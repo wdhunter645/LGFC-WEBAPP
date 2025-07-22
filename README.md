@@ -29,7 +29,6 @@ This repository contains the source code and schema for the **Lou Gehrig Fan Clu
 
 ## 🔗 Supabase Integration
 
-- **Supabase Project URL:** `https://vkwhrbjkdznncjkzkiuo.supabase.co`
 - **Anon Key:** Managed securely in environment variables
 - **Row-Level Security (RLS):** Enabled and actively enforced via SQL policies
 - **Access Rules:**
