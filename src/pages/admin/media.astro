@@ -1,6 +1,4 @@
 ---
-// media.astro (GitHub - Astro project)
-// Connects to Supabase to display media_assets
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 ---
@@ -10,16 +8,16 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     <title>Admin Media | Lou Gehrig Fan Club</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   </head>
   <body style="font-family: sans-serif; padding: 2rem;">
     <h1>Media Library (Admin)</h1>
-    <div id="media"></div>
+    <div id="media">Loading media assets...</div>
 
     <script type="module">
       const supabase = window.supabase.createClient(
-        "{{SUPABASE_URL}}",
-        "{{SUPABASE_ANON_KEY}}"
+        "${SUPABASE_URL}",
+        "${SUPABASE_ANON_KEY}"
       );
 
       async function loadMedia() {
@@ -38,20 +36,26 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
             )
           `);
 
+        if (error) {
+          console.error("Error fetching media:", error);
+          document.getElementById("media").innerHTML = "<p>Error loading media assets.</p>";
+          return;
+        }
+
         const container = document.getElementById("media");
 
-        if (error) {
-          container.innerText = "Error loading media: " + error.message;
+        if (!data || data.length === 0) {
+          container.innerHTML = "<p>No media assets found.</p>";
           return;
         }
 
         container.innerHTML = data.map(item => `
-          <div style="margin-bottom: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 1rem;">
-            <img src="${item.media_locations?.[0]?.url || ''}" width="150" />
-            <h3>${item.title}</h3>
-            <p><strong>Tags:</strong> ${item.tags?.join(', ')}</p>
-            <p><strong>Status:</strong> ${item.moderation_status}</p>
-            <p><strong>Visibility:</strong> ${item.is_public ? 'Public' : 'Private'}</p>
+          <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #ccc;">
+            <strong>${item.title}</strong><br/>
+            Tags: ${item.tags?.join(", ") || "None"}<br/>
+            Public: ${item.is_public ? "Yes" : "No"}<br/>
+            Status: ${item.moderation_status}<br/>
+            Location: ${item.media_locations?.[0]?.url || "N/A"}
           </div>
         `).join('');
       }
@@ -60,5 +64,4 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     </script>
   </body>
 </html>
-
 
