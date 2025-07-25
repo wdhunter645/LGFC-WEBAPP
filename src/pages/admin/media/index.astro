@@ -1,67 +1,12 @@
 ---
-const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 ---
-
 <html lang="en">
   <head>
-    <title>Admin Media | Lou Gehrig Fan Club</title>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <title>Media Route Test</title>
   </head>
   <body style="font-family: sans-serif; padding: 2rem;">
-    <h1>Media Library (Admin)</h1>
-    <div id="media">Loading media assets...</div>
-
-    <script type="module">
-      const supabase = window.supabase.createClient(
-        "${SUPABASE_URL}",
-        "${SUPABASE_ANON_KEY}"
-      );
-
-      async function loadMedia() {
-        const { data, error } = await supabase
-          .from("media_assets")
-          .select(`
-            id,
-            title,
-            tags,
-            moderation_status,
-            is_public,
-            media_locations (
-              url,
-              is_primary,
-              provider
-            )
-          `);
-
-        if (error) {
-          console.error("Error fetching media:", error);
-          document.getElementById("media").innerHTML = "<p>Error loading media assets.</p>";
-          return;
-        }
-
-        const container = document.getElementById("media");
-
-        if (!data || data.length === 0) {
-          container.innerHTML = "<p>No media assets found.</p>";
-          return;
-        }
-
-        container.innerHTML = data.map(item => `
-          <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #ccc;">
-            <strong>${item.title}</strong><br/>
-            Tags: ${item.tags?.join(", ") || "None"}<br/>
-            Public: ${item.is_public ? "Yes" : "No"}<br/>
-            Status: ${item.moderation_status}<br/>
-            Location: ${item.media_locations?.[0]?.url || "N/A"}
-          </div>
-        `).join('');
-      }
-
-      loadMedia();
-    </script>
+    <h1>✅ Success! The /admin/media/ route is rendering.</h1>
+    <p>If you see this message, routing is working correctly.</p>
   </body>
 </html>
-
