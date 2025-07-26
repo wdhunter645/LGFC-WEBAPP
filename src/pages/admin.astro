@@ -1,21 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Admin Dashboard | Lou Gehrig Fan Club</title>
-  </head>
-  <body style="font-family: sans-serif; padding: 2rem;">
-    <h1>⚙️ Admin Dashboard</h1>
+---
+const sections = [
+  { name: "Media", emoji: "🗂️" },
+  { name: "Users", emoji: "👥" },
+  { name: "Assets", emoji: "🖼️" },
+  { name: "Reports", emoji: "��" },
+  { name: "Posts", emoji: "📝" },
+  { name: "Milestones", emoji: "📅" },
+  { name: "Settings", emoji: "⚙️" },
+  { name: "Auth", emoji: "🔐" }
+];
+---
+
+<html>
+  <body>
+    <h2>⚙️ Admin Dashboard</h2>
     <p>Select a dashboard section:</p>
-    <ul style="line-height: 2;">
-      <li>🖼️ <a href="/admin/media">Media</a></li>
-      <li>👥 <a href="/admin/users">Users</a></li>
-      <li>📁 <a href="/admin/assets">Assets</a></li>
-      <li>📊 <a href="/admin/reports">Reports</a></li>
-      <li>📝 <a href="/admin/posts">Posts</a></li>
-      <li>📅 <a href="/admin/milestones">Milestones</a></li>
-      <li>⚙️ <a href="/admin/settings">Settings</a></li>
-      <li>🔐 <a href="/admin/auth">Auth</a></li>
+    <ul>
+      {sections.map(section => (
+        <li><a href={`/admin/${section.name.toLowerCase()}`}>{section.emoji} {section.name}</a></li>
+      ))}
     </ul>
     <p><a href="/">← Back to Home</a></p>
   </body>
