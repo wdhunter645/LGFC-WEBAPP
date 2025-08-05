@@ -2,3 +2,7 @@
 .env
 node_modules
 supabase_token.sh
+
+# In .gitignore
+*.txt
+
