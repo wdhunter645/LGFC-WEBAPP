@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",
+    "@google/gemini-cli": "^0.1.18",
     "@supabase/supabase-js": "^2.43.2",
     "astro": "^4.0.0",
     "lucide-react": "^0.536.0",
