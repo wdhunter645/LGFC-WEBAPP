@@ -1,4 +1,3 @@
-
 # Lou Gehrig Fan Club — Master Build, As‑Built Configurations & Project Record (v3)
 _Last updated: 2025‑08‑10 (America/New_York)_
 
