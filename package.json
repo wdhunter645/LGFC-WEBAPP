@@ -8,7 +8,8 @@
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50"
+    "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
+    "scrape:als": "node scripts/scrape_als_events.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",
@@ -19,7 +20,8 @@
     "astro": "^4.0.0",
     "lucide-react": "^0.536.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "astro-eslint-parser": "^0.16.3",
