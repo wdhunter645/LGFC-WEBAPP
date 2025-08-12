@@ -1,6 +1,6 @@
 /*
   Lou Gehrig Content Search Edge Function
-  - Live search via Bing if SEARCH_API_KEY is set; otherwise uses mock data
+  - Live search via Bing if SEARCH_API_KEY is set; otherwise uses free sources (GDELT + Wikipedia)
 */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -42,7 +42,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Initialize Supabase client (Edge runtime provides these secrets)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -50,10 +49,8 @@ Deno.serve(async (req: Request) => {
 
     const enhancedQuery = `"Lou Gehrig" OR "ALS" OR "amyotrophic lateral sclerosis" ${query}`;
 
-    // Try live search first if API key is set, otherwise use mock results
     const results = await fetchSearchResults(enhancedQuery, limit);
 
-    // Create hash function for deduplication
     const createContentHash = (content: string): string => {
       const encoder = new TextEncoder();
       const data = encoder.encode(content);
@@ -70,7 +67,6 @@ Deno.serve(async (req: Request) => {
 
       const contentHash = createContentHash(result.snippet + result.title);
 
-      // Check for duplicates by hash
       const { data: existingContent } = await supabase
         .from('content_items')
         .select('id')
@@ -81,7 +77,6 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Check for duplicate URLs
       const { data: existingUrl } = await supabase
         .from('content_items')
         .select('id')
@@ -91,17 +86,6 @@ Deno.serve(async (req: Request) => {
         duplicatesFound++;
         continue;
       }
-
-      // Calculate relevance score based on content
-      const calculateRelevance = (title: string, snippet: string): number => {
-        const keywords = ['lou gehrig', 'als', 'amyotrophic lateral sclerosis', 'iron horse', 'yankees'];
-        const text = (title + ' ' + snippet).toLowerCase();
-        let score = 0;
-        keywords.forEach(keyword => {
-          if (text.includes(keyword)) score += 2;
-        });
-        return Math.min(Math.max(score, 1), 10);
-      };
 
       const relevanceScore = calculateRelevance(result.title, result.snippet);
       const wordCount = result.snippet.split(' ').length;
@@ -131,7 +115,6 @@ Deno.serve(async (req: Request) => {
       processedCount++;
       processedItems.push(newItem);
 
-      // Extract and store media URLs
       const mediaUrls = extractMediaUrls(result.snippet);
       for (const mediaUrl of mediaUrls) {
         await supabase
@@ -145,12 +128,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Record search session
     await supabase
       .from('search_sessions')
       .insert({
         search_query: query,
-        search_provider: (Deno.env.get('SEARCH_API_PROVIDER') || 'mock').toLowerCase(),
+        search_provider: inferProvider(),
         results_found: results.length,
         new_content_added: newContentAdded,
         duplicates_found: duplicatesFound,
@@ -174,73 +156,180 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+function inferProvider(): string {
+  const apiKey = Deno.env.get('SEARCH_API_KEY');
+  const provider = (Deno.env.get('SEARCH_API_PROVIDER') || '').toLowerCase();
+  if (apiKey && provider) return provider;
+  return 'free-aggregator';
+}
+
+function calculateRelevance(title: string, snippet: string): number {
+  const keywords = ['lou gehrig', 'als', 'amyotrophic lateral sclerosis', 'iron horse', 'yankees'];
+  const text = (title + ' ' + snippet).toLowerCase();
+  let score = 0;
+  keywords.forEach(keyword => {
+    if (text.includes(keyword)) score += 2;
+  });
+  return Math.min(Math.max(score, 1), 10);
+}
+
 async function fetchSearchResults(query: string, limit: number): Promise<SearchResult[]> {
   const apiKey = Deno.env.get('SEARCH_API_KEY');
   const provider = (Deno.env.get('SEARCH_API_PROVIDER') || 'BING').toUpperCase();
 
-  if (!apiKey) {
-    return mockResults().slice(0, limit);
+  if (apiKey) {
+    if (provider === 'BING') {
+      return await fetchBingResults(query, limit, apiKey);
+    }
   }
 
-  if (provider === 'BING') {
-    try {
-      // Try Bing News first
-      const newsUrl = new URL('https://api.bing.microsoft.com/v7.0/news/search');
-      newsUrl.searchParams.set('q', query);
-      newsUrl.searchParams.set('count', String(limit));
-      const newsRes = await fetch(newsUrl.toString(), {
+  // Free aggregator path (no API key required)
+  const free = await fetchFreeResults(query, limit);
+  if (free.length > 0) return free.slice(0, limit);
+  // Last resort (should be rare)
+  return mockResults().slice(0, limit);
+}
+
+async function fetchBingResults(query: string, limit: number, apiKey: string): Promise<SearchResult[]> {
+  try {
+    const results: SearchResult[] = [];
+    const newsUrl = new URL('https://api.bing.microsoft.com/v7.0/news/search');
+    newsUrl.searchParams.set('q', query);
+    newsUrl.searchParams.set('count', String(limit));
+    const newsRes = await fetch(newsUrl.toString(), {
+      headers: { 'Ocp-Apim-Subscription-Key': apiKey },
+    });
+    if (newsRes.ok) {
+      const body = await newsRes.json();
+      const values = Array.isArray(body?.value) ? body.value : [];
+      for (const v of values) {
+        if (results.length >= limit) break;
+        if (!v?.name || !v?.url) continue;
+        results.push({
+          title: v.name,
+          url: v.url,
+          snippet: v.description || '',
+          datePublished: v.datePublished,
+        });
+      }
+    }
+
+    if (results.length < limit) {
+      const webUrl = new URL('https://api.bing.microsoft.com/v7.0/search');
+      webUrl.searchParams.set('q', query);
+      webUrl.searchParams.set('count', String(limit - results.length));
+      const webRes = await fetch(webUrl.toString(), {
         headers: { 'Ocp-Apim-Subscription-Key': apiKey },
       });
-
-      const results: SearchResult[] = [];
-      if (newsRes.ok) {
-        const body = await newsRes.json();
-        const values = Array.isArray(body?.value) ? body.value : [];
+      if (webRes.ok) {
+        const body = await webRes.json();
+        const values = Array.isArray(body?.webPages?.value) ? body.webPages.value : [];
         for (const v of values) {
           if (results.length >= limit) break;
           if (!v?.name || !v?.url) continue;
           results.push({
             title: v.name,
             url: v.url,
-            snippet: v.description || '',
-            datePublished: v.datePublished,
+            snippet: v.snippet || '',
+            datePublished: v.dateLastCrawled,
           });
         }
       }
+    }
 
-      // If we still need more, use Bing Web Search
-      if (results.length < limit) {
-        const webUrl = new URL('https://api.bing.microsoft.com/v7.0/search');
-        webUrl.searchParams.set('q', query);
-        webUrl.searchParams.set('count', String(limit - results.length));
-        const webRes = await fetch(webUrl.toString(), {
-          headers: { 'Ocp-Apim-Subscription-Key': apiKey },
-        });
-        if (webRes.ok) {
-          const body = await webRes.json();
-          const values = Array.isArray(body?.webPages?.value) ? body.webPages.value : [];
-          for (const v of values) {
-            if (results.length >= limit) break;
-            if (!v?.name || !v?.url) continue;
-            results.push({
-              title: v.name,
-              url: v.url,
-              snippet: v.snippet || '',
-              datePublished: v.dateLastCrawled,
-            });
-          }
+    return results.slice(0, limit);
+  } catch (e) {
+    console.error('Bing search error:', e);
+    return [];
+  }
+}
+
+async function fetchFreeResults(query: string, limit: number): Promise<SearchResult[]> {
+  const merged: SearchResult[] = [];
+  try {
+    const [gdelt, wiki] = await Promise.all([
+      fetchGdelt(query, limit),
+      fetchWikipedia(query, Math.min(limit, 20)),
+    ]);
+    const seen = new Set<string>();
+    for (const arr of [gdelt, wiki]) {
+      for (const r of arr) {
+        const key = r.url;
+        if (key && !seen.has(key)) {
+          merged.push(r);
+          seen.add(key);
+          if (merged.length >= limit) break;
         }
       }
-
-      return results.slice(0, limit);
-    } catch (e) {
-      console.error('Bing search error:', e);
-      return mockResults().slice(0, limit);
+      if (merged.length >= limit) break;
     }
+  } catch (e) {
+    console.error('Free results error:', e);
   }
+  return merged.slice(0, limit);
+}
 
-  // Default fallback
-  return mockResults().slice(0, limit);
+async function fetchGdelt(query: string, limit: number): Promise<SearchResult[]> {
+  try {
+    const url = new URL('https://api.gdeltproject.org/api/v2/doc/doc');
+    url.searchParams.set('query', query);
+    url.searchParams.set('mode', 'ArtList');
+    url.searchParams.set('maxrecords', String(Math.min(limit, 50)));
+    url.searchParams.set('format', 'json');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const body = await res.json();
+    const items = Array.isArray(body?.articles) ? body.articles : (Array.isArray(body?.documents) ? body.documents : []);
+
+    const results: SearchResult[] = [];
+    for (const it of items) {
+      const title = it?.title || it?.name || '';
+      const link = it?.url || it?.seendateurl || it?.link || '';
+      if (!title || !link) continue;
+      results.push({
+        title,
+        url: link,
+        snippet: it?.excerpt || it?.description || it?.text || '',
+        datePublished: it?.seendate || it?.date || undefined,
+      });
+      if (results.length >= limit) break;
+    }
+    return results;
+  } catch (e) {
+    console.error('GDELT error:', e);
+    return [];
+  }
+}
+
+async function fetchWikipedia(query: string, limit: number): Promise<SearchResult[]> {
+  try {
+    const url = new URL('https://en.wikipedia.org/w/api.php');
+    url.searchParams.set('action', 'query');
+    url.searchParams.set('list', 'search');
+    url.searchParams.set('srsearch', query);
+    url.searchParams.set('srlimit', String(Math.min(limit, 20)));
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('origin', '*');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const body = await res.json();
+    const arr = Array.isArray(body?.query?.search) ? body.query.search : [];
+    const results: SearchResult[] = [];
+    for (const s of arr) {
+      const title = s?.title;
+      if (!title) continue;
+      const pageUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+      const snippet = (s?.snippet || '').replace(/<[^>]+>/g, '');
+      results.push({ title, url: pageUrl, snippet });
+      if (results.length >= limit) break;
+    }
+    return results;
+  } catch (e) {
+    console.error('Wikipedia error:', e);
+    return [];
+  }
 }
 
 function mockResults(): SearchResult[] {
@@ -266,7 +355,6 @@ function mockResults(): SearchResult[] {
   ];
 }
 
-// Helper: extract media URLs from text
 function extractMediaUrls(content: string): string[] {
   const imageRegex = /https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp)/gi;
   return content.match(imageRegex) || [];
