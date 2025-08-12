@@ -25,28 +25,53 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const timelineStatus = document.getElementById('timeline-status');
     const timelineEl = document.getElementById('timeline');
 
+    function normalizeMilestone(m) {
+      const occurred_on = m.occurred_on ?? m.date ?? m.occurred ?? null;
+      const title = m.title ?? m.name ?? 'Untitled';
+      const description = m.description ?? m.details ?? '';
+      const link_url = m.link_url ?? m.url ?? '';
+      const year = m.year ?? (occurred_on ? new Date(occurred_on).getFullYear() : undefined);
+      const month = m.month ?? (occurred_on ? new Date(occurred_on).getMonth() + 1 : undefined);
+      const day = m.day ?? (occurred_on ? new Date(occurred_on).getDate() : undefined);
+      return { id: m.id, occurred_on, title, description, link_url, year, month, day };
+    }
+
+    function normalizeFact(f) {
+      return {
+        id: f.id,
+        fact_text: f.fact_text ?? f.text ?? f.fact ?? '',
+        month: f.month ?? f.mm ?? undefined,
+        day: f.day ?? f.dd ?? undefined,
+        last_shown_at: f.last_shown_at ?? f.shown_at ?? null,
+        times_shown: f.times_shown ?? f.count ?? 0,
+        source_url: f.source_url ?? f.url ?? ''
+      };
+    }
+
     async function loadFact() {
       const now = new Date();
       const month = now.getMonth() + 1;
       const day = now.getDate();
-      // Prefer facts for today not shown today, then least shown overall
       const { data, error } = await supabase
         .from('milestone_facts')
-        .select('id,fact_text,month,day,last_shown_at,times_shown,source_url')
-        .eq('month', month)
-        .eq('day', day)
-        .order('last_shown_at', { ascending: true, nullsFirst: true })
-        .order('times_shown', { ascending: true })
-        .limit(1);
+        .select('*')
+        .limit(2000);
       if (error) {
         factEl.textContent = `Error loading fact: ${error.message}`;
         return;
       }
-      if (!data?.length) {
+      const facts = (data ?? []).map(normalizeFact).filter(f => f.month === month && f.day === day);
+      if (!facts.length) {
         factEl.textContent = 'No fact available for today yet.';
         return;
       }
-      const f = data[0];
+      facts.sort((a, b) => {
+        const aShown = a.last_shown_at ? new Date(a.last_shown_at).getTime() : 0;
+        const bShown = b.last_shown_at ? new Date(b.last_shown_at).getTime() : 0;
+        if (aShown !== bShown) return aShown - bShown; // prefer least recently shown
+        return a.times_shown - b.times_shown; // then least shown
+      });
+      const f = facts[0];
       const text = f.source_url ? `${f.fact_text} (<a class="underline" href="${f.source_url}" target="_blank" rel="noreferrer">source</a>)` : f.fact_text;
       factEl.innerHTML = text;
     }
@@ -54,19 +79,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     async function loadTimeline() {
       const { data, error } = await supabase
         .from('milestones')
-        .select('id,title,description,occurred_on,year,month,day,link_url')
-        .order('occurred_on', { ascending: true })
-        .limit(500);
+        .select('*')
+        .limit(1000);
       if (error) {
         timelineStatus.textContent = `Error: ${error.message}`;
         return;
       }
-      if (!data?.length) {
+      const items = (data ?? []).map(normalizeMilestone);
+      if (!items.length) {
         timelineStatus.textContent = 'No milestones yet.';
         return;
       }
+      items.sort((a, b) => {
+        const ad = a.occurred_on ? new Date(a.occurred_on).getTime() : 0;
+        const bd = b.occurred_on ? new Date(b.occurred_on).getTime() : 0;
+        return ad - bd;
+      });
       timelineStatus.remove();
-      for (const m of data) {
+      for (const m of items) {
         const li = document.createElement('li');
         li.className = 'border p-3 rounded bg-white';
         const when = m.occurred_on ? new Date(m.occurred_on).toLocaleDateString() : [m.year, m.month, m.day].filter(Boolean).join('-');

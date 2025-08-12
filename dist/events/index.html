@@ -9,8 +9,21 @@
     const clubList = document.getElementById('club-list');
     const otherList = document.getElementById('other-list');
 
+    function normalizeEvent(e) {
+      return {
+        id: e.id,
+        title: e.title ?? e.name ?? 'Untitled Event',
+        description: e.description ?? e.details ?? '',
+        start_at: e.start_at ?? e.start_time ?? e.start ?? e.date ?? e.startDate ?? null,
+        location: e.location ?? e.place ?? '',
+        link_url: e.link_url ?? e.url ?? e.link ?? '',
+        is_mlb_lou_gehrig_day: e.is_mlb_lou_gehrig_day ?? e.is_lg_day ?? e.is_lou_gehrig_day ?? false,
+        is_club_event: e.is_club_event ?? e.club_event ?? e.is_club ?? false,
+      };
+    }
+
     function renderEvent(li, e) {
-      const when = new Date(e.start_at).toLocaleString();
+      const when = e.start_at ? new Date(e.start_at).toLocaleString() : '';
       const badge = e.is_mlb_lou_gehrig_day ? '<span class="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded">Lou Gehrig Day</span>' : '';
       li.className = 'border p-3 rounded bg-white';
       li.innerHTML = `
@@ -27,14 +40,18 @@
 
     async function loadEvents() {
       try {
-        const { data: club, error: e1 } = await supabase
+        const { data: all, error } = await supabase
           .from('events')
-          .select('id,title,description,start_at,location,link_url,is_mlb_lou_gehrig_day')
-          .eq('is_club_event', true)
+          .select('*')
           .order('start_at', { ascending: true })
-          .limit(50);
-        if (e1) throw e1;
-        if (!club?.length) {
+          .limit(200);
+        if (error) throw error;
+
+        const normalized = (all ?? []).map(normalizeEvent);
+        const club = normalized.filter(ev => ev.is_club_event);
+        const other = normalized.filter(ev => !ev.is_club_event);
+
+        if (!club.length) {
           clubStatus.textContent = 'No upcoming club events.';
         } else {
           clubStatus.remove();
@@ -45,14 +62,7 @@
           }
         }
 
-        const { data: other, error: e2 } = await supabase
-          .from('events')
-          .select('id,title,description,start_at,location,link_url,is_mlb_lou_gehrig_day')
-          .eq('is_club_event', false)
-          .order('start_at', { ascending: true })
-          .limit(100);
-        if (e2) throw e2;
-        if (!other?.length) {
+        if (!other.length) {
           otherStatus.textContent = 'No other events found.';
         } else {
           otherStatus.remove();
