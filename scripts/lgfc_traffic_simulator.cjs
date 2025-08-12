@@ -611,14 +611,4 @@ process.on('SIGINT', () => {
 });
 
 // Run enhanced simulation
-if (require.main === module) {
-  console.log('🎯 Lou Gehrig Fan Club Enhanced Traffic Simulator');
-  console.log('   Variable Load Patterns for Realistic Database Metrics');
-  console.log('   Based on LGFC_AS_BUILT_MASTER_DOCUMENTATION V2\n');
-  
-  const simulator = new VariableLoadTrafficSimulator();
-  simulator.run().catch(err => {
-    console.error('❌ Enhanced simulation failed:', err);
-    process.exit(1);
-  });
-}
+module.exports = { SupabaseClient };

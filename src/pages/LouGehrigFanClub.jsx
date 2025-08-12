@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabase'; // Corrected import path
 import {
   Calendar, Camera, Users, Heart, Award, Clock, ArrowRight, Upload,
   Settings, BarChart3, User, Home, Image, FileText, Activity
@@ -11,23 +12,34 @@ const LouGehrigFanClub = () => {
   const [milestones, setMilestones] = useState([]);
   const [posts, setPosts] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setMilestones([
-      { id: 1, title: "Lou Gehrig Day", date: "2025-06-02", description: "Annual celebration of Lou Gehrig’s legacy" },
-      { id: 2, title: "Yankees Debut", date: "1923-06-15", description: "Lou Gehrig’s first game with the Yankees" },
-      { id: 3, title: "Farewell Speech", date: "1939-07-04", description: "The famous ‘Luckiest Man’ speech" }
-    ]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const { data: milestonesData, error: milestonesError } = await supabase.from('milestones').select('*');
+        if (milestonesError) throw milestonesError;
+        setMilestones(milestonesData);
 
-    setPosts([
-      { id: 1, title: "Welcome to the Lou Gehrig Fan Club", content: "Celebrating the Iron Horse's incredible legacy...", date: "2025-01-31" },
-      { id: 2, title: "ALS Awareness Month", content: "Supporting ALS research in Lou's honor...", date: "2025-01-30" }
-    ]);
+        const { data: postsData, error: postsError } = await supabase.from('posts').select('*');
+        if (postsError) throw postsError;
+        setPosts(postsData);
 
-    setPhotos([
-      { id: 1, url: "https://f005.backblazeb2.com/file/LouGehrigFanClub/Photoroom_20250727_233421.png", caption: "Lou Gehrig at Yankee Stadium" }
-    ]);
+        const { data: photosData, error: photosError } = await supabase.from('photos').select('*');
+        if (photosError) throw photosError;
+        setPhotos(photosData);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
 
   const Navigation = () => (
     <nav className="bg-blue-900 text-white p-4 shadow-lg">
@@ -92,7 +104,9 @@ const LouGehrigFanClub = () => {
     <div className="min-h-screen bg-gray-100">
       <Navigation />
       <main className="max-w-6xl mx-auto p-6">
-        {currentView === 'home' && <HomePage />}
+        {loading && <p>Loading...</p>}
+        {error && <p>Error: {error}</p>}
+        {!loading && !error && currentView === 'home' && <HomePage />}
       </main>
     </div>
   );
