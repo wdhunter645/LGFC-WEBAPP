@@ -21,8 +21,31 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+async function checkSupabaseConnectivity() {
+  try {
+    const host = new URL(SUPABASE_URL).hostname;
+    console.log(`Connecting to Supabase host: ${host}`);
+  } catch {
+    console.error('Invalid SUPABASE_URL format. Expected https://<ref>.supabase.co');
+  }
+  const { data, error } = await supabase.from('search_state').select('id').limit(1);
+  if (error && error.message) {
+    console.error('Supabase connectivity or permission error on search_state:', error.message);
+    process.exit(1);
+  }
+}
+
 async function main() {
-  const { data: stateRows } = await supabase.from('search_state').select('last_run_at').eq('id', 1).limit(1);
+  await checkSupabaseConnectivity();
+
+  const { data: stateRows, error: stateErr } = await supabase
+    .from('search_state')
+    .select('last_run_at')
+    .eq('id', 1)
+    .limit(1);
+  if (stateErr && stateErr.message) {
+    console.error('Error reading search_state:', stateErr.message);
+  }
   const lastRunAt = stateRows && stateRows[0]?.last_run_at ? new Date(stateRows[0].last_run_at) : undefined;
 
   const enhancedQuery = `"Lou Gehrig" OR "ALS" OR "amyotrophic lateral sclerosis" ${query}`;
@@ -38,21 +61,29 @@ async function main() {
 
     const contentHash = hashHex(result.snippet + result.title);
 
-    const { data: existingContent } = await supabase
+    const { data: existingContent, error: existHashErr } = await supabase
       .from('content_items')
       .select('id')
       .eq('content_hash', contentHash)
       .limit(1);
+    if (existHashErr && existHashErr.message) {
+      console.error('Error checking content_items by hash:', existHashErr.message);
+      break;
+    }
     if (existingContent && existingContent.length > 0) {
       duplicatesFound++;
       continue;
     }
 
-    const { data: existingUrl } = await supabase
+    const { data: existingUrl, error: existUrlErr } = await supabase
       .from('content_items')
       .select('id')
       .eq('source_url', result.url)
       .limit(1);
+    if (existUrlErr && existUrlErr.message) {
+      console.error('Error checking content_items by url:', existUrlErr.message);
+      break;
+    }
     if (existingUrl && existingUrl.length > 0) {
       duplicatesFound++;
       continue;
@@ -77,8 +108,8 @@ async function main() {
       .select()
       .single();
 
-    if (insertError) {
-      console.error('Insert error:', insertError);
+    if (insertError && insertError.message) {
+      console.error('Insert error content_items:', insertError.message);
       continue;
     }
 
@@ -87,7 +118,7 @@ async function main() {
 
     const mediaUrls = extractMediaUrls(result.snippet);
     for (const mediaUrl of mediaUrls) {
-      await supabase
+      const { error: mediaErr } = await supabase
         .from('media_files')
         .insert({
           content_item_id: newItem.id,
@@ -95,10 +126,13 @@ async function main() {
           media_type: 'image',
           file_name: mediaUrl.split('/').pop() || '',
         });
+      if (mediaErr && mediaErr.message) {
+        console.error('Insert error media_files:', mediaErr.message);
+      }
     }
   }
 
-  await supabase
+  const { error: sessErr } = await supabase
     .from('search_sessions')
     .insert({
       search_query: query,
@@ -107,10 +141,16 @@ async function main() {
       new_content_added: newContentAdded,
       duplicates_found: duplicatesFound,
     });
+  if (sessErr && sessErr.message) {
+    console.error('Insert error search_sessions:', sessErr.message);
+  }
 
-  await supabase
+  const { error: stateUpsertErr } = await supabase
     .from('search_state')
     .upsert({ id: 1, last_run_at: nowIso(), last_query: query });
+  if (stateUpsertErr && stateUpsertErr.message) {
+    console.error('Upsert error search_state:', stateUpsertErr.message);
+  }
 
   console.log(JSON.stringify({
     success: true,
