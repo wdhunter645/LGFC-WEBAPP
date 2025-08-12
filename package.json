@@ -7,13 +7,15 @@
     "build": "astro build",
     "preview": "astro preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",
     "@astrojs/tailwind": "^6.0.2",
     "@google/gemini-cli": "^0.1.18",
     "@supabase/supabase-js": "^2.43.2",
+    "@xmldom/xmldom": "^0.8.10",
     "astro": "^4.0.0",
     "lucide-react": "^0.536.0",
     "react": "^19.1.1",
