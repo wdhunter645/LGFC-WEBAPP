@@ -1,0 +1,4 @@
+dist
+node_modules
+vendor_reports
+lgfc_traffic_simulator.js
