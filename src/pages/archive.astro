@@ -1,0 +1,134 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Archive | Lou Gehrig Fan Club" description="Member archive: content library and search history." requireAuth={true}>
+  <section class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">Archive</h1>
+
+    <div class="grid gap-8 md:grid-cols-2">
+      <div>
+        <h2 class="text-2xl font-semibold mb-2">Content Library</h2>
+        <p id="library-status" class="text-gray-600">Loading…</p>
+        <ul id="library-list" class="space-y-4 mt-4"></ul>
+      </div>
+      <div>
+        <h2 class="text-2xl font-semibold mb-2">Search History</h2>
+        <p id="history-status" class="text-gray-600">Loading…</p>
+        <div class="overflow-x-auto">
+          <table id="history-table" class="hidden w-full text-left bg-white">
+            <thead>
+              <tr class="border-b">
+                <th class="p-2">When</th>
+                <th class="p-2">Query</th>
+                <th class="p-2">Provider</th>
+                <th class="p-2">Found</th>
+                <th class="p-2">New</th>
+                <th class="p-2">Duplicates</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    // Library section
+    const libraryStatusEl = document.getElementById('library-status');
+    const libraryListEl = document.getElementById('library-list');
+
+    async function loadLibrary() {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        libraryStatusEl.textContent = 'Supabase is not configured.';
+        return;
+      }
+      try {
+        const params = new URLSearchParams({
+          select: 'id,title,source_url,date_found,relevance_score,word_count',
+          order: 'date_found.desc',
+          limit: '25'
+        });
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/content_items?${params.toString()}`, {
+          headers: { apikey: SUPABASE_ANON_KEY }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const items = await res.json();
+        if (!items.length) {
+          libraryStatusEl.textContent = 'No content found yet.';
+          return;
+        }
+        libraryStatusEl.remove();
+        for (const item of items) {
+          const li = document.createElement('li');
+          li.className = 'border p-4 rounded bg-white text-left';
+          li.innerHTML = `
+            <a href="${item.source_url}" class="text-blue-700 underline" target="_blank" rel="noreferrer">${item.title}</a>
+            <div class="text-sm text-gray-600 mt-1">
+              <span>Found: ${new Date(item.date_found).toLocaleString()}</span>
+              <span class="mx-2">•</span>
+              <span>Relevance: ${item.relevance_score}</span>
+              <span class="mx-2">•</span>
+              <span>Words: ${item.word_count}</span>
+            </div>
+          `;
+          libraryListEl.appendChild(li);
+        }
+      } catch (e) {
+        libraryStatusEl.textContent = `Error loading content: ${e.message}`;
+      }
+    }
+
+    // History section
+    const historyStatusEl = document.getElementById('history-status');
+    const historyTable = document.getElementById('history-table');
+    const historyTbody = historyTable.querySelector('tbody');
+
+    async function loadHistory() {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        historyStatusEl.textContent = 'Supabase is not configured.';
+        return;
+      }
+      try {
+        const params = new URLSearchParams({
+          select: 'id,search_query,search_provider,results_found,new_content_added,duplicates_found,created_at',
+          order: 'created_at.desc',
+          limit: '50'
+        });
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/search_sessions?${params.toString()}`, {
+          headers: { apikey: SUPABASE_ANON_KEY }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const sessions = await res.json();
+        if (!sessions.length) {
+          historyStatusEl.textContent = 'No sessions recorded yet.';
+          return;
+        }
+        historyStatusEl.remove();
+        historyTable.classList.remove('hidden');
+        for (const s of sessions) {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b';
+          tr.innerHTML = `
+            <td class="p-2">${new Date(s.created_at).toLocaleString()}</td>
+            <td class="p-2">${s.search_query}</td>
+            <td class="p-2">${s.search_provider}</td>
+            <td class="p-2">${s.results_found}</td>
+            <td class="p-2">${s.new_content_added}</td>
+            <td class="p-2">${s.duplicates_found}</td>
+          `;
+          historyTbody.appendChild(tr);
+        }
+      } catch (e) {
+        historyStatusEl.textContent = `Error loading history: ${e.message}`;
+      }
+    }
+
+    loadLibrary();
+    loadHistory();
+  </script>
+</BaseLayout>
