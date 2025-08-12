@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Join the Club | Lou Gehrig Fan Club" description="Free membership, digital and physical membership card details." requireAuth={true}>
+  <section class="max-w-3xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Join the Lou Gehrig Fan Club</h1>
+    <p class="text-gray-700 mb-6">Free membership. Set your preferred screen name and claim your digital membership card.</p>
+
+    <div class="border rounded p-4 bg-white mb-6">
+      <h2 class="text-xl font-semibold">Your Screen Name</h2>
+      <p class="text-gray-600 mb-2">Choose how your name appears on posts and comments.</p>
+      <form id="profile-form" class="flex gap-2 items-center">
+        <input id="screen" class="flex-1 border rounded px-3 py-2" placeholder="e.g., Billy" />
+        <button class="border rounded px-4 py-2">Save</button>
+      </form>
+      <p id="save-status" class="text-sm text-gray-600 mt-2"></p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="border rounded p-4 bg-white">
+        <h3 class="font-semibold">Digital Membership Card</h3>
+        <p class="text-gray-600">Preview and download your free digital card.</p>
+        <div class="mt-2 border rounded overflow-hidden">
+          <img src="/placeholder.svg" alt="Digital membership card preview" class="w-full h-40 object-cover" />
+        </div>
+        <a class="underline mt-2 inline-block" href="#">Download PDF</a>
+      </div>
+      <div class="border rounded p-4 bg-white">
+        <h3 class="font-semibold">Physical Membership Card</h3>
+        <p class="text-gray-600">Instructions to receive your free physical card.</p>
+        <ol class="list-decimal list-inside mt-2 text-sm text-gray-700">
+          <li>Confirm your screen name above.</li>
+          <li>Provide mailing details (coming soon).</li>
+          <li>We’ll ship your card at no cost.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    const form = document.getElementById('profile-form');
+    const screen = document.getElementById('screen');
+    const saveStatus = document.getElementById('save-status');
+
+    async function loadProfile() {
+      const { data } = await supabase.auth.getSession();
+      const uid = data?.session?.user?.id;
+      const email = data?.session?.user?.email || '';
+      if (!uid) return;
+      // Ensure members row exists
+      await supabase.from('members').upsert({ user_id: uid, email }).eq('user_id', uid);
+      const { data: m } = await supabase.from('members').select('*').eq('user_id', uid).maybeSingle();
+      if (m?.preferred_screen_name) screen.value = m.preferred_screen_name;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveStatus.textContent = '';
+      const { data } = await supabase.auth.getSession();
+      const uid = data?.session?.user?.id;
+      if (!uid) return;
+      const preferred_screen_name = screen.value.trim();
+      const { error } = await supabase.from('members').update({ preferred_screen_name }).eq('user_id', uid);
+      saveStatus.textContent = error ? `Error: ${error.message}` : 'Saved!';
+    });
+
+    loadProfile();
+  </script>
+</BaseLayout>
