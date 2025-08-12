@@ -68,7 +68,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         const btn = document.createElement('button');
         btn.className = 'block border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600';
         btn.innerHTML = `
-          <img src="${img.url}" alt="${img.alt}" class="w-full h-64 object-cover" loading="lazy" />
+          <img src="${img.url || '/placeholder.svg'}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" />
           <div class="p-3 text-center font-medium">Vote</div>
         `;
         btn.addEventListener('click', () => recordVote(img.id));
