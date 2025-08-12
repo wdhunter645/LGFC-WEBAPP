@@ -1,6 +1,10 @@
 ---
 import "../styles/global.css";
-const { title = "Lou Gehrig Fan Club", description = "Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research." } = Astro.props;
+const {
+  title = "Lou Gehrig Fan Club",
+  description = "Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.",
+  canonical
+} = Astro.props;
 ---
 
 <html lang="en">
@@ -9,6 +13,14 @@ const { title = "Lou Gehrig Fan Club", description = "Honoring the legacy of Lou
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <link rel="icon" href="/favicon.ico" />
   </head>
   <body class="font-sans text-gray-900">
     <main class="min-h-screen">
