@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive | Lou Gehrig Fan Club</title><meta name="description" content="Member archive: content library and search history."><meta property="og:title" content="Archive | Lou Gehrig Fan Club"><meta property="og:description" content="Member archive: content library and search history."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive | Lou Gehrig Fan Club"><meta name="twitter:description" content="Member archive: content library and search history."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.s6WTaB_p.css"></head> <body class="font-sans text-gray-900"> <script type="module">
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive | Lou Gehrig Fan Club</title><meta name="description" content="Member archive hub: books library, photo gallery, and memorabilia."><meta property="og:title" content="Archive | Lou Gehrig Fan Club"><meta property="og:description" content="Member archive hub: books library, photo gallery, and memorabilia."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive | Lou Gehrig Fan Club"><meta name="twitter:description" content="Member archive hub: books library, photo gallery, and memorabilia."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.C_bQO6cB.css"></head> <body class="font-sans text-gray-900"> <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
         const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,102 +10,6 @@
             window.location.href = `/login?redirect=${target}`;
           }
         })();
-      </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="max-w-6xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-6">Archive</h1> <div class="grid gap-8 md:grid-cols-2"> <div> <h2 class="text-2xl font-semibold mb-2">Content Library</h2> <p id="library-status" class="text-gray-600">Loading…</p> <ul id="library-list" class="space-y-4 mt-4"></ul> </div> <div> <h2 class="text-2xl font-semibold mb-2">Search History</h2> <p id="history-status" class="text-gray-600">Loading…</p> <div class="overflow-x-auto"> <table id="history-table" class="hidden w-full text-left bg-white"> <thead> <tr class="border-b"> <th class="p-2">When</th> <th class="p-2">Query</th> <th class="p-2">Provider</th> <th class="p-2">Found</th> <th class="p-2">New</th> <th class="p-2">Duplicates</th> </tr> </thead> <tbody></tbody> </table> </div> </div> </div> </section> <script type="module">
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    // Library section
-    const libraryStatusEl = document.getElementById('library-status');
-    const libraryListEl = document.getElementById('library-list');
-
-    async function loadLibrary() {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        libraryStatusEl.textContent = 'Supabase is not configured.';
-        return;
-      }
-      try {
-        const params = new URLSearchParams({
-          select: 'id,title,source_url,date_found,relevance_score,word_count',
-          order: 'date_found.desc',
-          limit: '25'
-        });
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/content_items?${params.toString()}`, {
-          headers: { apikey: SUPABASE_ANON_KEY }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const items = await res.json();
-        if (!items.length) {
-          libraryStatusEl.textContent = 'No content found yet.';
-          return;
-        }
-        libraryStatusEl.remove();
-        for (const item of items) {
-          const li = document.createElement('li');
-          li.className = 'border p-4 rounded bg-white text-left';
-          li.innerHTML = `
-            <a href="${item.source_url}" class="text-blue-700 underline" target="_blank" rel="noreferrer">${item.title}</a>
-            <div class="text-sm text-gray-600 mt-1">
-              <span>Found: ${new Date(item.date_found).toLocaleString()}</span>
-              <span class="mx-2">•</span>
-              <span>Relevance: ${item.relevance_score}</span>
-              <span class="mx-2">•</span>
-              <span>Words: ${item.word_count}</span>
-            </div>
-          `;
-          libraryListEl.appendChild(li);
-        }
-      } catch (e) {
-        libraryStatusEl.textContent = `Error loading content: ${e.message}`;
-      }
-    }
-
-    // History section
-    const historyStatusEl = document.getElementById('history-status');
-    const historyTable = document.getElementById('history-table');
-    const historyTbody = historyTable.querySelector('tbody');
-
-    async function loadHistory() {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        historyStatusEl.textContent = 'Supabase is not configured.';
-        return;
-      }
-      try {
-        const params = new URLSearchParams({
-          select: 'id,search_query,search_provider,results_found,new_content_added,duplicates_found,created_at',
-          order: 'created_at.desc',
-          limit: '50'
-        });
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/search_sessions?${params.toString()}`, {
-          headers: { apikey: SUPABASE_ANON_KEY }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const sessions = await res.json();
-        if (!sessions.length) {
-          historyStatusEl.textContent = 'No sessions recorded yet.';
-          return;
-        }
-        historyStatusEl.remove();
-        historyTable.classList.remove('hidden');
-        for (const s of sessions) {
-          const tr = document.createElement('tr');
-          tr.className = 'border-b';
-          tr.innerHTML = `
-            <td class="p-2">${new Date(s.created_at).toLocaleString()}</td>
-            <td class="p-2">${s.search_query}</td>
-            <td class="p-2">${s.search_provider}</td>
-            <td class="p-2">${s.results_found}</td>
-            <td class="p-2">${s.new_content_added}</td>
-            <td class="p-2">${s.duplicates_found}</td>
-          `;
-          historyTbody.appendChild(tr);
-        }
-      } catch (e) {
-        historyStatusEl.textContent = `Error loading history: ${e.message}`;
-      }
-    }
-
-    loadLibrary();
-    loadHistory();
-  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
+      </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="max-w-6xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-6">Archive</h1> <p class="text-gray-700 mb-6">Explore the archive by section.</p> <div class="grid gap-6 md:grid-cols-3"> <a href="/archive/library" class="block border rounded p-4 bg-white hover:shadow"> <h2 class="text-xl font-semibold">Library (Books)</h2> <p class="text-gray-600 mt-1">Curated books about or featuring Lou Gehrig.</p> </a> <a href="/archive/photos" class="block border rounded p-4 bg-white hover:shadow"> <h2 class="text-xl font-semibold">Photo Gallery</h2> <p class="text-gray-600 mt-1">Search by metadata and browse thumbnails.</p> </a> <a href="/archive/memorabilia" class="block border rounded p-4 bg-white hover:shadow"> <h2 class="text-xl font-semibold">Memorabilia</h2> <p class="text-gray-600 mt-1">Artifacts, stories, and media in one space.</p> </a> </div> </section>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
 "Today I consider myself the luckiest man on the face of the earth."
 </p> </div> </footer> </body></html>

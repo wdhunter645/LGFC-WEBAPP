@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive • Photo Gallery | Lou Gehrig Fan Club</title><meta name="description" content="Search and browse the photo archive."><meta property="og:title" content="Archive • Photo Gallery | Lou Gehrig Fan Club"><meta property="og:description" content="Search and browse the photo archive."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive • Photo Gallery | Lou Gehrig Fan Club"><meta name="twitter:description" content="Search and browse the photo archive."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.C_bQO6cB.css"></head> <body class="font-sans text-gray-900"> <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        (async () => {
+          const { data } = await supabase.auth.getSession();
+          if (!data?.session) {
+            const target = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/login?redirect=${target}`;
+          }
+        })();
+      </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="max-w-6xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Photo Gallery</h1> <form id="search-form" class="flex flex-wrap gap-2 items-center"> <input id="q" class="flex-1 min-w-[240px] border rounded px-3 py-2" placeholder="Search alt text, filename, or title…"> <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button> <span id="count" class="text-sm text-gray-600 ml-auto"></span> </form> <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4"></div> <div class="flex justify-between items-center mt-6"> <button id="prev" class="border rounded px-3 py-2 disabled:opacity-50">Prev</button> <div id="pageinfo" class="text-sm text-gray-600"></div> <button id="next" class="border rounded px-3 py-2 disabled:opacity-50">Next</button> </div> <p id="status" class="text-gray-600 mt-3"></p> </section> <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    const q = document.getElementById('q');
+    const form = document.getElementById('search-form');
+    const grid = document.getElementById('grid');
+    const prev = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const pageinfo = document.getElementById('pageinfo');
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
+
+    const PAGE_SIZE = 20;
+    let page = 1;
+    let lastPage = false;
+
+    function normalize(m) {
+      return {
+        id: m.id,
+        url: m.media_url ?? m.url,
+        type: m.media_type ?? m.type ?? 'image',
+        alt: m.alt_text ?? m.file_name ?? '',
+        title: m.content_items?.title ?? ''
+      };
+    }
+
+    function render(items) {
+      grid.innerHTML = '';
+      for (const it of items) {
+        const a = document.createElement('a');
+        a.href = it.url;
+        a.target = '_blank';
+        a.rel = 'noreferrer';
+        a.className = 'block border rounded overflow-hidden bg-white hover:shadow';
+        a.innerHTML = `
+          <img src="${it.url}" alt="${(it.alt || it.title).replace(/"/g,'&quot;')}" class="w-full h-40 object-cover" loading="lazy" />
+          <div class="p-2 text-xs text-gray-700 truncate">${it.title || it.alt || 'Photo'}</div>
+        `;
+        grid.appendChild(a);
+      }
+    }
+
+    async function load() {
+      statusEl.textContent = 'Loading…';
+      const term = q.value.trim();
+      let query = supabase
+        .from('media_files')
+        .select('*, content_items(title)')
+        .eq('media_type', 'image');
+
+      if (term) {
+        // Try to match across alt_text, file_name, and related content_items.title
+        query = query.or(`alt_text.ilike.%${term}%,file_name.ilike.%${term}%,content_items.title.ilike.%${term}%`);
+      }
+
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.order('created_at', { ascending: false }).range(from, to);
+
+      const [{ data, error }, { count, error: countError }] = await Promise.all([
+        query,
+        supabase.from('media_files').select('*', { count: 'exact', head: true })
+          .eq('media_type', 'image')
+          .or(term ? `alt_text.ilike.%${term}%,file_name.ilike.%${term}%` : 'id.not.is.null')
+      ]);
+
+      if (error || countError) {
+        statusEl.textContent = `Error: ${(error || countError).message}`;
+        return;
+      }
+
+      const items = (data ?? []).map(normalize);
+      render(items);
+      lastPage = items.length < PAGE_SIZE;
+      pageinfo.textContent = `Page ${page}`;
+      prev.disabled = page <= 1;
+      nextBtn.disabled = lastPage;
+      statusEl.textContent = items.length ? '' : 'No photos found.';
+      countEl.textContent = typeof count === 'number' ? `${count} photos` : '';
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      page = 1;
+      load();
+    });
+
+    prev.addEventListener('click', () => { if (page > 1) { page--; load(); } });
+    nextBtn.addEventListener('click', () => { if (!lastPage) { page++; load(); } });
+
+    load();
+  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
+"Today I consider myself the luckiest man on the face of the earth."
+</p> </div> </footer> </body></html>

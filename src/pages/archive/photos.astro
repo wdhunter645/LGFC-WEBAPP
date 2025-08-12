@@ -2,25 +2,24 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Archive • Photo Gallery | Lou Gehrig Fan Club" description="Search and browse photos with metadata filters." requireAuth={true}>
+<BaseLayout title="Archive • Photo Gallery | Lou Gehrig Fan Club" description="Search and browse the photo archive." requireAuth={true}>
   <section class="max-w-6xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-4">Photo Gallery</h1>
 
     <form id="search-form" class="flex flex-wrap gap-2 items-center">
-      <input id="q" class="flex-1 min-w-[240px] border rounded px-3 py-2" placeholder="Search tags, description, filename…" />
+      <input id="q" class="flex-1 min-w-[240px] border rounded px-3 py-2" placeholder="Search alt text, filename, or title…" />
       <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button>
-      <button id="clear" type="button" class="border rounded px-3 py-2">Clear</button>
+      <span id="count" class="text-sm text-gray-600 ml-auto"></span>
     </form>
 
-    <p id="status" class="text-gray-600 mt-4">Loading…</p>
+    <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4"></div>
 
-    <div id="grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
-
-    <div class="flex items-center justify-between mt-6">
-      <button id="prev" class="border rounded px-3 py-2" disabled>Previous</button>
-      <span id="pageinfo" class="text-sm text-gray-600"></span>
-      <button id="next" class="border rounded px-3 py-2" disabled>Next</button>
+    <div class="flex justify-between items-center mt-6">
+      <button id="prev" class="border rounded px-3 py-2 disabled:opacity-50">Prev</button>
+      <div id="pageinfo" class="text-sm text-gray-600"></div>
+      <button id="next" class="border rounded px-3 py-2 disabled:opacity-50">Next</button>
     </div>
+    <p id="status" class="text-gray-600 mt-3"></p>
   </section>
 
   <script type="module">
@@ -29,76 +28,90 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     const q = document.getElementById('q');
     const form = document.getElementById('search-form');
-    const clearBtn = document.getElementById('clear');
-    const statusEl = document.getElementById('status');
     const grid = document.getElementById('grid');
-    const prevBtn = document.getElementById('prev');
+    const prev = document.getElementById('prev');
     const nextBtn = document.getElementById('next');
-    const pageInfo = document.getElementById('pageinfo');
+    const pageinfo = document.getElementById('pageinfo');
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
 
     const PAGE_SIZE = 20;
     let page = 1;
-    let lastCount = 0;
+    let lastPage = false;
 
     function normalize(m) {
       return {
         id: m.id,
-        url: m.media_url ?? m.url ?? '',
-        alt: m.alt_text ?? m.description ?? '',
-        tags: m.tags ?? '',
-        filename: m.file_name ?? '',
-        created_at: m.created_at
+        url: m.media_url ?? m.url,
+        type: m.media_type ?? m.type ?? 'image',
+        alt: m.alt_text ?? m.file_name ?? '',
+        title: m.content_items?.title ?? ''
       };
-    }
-
-    function thumb(url) {
-      return url; // TODO: swap for B2 thumb CDN if available
     }
 
     function render(items) {
       grid.innerHTML = '';
       for (const it of items) {
-        const div = document.createElement('div');
-        div.className = 'border rounded overflow-hidden bg-white';
-        div.innerHTML = `
-          <a href="${it.url}" target="_blank" rel="noreferrer">
-            <img src="${thumb(it.url)}" alt="${it.alt}" class="w-full aspect-square object-cover" />
-          </a>
-          <div class="p-2 text-xs text-gray-700 truncate">${it.alt || it.filename}</div>
+        const a = document.createElement('a');
+        a.href = it.url;
+        a.target = '_blank';
+        a.rel = 'noreferrer';
+        a.className = 'block border rounded overflow-hidden bg-white hover:shadow';
+        a.innerHTML = `
+          <img src="${it.url}" alt="${(it.alt || it.title).replace(/"/g,'&quot;')}" class="w-full h-40 object-cover" loading="lazy" />
+          <div class="p-2 text-xs text-gray-700 truncate">${it.title || it.alt || 'Photo'}</div>
         `;
-        grid.appendChild(div);
+        grid.appendChild(a);
       }
     }
 
-    async function load(term = '') {
+    async function load() {
       statusEl.textContent = 'Loading…';
-      let query = supabase.from('media_files').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      const term = q.value.trim();
+      let query = supabase
+        .from('media_files')
+        .select('*, content_items(title)')
+        .eq('media_type', 'image');
+
       if (term) {
-        query = query.or(`alt_text.ilike.%${term}%,file_name.ilike.%${term}%,tags.ilike.%${term}%`);
+        // Try to match across alt_text, file_name, and related content_items.title
+        query = query.or(`alt_text.ilike.%${term}%,file_name.ilike.%${term}%,content_items.title.ilike.%${term}%`);
       }
-      const { data, error, count } = await query;
-      if (error) {
-        statusEl.textContent = `Error: ${error.message}`;
+
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.order('created_at', { ascending: false }).range(from, to);
+
+      const [{ data, error }, { count, error: countError }] = await Promise.all([
+        query,
+        supabase.from('media_files').select('*', { count: 'exact', head: true })
+          .eq('media_type', 'image')
+          .or(term ? `alt_text.ilike.%${term}%,file_name.ilike.%${term}%` : 'id.not.is.null')
+      ]);
+
+      if (error || countError) {
+        statusEl.textContent = `Error: ${(error || countError).message}`;
         return;
       }
+
       const items = (data ?? []).map(normalize);
-      lastCount = count ?? items.length;
-      statusEl.textContent = items.length ? '' : 'No photos found.';
       render(items);
-      const totalPages = Math.max(1, Math.ceil(lastCount / PAGE_SIZE));
-      pageInfo.textContent = `Page ${page} of ${totalPages}`;
-      prevBtn.disabled = page <= 1;
-      nextBtn.disabled = page >= totalPages;
+      lastPage = items.length < PAGE_SIZE;
+      pageinfo.textContent = `Page ${page}`;
+      prev.disabled = page <= 1;
+      nextBtn.disabled = lastPage;
+      statusEl.textContent = items.length ? '' : 'No photos found.';
+      countEl.textContent = typeof count === 'number' ? `${count} photos` : '';
     }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       page = 1;
-      load(q.value.trim());
+      load();
     });
-    clearBtn.addEventListener('click', () => { q.value = ''; page = 1; load(); });
-    prevBtn.addEventListener('click', () => { if (page > 1) { page--; load(q.value.trim()); } });
-    nextBtn.addEventListener('click', () => { page++; load(q.value.trim()); });
+
+    prev.addEventListener('click', () => { if (page > 1) { page--; load(); } });
+    nextBtn.addEventListener('click', () => { if (!lastPage) { page++; load(); } });
 
     load();
   </script>

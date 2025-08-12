@@ -1,0 +1,77 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Archive • Memorabilia | Lou Gehrig Fan Club" description="Memorabilia items and stories." requireAuth={true}>
+  <section class="max-w-5xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Memorabilia</h1>
+
+    <form id="search-form" class="flex gap-2">
+      <input id="q" class="flex-1 border rounded px-3 py-2" placeholder="Search title or description…" />
+      <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button>
+    </form>
+
+    <p id="status" class="text-gray-600 mt-4">Loading…</p>
+    <ul id="list" class="space-y-4 mt-4"></ul>
+  </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    const q = document.getElementById('q');
+    const form = document.getElementById('search-form');
+    const statusEl = document.getElementById('status');
+    const listEl = document.getElementById('list');
+
+    function normalize(m) {
+      return {
+        id: m.id,
+        title: m.title ?? m.name ?? 'Untitled',
+        description: m.description ?? m.story ?? '',
+        image_url: m.image_url ?? m.media_url ?? '',
+        link_url: m.link_url ?? m.url ?? ''
+      };
+    }
+
+    async function load(term = '') {
+      statusEl.textContent = 'Loading…';
+      listEl.innerHTML = '';
+      let query = supabase.from('memorabilia').select('*').order('created_at', { ascending: false }).limit(100);
+      if (term) {
+        query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
+      }
+      const { data, error } = await query;
+      if (error) {
+        statusEl.textContent = `Error: ${error.message}`;
+        return;
+      }
+      const items = (data ?? []).map(normalize);
+      if (!items.length) {
+        statusEl.textContent = 'No items found.';
+        return;
+      }
+      statusEl.remove();
+      for (const it of items) {
+        const li = document.createElement('li');
+        li.className = 'border rounded bg-white overflow-hidden';
+        li.innerHTML = `
+          ${it.image_url ? `<img src="${it.image_url}" alt="${it.title}" class="w-full h-60 object-cover" loading="lazy" />` : ''}
+          <div class="p-4">
+            <div class="font-semibold">${it.title}</div>
+            ${it.description ? `<p class="mt-1">${it.description}</p>` : ''}
+            ${it.link_url ? `<a class="text-blue-700 underline" href="${it.link_url}" target="_blank" rel="noreferrer">Details</a>` : ''}
+          </div>
+        `;
+        listEl.appendChild(li);
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      load(q.value.trim());
+    });
+
+    load();
+  </script>
+</BaseLayout>
