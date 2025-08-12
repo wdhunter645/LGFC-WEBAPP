@@ -5,6 +5,8 @@ const {
   description = "Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.",
   canonical
 } = Astro.props;
+
+const currentPath = Astro.url.pathname;
 ---
 
 <html lang="en">
@@ -27,14 +29,15 @@ const {
       <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <a href="/" class="font-semibold">Lou Gehrig Fan Club</a>
         <nav class="flex flex-wrap gap-4 text-sm">
-          <a class="hover:underline" href="/library">Library</a>
-          <a class="hover:underline" href="/history">History</a>
-          <a class="hover:underline" href="/search">Search</a>
-          <a class="hover:underline" href="/about">About</a>
-          <a class="hover:underline" href="/contribute">Contribute</a>
-          <a class="hover:underline" href="/admin">Admin</a>
+          <a class={`hover:underline ${currentPath === '/library' ? 'font-semibold underline' : ''}`} href="/library">Library</a>
+          <a class={`hover:underline ${currentPath === '/history' ? 'font-semibold underline' : ''}`} href="/history">History</a>
+          <a class={`hover:underline ${currentPath === '/search' ? 'font-semibold underline' : ''}`} href="/search">Search</a>
+          <a class={`hover:underline ${currentPath === '/about' ? 'font-semibold underline' : ''}`} href="/about">About</a>
+          <a class={`hover:underline ${currentPath === '/contribute' ? 'font-semibold underline' : ''}`} href="/contribute">Contribute</a>
+          <a class={`hover:underline ${currentPath === '/admin' ? 'font-semibold underline' : ''}`} href="/admin">Admin</a>
           <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a>
           <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a>
+          <a class={`hover:underline ${currentPath === '/login' ? 'font-semibold underline' : ''}`} href="/login">Login</a>
         </nav>
       </div>
     </header>

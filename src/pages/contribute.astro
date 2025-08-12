@@ -5,22 +5,111 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="Contribute | Lou Gehrig Fan Club" description="Submit links, media, or stories to help build the archive.">
   <section class="max-w-3xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-4">Contribute</h1>
-    <p class="text-gray-700 mb-6">Submit links, media, or stories to help build the archive. This form is a placeholder for future integration.</p>
+    <p class="text-gray-700 mb-6">Submit links, media, or stories to help build the archive.</p>
 
-    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Thank you! This will be wired to Supabase soon.');">
+    <div id="auth-warning" class="hidden p-3 mb-4 rounded bg-yellow-50 text-yellow-800">
+      Please <a href="/login" class="underline">log in</a> to submit content.
+    </div>
+
+    <form id="contrib-form" class="space-y-4">
       <div>
         <label class="block text-sm font-medium">Title</label>
-        <input class="w-full border rounded px-3 py-2" placeholder="A short title" />
+        <input id="title" class="w-full border rounded px-3 py-2" placeholder="A short title" />
       </div>
       <div>
         <label class="block text-sm font-medium">URL</label>
-        <input type="url" class="w-full border rounded px-3 py-2" placeholder="https://example.com/article" />
+        <input id="url" type="url" class="w-full border rounded px-3 py-2" placeholder="https://example.com/article" />
       </div>
       <div>
         <label class="block text-sm font-medium">Notes</label>
-        <textarea class="w-full border rounded px-3 py-2" rows="4" placeholder="Optional context or description"></textarea>
+        <textarea id="notes" class="w-full border rounded px-3 py-2" rows="4" placeholder="Optional context or description"></textarea>
       </div>
-      <button class="border rounded px-4 py-2 bg-blue-600 text-white">Submit</button>
+      <button id="submit-btn" class="border rounded px-4 py-2 bg-blue-600 text-white">Submit</button>
     </form>
+
+    <p id="status" class="text-sm text-gray-600 mt-3"></p>
   </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const authWarning = document.getElementById('auth-warning');
+    const form = document.getElementById('contrib-form');
+    const titleEl = document.getElementById('title');
+    const urlEl = document.getElementById('url');
+    const notesEl = document.getElementById('notes');
+    const statusEl = document.getElementById('status');
+    const submitBtn = document.getElementById('submit-btn');
+
+    async function sha256Hex(input) {
+      const data = new TextEncoder().encode(input);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function ensureAuth() {
+      const { data } = await supabase.auth.getSession();
+      const isAuthed = Boolean(data?.session);
+      authWarning.classList.toggle('hidden', isAuthed);
+      submitBtn.disabled = !isAuthed;
+      return isAuthed;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = '';
+      if (!(await ensureAuth())) {
+        statusEl.textContent = 'You must be logged in to submit.';
+        return;
+      }
+
+      const title = titleEl.value.trim();
+      const source_url = urlEl.value.trim();
+      const content_text = notesEl.value.trim();
+
+      if (!title || !source_url) {
+        statusEl.textContent = 'Title and URL are required.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Submitting…';
+
+      try {
+        const content_hash = await sha256Hex(source_url);
+        const payload = {
+          title,
+          source_url,
+          content_text,
+          content_hash,
+          content_type: 'article',
+          search_query: 'user_submission'
+        };
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/content_items`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const [row] = await res.json();
+        statusEl.textContent = 'Submitted! Thank you.';
+        form.reset();
+      } catch (e) {
+        statusEl.textContent = `Error: ${e.message}`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    ensureAuth();
+  </script>
 </BaseLayout>
