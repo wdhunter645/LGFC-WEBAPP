@@ -1,0 +1,26 @@
+name: search-cron
+
+on:
+  schedule:
+    - cron: "0 * * * *" # hourly
+  workflow_dispatch:
+
+jobs:
+  run-search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Run ingestion (50 max)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RSS_FEEDS: ${{ secrets.RSS_FEEDS }}
+          NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
+        run: node scripts/ingest.mjs "Lou Gehrig" 50
