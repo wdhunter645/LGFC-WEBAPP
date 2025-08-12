@@ -4,7 +4,8 @@ const {
   title = "Lou Gehrig Fan Club",
   description = "Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.",
   canonical,
-  requireAuth = false
+  requireAuth = false,
+  requireAdmin = false
 } = Astro.props;
 
 const currentPath = Astro.url.pathname;
@@ -26,7 +27,7 @@ const currentPath = Astro.url.pathname;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body class="font-sans text-gray-900">
-    {requireAuth && (
+    {(requireAuth || requireAdmin) && (
       <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -37,6 +38,19 @@ const currentPath = Astro.url.pathname;
           if (!data?.session) {
             const target = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/login?redirect=${target}`;
+            return;
+          }
+          if ({requireAdmin}) {
+            const { data: members, error } = await supabase
+              .from('members')
+              .select('is_admin')
+              .eq('user_id', data.session.user.id)
+              .limit(1)
+              .maybeSingle();
+            if (error || !members?.is_admin) {
+              window.location.href = '/';
+              return;
+            }
           }
         })();
       </script>

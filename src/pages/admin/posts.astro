@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Admin: Member Posts | Lou Gehrig Fan Club" requireAuth={true}>
+<BaseLayout title="Admin: Member Posts | Lou Gehrig Fan Club" requireAuth={true} requireAdmin={true}>
   <p><a class="underline" href="/admin">← Back to Admin Dashboard</a></p>
   <h1 class="text-2xl font-semibold mb-4">Member Posts</h1>
   <p id="status" class="text-gray-600">Loading…</p>

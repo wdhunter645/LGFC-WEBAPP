@@ -8,6 +8,19 @@
           if (!data?.session) {
             const target = encodeURIComponent(window.location.pathname + window.location.search);
             window.location.href = `/login?redirect=${target}`;
+            return;
+          }
+          if ({requireAdmin}) {
+            const { data: members, error } = await supabase
+              .from('members')
+              .select('is_admin')
+              .eq('user_id', data.session.user.id)
+              .limit(1)
+              .maybeSingle();
+            if (error || !members?.is_admin) {
+              window.location.href = '/';
+              return;
+            }
           }
         })();
       </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/community">Community</a> <a class="hover:underline " href="/qa">Q&A</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline font-semibold underline" href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <p><a class="underline" href="/admin">← Back to Admin Dashboard</a></p> <h1 class="text-2xl font-semibold mb-4">Member Posts</h1> <p id="status" class="text-gray-600">Loading…</p> <ul id="posts" class="space-y-3 mt-3"></ul> <script type="module">
