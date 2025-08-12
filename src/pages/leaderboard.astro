@@ -1,0 +1,88 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Picture Vote Leaderboard | Lou Gehrig Fan Club" description="Top images by votes (overall and today).">
+  <section class="max-w-5xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Leaderboard</h1>
+
+    <h2 class="text-2xl font-semibold mt-4">Today</h2>
+    <p id="today-status" class="text-gray-600">Loading…</p>
+    <div id="today" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div>
+
+    <h2 class="text-2xl font-semibold mt-8">All Time</h2>
+    <p id="all-status" class="text-gray-600">Loading…</p>
+    <div id="all" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div>
+  </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    const todayEl = document.getElementById('today');
+    const allEl = document.getElementById('all');
+    const todayStatus = document.getElementById('today-status');
+    const allStatus = document.getElementById('all-status');
+
+    function card(img, votes) {
+      const div = document.createElement('div');
+      div.className = 'border rounded overflow-hidden bg-white';
+      const url = img.media_url || img.url || '/placeholder.svg';
+      const alt = img.alt_text || img.file_name || 'Photo';
+      div.innerHTML = `
+        <img src="${url}" alt="${alt}" class="w-full h-40 object-cover" loading="lazy" />
+        <div class="p-2 text-sm flex items-center justify-between">
+          <span class="truncate">${alt}</span>
+          <span class="font-semibold">${votes}</span>
+        </div>
+      `;
+      return div;
+    }
+
+    async function loadToday() {
+      todayStatus.textContent = 'Loading…';
+      const { data, error } = await supabase
+        .from('picture_votes')
+        .select('image_id, voted_at, media_files!inner(id, media_url, alt_text, file_name)')
+        .gte('voted_at', new Date().toISOString().slice(0,10))
+        .limit(10000);
+      if (error) { todayStatus.textContent = `Error: ${error.message}`; return; }
+      const map = new Map();
+      for (const row of data ?? []) {
+        const key = row.image_id;
+        map.set(key, (map.get(key) || 0) + 1);
+      }
+      const items = [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0,12);
+      todayEl.innerHTML = '';
+      for (const [image_id, votes] of items) {
+        const img = (data ?? []).find(d => d.image_id === image_id)?.media_files || {};
+        todayEl.appendChild(card(img, votes));
+      }
+      todayStatus.textContent = items.length ? '' : 'No votes today.';
+    }
+
+    async function loadAll() {
+      allStatus.textContent = 'Loading…';
+      const { data, error } = await supabase
+        .from('picture_votes')
+        .select('image_id, media_files!inner(id, media_url, alt_text, file_name)')
+        .limit(100000);
+      if (error) { allStatus.textContent = `Error: ${error.message}`; return; }
+      const map = new Map();
+      for (const row of data ?? []) {
+        const key = row.image_id;
+        map.set(key, (map.get(key) || 0) + 1);
+      }
+      const items = [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0,12);
+      allEl.innerHTML = '';
+      for (const [image_id, votes] of items) {
+        const img = (data ?? []).find(d => d.image_id === image_id)?.media_files || {};
+        allEl.appendChild(card(img, votes));
+      }
+      allStatus.textContent = items.length ? '' : 'No votes recorded.';
+    }
+
+    loadToday();
+    loadAll();
+  </script>
+</BaseLayout>
