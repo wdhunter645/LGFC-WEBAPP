@@ -47,6 +47,8 @@ const currentPath = Astro.url.pathname;
         <nav class="flex flex-wrap gap-4 text-sm">
           <a class={`hover:underline ${currentPath === '/library' ? 'font-semibold underline' : ''}`} href="/library">Library</a>
           <a class={`hover:underline ${currentPath === '/history' ? 'font-semibold underline' : ''}`} href="/history">History</a>
+          <a class={`hover:underline ${currentPath === '/milestones' ? 'font-semibold underline' : ''}`} href="/milestones">Milestones</a>
+          <a class={`hover:underline ${currentPath === '/events' ? 'font-semibold underline' : ''}`} href="/events">Events</a>
           <a class={`hover:underline ${currentPath === '/search' ? 'font-semibold underline' : ''}`} href="/search">Search</a>
           <a class={`hover:underline ${currentPath === '/about' ? 'font-semibold underline' : ''}`} href="/about">About</a>
           <a class={`hover:underline ${currentPath === '/contribute' ? 'font-semibold underline' : ''}`} href="/contribute">Contribute</a>
