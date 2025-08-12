@@ -49,7 +49,11 @@ Deno.serve(async (req: Request) => {
 
     const enhancedQuery = `"Lou Gehrig" OR "ALS" OR "amyotrophic lateral sclerosis" ${query}`;
 
-    const results = await fetchSearchResults(enhancedQuery, limit);
+    // Read last run time for incremental search
+    const { data: stateRows } = await supabase.from('search_state').select('last_run_at').eq('id', 1).limit(1);
+    const lastRunAt: string | null = (stateRows && stateRows[0]?.last_run_at) || null;
+
+    const results = await fetchSearchResults(enhancedQuery, limit, supabase, lastRunAt || undefined);
 
     const createContentHash = (content: string): string => {
       const encoder = new TextEncoder();
@@ -138,6 +142,9 @@ Deno.serve(async (req: Request) => {
         duplicates_found: duplicatesFound,
       });
 
+    // Update last_run_at
+    await supabase.from('search_state').upsert({ id: 1, last_run_at: new Date().toISOString(), last_query: query });
+
     return new Response(JSON.stringify({
       success: true,
       query,
@@ -173,7 +180,7 @@ function calculateRelevance(title: string, snippet: string): number {
   return Math.min(Math.max(score, 1), 10);
 }
 
-async function fetchSearchResults(query: string, limit: number): Promise<SearchResult[]> {
+async function fetchSearchResults(query: string, limit: number, supabase: ReturnType<typeof createClient>, lastRunAt?: string): Promise<SearchResult[]> {
   const apiKey = Deno.env.get('SEARCH_API_KEY');
   const provider = (Deno.env.get('SEARCH_API_PROVIDER') || 'BING').toUpperCase();
 
@@ -184,7 +191,7 @@ async function fetchSearchResults(query: string, limit: number): Promise<SearchR
   }
 
   // Free aggregator path (no API key required)
-  const free = await fetchFreeResults(query, limit);
+  const free = await fetchFreeResults(query, limit, lastRunAt);
   if (free.length > 0) return free.slice(0, limit);
   // Last resort (should be rare)
   return mockResults().slice(0, limit);
@@ -244,11 +251,11 @@ async function fetchBingResults(query: string, limit: number, apiKey: string): P
   }
 }
 
-async function fetchFreeResults(query: string, limit: number): Promise<SearchResult[]> {
+async function fetchFreeResults(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
   const merged: SearchResult[] = [];
   try {
     const [gdelt, wiki] = await Promise.all([
-      fetchGdelt(query, limit),
+      fetchGdelt(query, limit, lastRunAt),
       fetchWikipedia(query, Math.min(limit, 20)),
     ]);
     const seen = new Set<string>();
@@ -269,13 +276,20 @@ async function fetchFreeResults(query: string, limit: number): Promise<SearchRes
   return merged.slice(0, limit);
 }
 
-async function fetchGdelt(query: string, limit: number): Promise<SearchResult[]> {
+async function fetchGdelt(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
   try {
     const url = new URL('https://api.gdeltproject.org/api/v2/doc/doc');
     url.searchParams.set('query', query);
     url.searchParams.set('mode', 'ArtList');
     url.searchParams.set('maxrecords', String(Math.min(limit, 50)));
     url.searchParams.set('format', 'json');
+    if (lastRunAt) {
+      // GDELT expects YYYYMMDDHHMMSS (UTC)
+      const dt = new Date(lastRunAt);
+      const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+      const stamp = `${dt.getUTCFullYear()}${pad(dt.getUTCMonth() + 1)}${pad(dt.getUTCDate())}${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}`;
+      url.searchParams.set('startdatetime', stamp);
+    }
 
     const res = await fetch(url.toString());
     if (!res.ok) return [];
