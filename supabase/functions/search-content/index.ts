@@ -42,6 +42,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { query, maxResults = 10 }: SearchRequest = await req.json();
+    const limit = Math.max(1, Math.min(Number(maxResults) || 10, 100));
     
     if (!query) {
       return new Response(JSON.stringify({ error: "Query parameter is required" }), {
@@ -94,7 +95,9 @@ Deno.serve(async (req: Request) => {
     const processedItems = [];
 
     // Process each search result
+    let processedCount = 0;
     for (const result of mockSearchResults) {
+      if (processedCount >= limit) break;
       const contentHash = createContentHash(result.snippet + result.title);
       
       // Check for duplicates
@@ -158,6 +161,7 @@ Deno.serve(async (req: Request) => {
       }
 
       newContentAdded++;
+      processedCount++;
       processedItems.push(newItem);
 
       // Extract and store media URLs (simulate image extraction)
