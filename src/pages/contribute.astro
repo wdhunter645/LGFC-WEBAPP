@@ -57,13 +57,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       const isAuthed = Boolean(data?.session);
       authWarning.classList.toggle('hidden', isAuthed);
       submitBtn.disabled = !isAuthed;
-      return isAuthed;
+      return data?.session ?? null;
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       statusEl.textContent = '';
-      if (!(await ensureAuth())) {
+      const session = await ensureAuth();
+      if (!session) {
         statusEl.textContent = 'You must be logged in to submit.';
         return;
       }
@@ -88,19 +89,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           content_text,
           content_hash,
           content_type: 'article',
-          search_query: 'user_submission'
+          search_query: 'user_submission',
+          created_by: session.user.id
         };
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/content_items`, {
-          method: 'POST',
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation'
-          },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const [row] = await res.json();
+
+        const { data: rows, error } = await supabase
+          .from('content_items')
+          .insert(payload)
+          .select('*')
+          .limit(1);
+
+        if (error) throw error;
         statusEl.textContent = 'Submitted! Thank you.';
         form.reset();
       } catch (e) {

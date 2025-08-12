@@ -1,8 +1,9 @@
 ---
+import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
-<html>
-  <body>
-    <h1>🔧 Admin: Users</h1>
-    <p>This is the <code>/admin/users</code> dashboard section.</p>
-  </body>
-</html>
+
+<BaseLayout title="Admin: Users | Lou Gehrig Fan Club" requireAuth={true}>
+  <p><a class="underline" href="/admin">← Back to Admin Dashboard</a></p>
+  <h1 class="text-2xl font-semibold">👥 Users</h1>
+  <p>This is the <code>/admin/users</code> section.</p>
+</BaseLayout>
