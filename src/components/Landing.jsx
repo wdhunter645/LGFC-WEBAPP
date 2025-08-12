@@ -9,7 +9,7 @@ import {
   Heart
 } from 'lucide-react';
 
-const LouGehrigFanClub = () => {
+const Landing = () => {
   const [currentView, setCurrentView] = useState('home');
 
   const Navigation = () => (
@@ -117,4 +117,4 @@ const LouGehrigFanClub = () => {
   );
 };
 
-export default LouGehrigFanClub;
+export default Landing;
