@@ -254,13 +254,20 @@ async function fetchBingResults(query: string, limit: number, apiKey: string): P
 async function fetchFreeResults(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
   const merged: SearchResult[] = [];
   try {
-    const [gdelt, wiki, ia] = await Promise.all([
+    const rssFeeds = getRssFeeds();
+    const tasks: Promise<SearchResult[]>[] = [
       fetchGdelt(query, limit, lastRunAt),
       fetchWikipedia(query, Math.min(limit, 20)),
       fetchInternetArchive(query, Math.min(limit, 50), lastRunAt),
-    ]);
+      fetchWikimediaCommons(query, Math.min(limit, 25)),
+      fetchRssFeeds(rssFeeds, Math.min(limit, 50), lastRunAt),
+    ];
+    const nytKey = Deno.env.get('NYT_API_KEY') || Deno.env.get('NYTIMES_API_KEY');
+    if (nytKey) tasks.push(fetchNYTimes(query, Math.min(limit, 25), lastRunAt, nytKey));
+
+    const resultsArrays = await Promise.all(tasks);
     const seen = new Set<string>();
-    for (const arr of [gdelt, wiki, ia]) {
+    for (const arr of resultsArrays) {
       for (const r of arr) {
         const key = r.url;
         if (key && !seen.has(key)) {
@@ -275,6 +282,118 @@ async function fetchFreeResults(query: string, limit: number, lastRunAt?: string
     console.error('Free results error:', e);
   }
   return merged.slice(0, limit);
+}
+
+function getRssFeeds(): string[] {
+  const env = Deno.env.get('RSS_FEEDS');
+  if (env && env.trim().length > 0) {
+    return env.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  // Defaults: MLB + Yankees news feeds
+  return [
+    'https://www.mlb.com/feeds/news/rss.xml',
+    'https://www.mlb.com/yankees/feeds/news/rss.xml'
+  ];
+}
+
+async function fetchWikimediaCommons(query: string, limit: number): Promise<SearchResult[]> {
+  try {
+    const url = new URL('https://commons.wikimedia.org/w/api.php');
+    url.searchParams.set('action', 'query');
+    url.searchParams.set('list', 'search');
+    url.searchParams.set('srsearch', query);
+    url.searchParams.set('srnamespace', '6'); // File namespace
+    url.searchParams.set('srlimit', String(Math.min(limit, 25)));
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('origin', '*');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const body = await res.json();
+    const arr = Array.isArray(body?.query?.search) ? body.query.search : [];
+    const out: SearchResult[] = [];
+    for (const s of arr) {
+      const title = s?.title; // e.g., File:...
+      if (!title) continue;
+      const pageUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+      const snippet = (s?.snippet || '').replace(/<[^>]+>/g, '');
+      out.push({ title, url: pageUrl, snippet });
+      if (out.length >= limit) break;
+    }
+    return out;
+  } catch (e) {
+    console.error('Wikimedia Commons error:', e);
+    return [];
+  }
+}
+
+async function fetchNYTimes(query: string, limit: number, lastRunAt: string | undefined, apiKey: string): Promise<SearchResult[]> {
+  try {
+    const url = new URL('https://api.nytimes.com/svc/search/v2/articlesearch.json');
+    url.searchParams.set('q', query);
+    url.searchParams.set('sort', 'newest');
+    url.searchParams.set('api-key', apiKey);
+    if (lastRunAt) {
+      const dt = new Date(lastRunAt);
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(dt.getUTCDate()).padStart(2, '0');
+      url.searchParams.set('begin_date', `${y}${m}${d}`);
+    }
+    url.searchParams.set('page', '0');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const body = await res.json();
+    const docs = Array.isArray(body?.response?.docs) ? body.response.docs : [];
+    const out: SearchResult[] = [];
+    for (const doc of docs) {
+      const title = doc?.headline?.main || doc?.headline || '';
+      const link = doc?.web_url || '';
+      if (!title || !link) continue;
+      const snippet = doc?.abstract || doc?.lead_paragraph || '';
+      out.push({ title, url: link, snippet, datePublished: doc?.pub_date });
+      if (out.length >= limit) break;
+    }
+    return out;
+  } catch (e) {
+    console.error('NYTimes error:', e);
+    return [];
+  }
+}
+
+async function fetchRssFeeds(feeds: string[], limit: number, lastRunAt?: string): Promise<SearchResult[]> {
+  const items: SearchResult[] = [];
+  const since = lastRunAt ? new Date(lastRunAt).getTime() : undefined;
+
+  for (const feedUrl of feeds) {
+    try {
+      const res = await fetch(feedUrl);
+      if (!res.ok) continue;
+      const xml = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'text/xml');
+      const channelItems = Array.from(doc.querySelectorAll('item'));
+      for (const it of channelItems) {
+        const title = it.querySelector('title')?.textContent?.trim() || '';
+        const link = it.querySelector('link')?.textContent?.trim() || '';
+        const desc = it.querySelector('description')?.textContent?.trim() || '';
+        const pubDate = it.querySelector('pubDate')?.textContent?.trim() || '';
+        if (!title || !link) continue;
+        if (since && pubDate) {
+          const t = Date.parse(pubDate);
+          if (!Number.isNaN(t) && t < since) continue;
+        }
+        items.push({ title, url: link, snippet: desc, datePublished: pubDate });
+        if (items.length >= limit) break;
+      }
+      if (items.length >= limit) break;
+    } catch (e) {
+      console.error('RSS error:', feedUrl, e);
+    }
+  }
+
+  return items.slice(0, limit);
 }
 
 async function fetchInternetArchive(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
