@@ -254,12 +254,13 @@ async function fetchBingResults(query: string, limit: number, apiKey: string): P
 async function fetchFreeResults(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
   const merged: SearchResult[] = [];
   try {
-    const [gdelt, wiki] = await Promise.all([
+    const [gdelt, wiki, ia] = await Promise.all([
       fetchGdelt(query, limit, lastRunAt),
       fetchWikipedia(query, Math.min(limit, 20)),
+      fetchInternetArchive(query, Math.min(limit, 50), lastRunAt),
     ]);
     const seen = new Set<string>();
-    for (const arr of [gdelt, wiki]) {
+    for (const arr of [gdelt, wiki, ia]) {
       for (const r of arr) {
         const key = r.url;
         if (key && !seen.has(key)) {
@@ -274,6 +275,52 @@ async function fetchFreeResults(query: string, limit: number, lastRunAt?: string
     console.error('Free results error:', e);
   }
   return merged.slice(0, limit);
+}
+
+async function fetchInternetArchive(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
+  try {
+    const url = new URL('https://archive.org/advancedsearch.php');
+    let q = query;
+    if (lastRunAt) {
+      const dt = new Date(lastRunAt);
+      const iso = dt.toISOString().split('Z')[0] + 'Z';
+      q = `${query} AND publicdate:[${iso} TO *]`;
+    }
+    url.searchParams.set('q', q);
+    url.searchParams.set('output', 'json');
+    url.searchParams.set('rows', String(Math.min(limit, 50)));
+    url.searchParams.append('sort[]', 'publicdate desc');
+    url.searchParams.append('fl[]', 'identifier');
+    url.searchParams.append('fl[]', 'title');
+    url.searchParams.append('fl[]', 'description');
+    url.searchParams.append('fl[]', 'publicdate');
+    url.searchParams.set('page', '1');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const body = await res.json();
+    const docs = Array.isArray(body?.response?.docs) ? body.response.docs : [];
+
+    const results: SearchResult[] = [];
+    for (const d of docs) {
+      const identifier = d?.identifier;
+      const title = d?.title || identifier;
+      if (!identifier || !title) continue;
+      const link = `https://archive.org/details/${encodeURIComponent(identifier)}`;
+      const snippet = typeof d?.description === 'string' ? d.description : '';
+      results.push({
+        title,
+        url: link,
+        snippet,
+        datePublished: d?.publicdate,
+      });
+      if (results.length >= limit) break;
+    }
+    return results;
+  } catch (e) {
+    console.error('Internet Archive error:', e);
+    return [];
+  }
 }
 
 async function fetchGdelt(query: string, limit: number, lastRunAt?: string): Promise<SearchResult[]> {
