@@ -1,0 +1,76 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Archive • Library (Books) | Lou Gehrig Fan Club" description="Curated books about or featuring Lou Gehrig." requireAuth={true}>
+  <section class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Library (Books)</h1>
+
+    <form id="search-form" class="flex gap-2">
+      <input id="q" class="flex-1 border rounded px-3 py-2" placeholder="Search title, author, or keywords…" />
+      <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button>
+    </form>
+
+    <p id="status" class="text-gray-600 mt-4">Loading…</p>
+    <ul id="list" class="space-y-4 mt-4"></ul>
+  </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    const q = document.getElementById('q');
+    const form = document.getElementById('search-form');
+    const statusEl = document.getElementById('status');
+    const listEl = document.getElementById('list');
+
+    function normalize(b) {
+      return {
+        id: b.id,
+        title: b.title ?? b.name ?? 'Untitled',
+        author: b.author ?? b.authors ?? '',
+        year: b.year ?? b.published_year ?? b.pub_year ?? '',
+        link_url: b.link_url ?? b.url ?? '',
+        description: b.description ?? b.summary ?? ''
+      };
+    }
+
+    async function load(term = '') {
+      statusEl.textContent = 'Loading…';
+      listEl.innerHTML = '';
+      let query = supabase.from('books').select('*').order('year', { ascending: false }).limit(100);
+      if (term) {
+        query = query.or(`title.ilike.%${term}%,author.ilike.%${term}%,description.ilike.%${term}%`);
+      }
+      const { data, error } = await query;
+      if (error) {
+        statusEl.textContent = `Error: ${error.message}`;
+        return;
+      }
+      const items = (data ?? []).map(normalize);
+      if (!items.length) {
+        statusEl.textContent = 'No books found.';
+        return;
+      }
+      statusEl.remove();
+      for (const b of items) {
+        const li = document.createElement('li');
+        li.className = 'border p-4 rounded bg-white';
+        li.innerHTML = `
+          <div class="font-semibold">${b.title}</div>
+          <div class="text-sm text-gray-600">${b.author}${b.year ? ` • ${b.year}` : ''}</div>
+          ${b.description ? `<p class="mt-1">${b.description}</p>` : ''}
+          ${b.link_url ? `<a class="text-blue-700 underline" href="${b.link_url}" target="_blank" rel="noreferrer">Details</a>` : ''}
+        `;
+        listEl.appendChild(li);
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      load(q.value.trim());
+    });
+
+    load();
+  </script>
+</BaseLayout>
