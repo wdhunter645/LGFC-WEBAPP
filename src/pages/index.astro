@@ -5,26 +5,47 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="Lou Gehrig Fan Club" description="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.">
   <section id="section1" class="max-w-5xl mx-auto p-6">
     <h2 class="text-2xl font-semibold mb-3">Vote for your favorite pic</h2>
-    <div id="vote" class="grid gap-4 md:grid-cols-2"></div>
-    <p id="vote-status" class="text-sm text-gray-600 mt-3"></p>
+    <div id="vote" class="grid gap-4 md:grid-cols-2">
+      <!-- Placeholder voting cards -->
+      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
+        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+          <div class="text-center text-gray-500">
+            <div class="text-4xl mb-2">⚾</div>
+            <div class="text-sm">Loading...</div>
+          </div>
+        </div>
+        <div class="p-3 text-center font-medium">Vote</div>
+      </div>
+      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
+        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+          <div class="text-center text-gray-500">
+            <div class="text-4xl mb-2">🏟️</div>
+            <div class="text-sm">Loading...</div>
+          </div>
+        </div>
+        <div class="p-3 text-center font-medium">Vote</div>
+      </div>
+    </div>
+    <p id="vote-status" class="text-sm text-gray-600 mt-3">Loading pictures...</p>
     <p class="text-sm mt-2"><a class="underline" href="/leaderboard">View leaderboard</a></p>
   </section>
 
   <section id="section2" class="max-w-5xl mx-auto p-6">
     <div class="grid gap-6 md:grid-cols-2">
-      <div class="border rounded p-4 bg-white">
-        <h3 class="text-xl font-semibold mb-2">Join Free</h3>
-        <p class="text-gray-600 mb-3">Free membership</p>
-        <a href="/login" class="inline-block border rounded px-4 py-2 bg-blue-600 text-white">Join Free</a>
+      <div class="border rounded p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+        <h3 class="text-xl font-semibold mb-2">Join the Fan Club</h3>
+        <p class="text-gray-600 mb-3">Become part of the community honoring Lou Gehrig's legacy and supporting ALS research</p>
+        <a href="/login" class="inline-block border rounded px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors">Join Free</a>
       </div>
-      <div class="border rounded p-4 bg-white">
-        <h3 class="text-xl font-semibold mb-2">Sign In</h3>
-        <p class="text-gray-600 mb-3">Free membership</p>
-        <a href="/login" class="inline-block border rounded px-4 py-2">Sign In</a>
+      <div class="border rounded p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+        <h3 class="text-xl font-semibold mb-2">Welcome Back</h3>
+        <p class="text-gray-600 mb-3">Sign in to access your member benefits and contribute to the community</p>
+        <a href="/login" class="inline-block border rounded px-4 py-2 hover:bg-gray-50 transition-colors">Sign In</a>
       </div>
     </div>
     <div class="mt-6 text-center">
-      <div class="text-xl font-semibold">FREE MEMBERSHIP CARDS</div>
+      <div class="text-xl font-semibold text-blue-600">FREE MEMBERSHIP CARDS</div>
+      <p class="text-sm text-gray-600 mt-1">Get your official Lou Gehrig Fan Club membership card</p>
     </div>
   </section>
 

@@ -17,6 +17,18 @@ jobs:
           cache: 'npm'
       - name: Install deps
         run: npm ci
+      - name: Check database migrations
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/check_migrations.mjs
+        
+      - name: Run diagnostic test
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/test_ingest.mjs
+        
       - name: Run ingestion (50 max)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
