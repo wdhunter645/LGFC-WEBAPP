@@ -77,7 +77,7 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           <a class={`hover:underline ${currentPath === '/books' ? 'font-semibold underline' : ''}`} href="/books">Books</a>
           <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a>
           <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a>
-          <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''} ${isDevMode ? '' : 'hidden'}`} id="nav-admin" href="/admin">Admin</a>
+          <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''}`} href="/admin">Admin</a>
           <form action="/search" method="get" class="flex items-center gap-1">
             <input name="q" placeholder="Search" class="border rounded px-2 py-1 h-8" />
             <button class="border rounded px-2 py-1 h-8">Go</button>
@@ -96,16 +96,8 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
         (async () => {
           const { data } = await supabase.auth.getSession();
           const club = document.getElementById('nav-club-home');
-          const admin = document.getElementById('nav-admin');
           if (data?.session) {
             club?.classList.remove('hidden');
-            const { data: m } = await supabase
-              .from('members')
-              .select('is_admin')
-              .eq('user_id', data.session.user.id)
-              .limit(1)
-              .maybeSingle();
-            if (m?.is_admin) admin?.classList.remove('hidden');
           }
         })();
       </script>
