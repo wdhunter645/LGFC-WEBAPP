@@ -1,0 +1,69 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get all news articles and sort by date
+const newsArticles = await getCollection('news');
+newsArticles.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+---
+
+<BaseLayout title="News | Lou Gehrig Fan Club">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Latest News</h1>
+    
+    <div class="grid gap-8">
+      {newsArticles.map((article) => (
+        <article class="bg-white rounded-lg shadow-md overflow-hidden">
+          {article.data.featuredImage && (
+            <div class="h-64 bg-gray-200">
+              <img 
+                src={article.data.featuredImage} 
+                alt={article.data.title}
+                class="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-2xl font-semibold text-gray-900">
+                {article.data.title}
+              </h2>
+              <div class="text-right">
+                <time class="text-sm text-gray-500 block">
+                  {new Date(article.data.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </time>
+                <span class="text-sm text-gray-600">by {article.data.author}</span>
+              </div>
+            </div>
+            
+            <p class="text-gray-600 mb-4">{article.data.description}</p>
+            
+            <div class="prose max-w-none">
+              {article.render()}
+            </div>
+            
+            {article.data.tags && article.data.tags.length > 0 && (
+              <div class="mt-4 flex flex-wrap gap-2">
+                {article.data.tags.map((tag) => (
+                  <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+    
+    {newsArticles.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">No news articles have been published yet.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

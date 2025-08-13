@@ -1,0 +1,64 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get all photos and sort by year
+const photos = await getCollection('photos');
+photos.sort((a, b) => {
+  const yearA = a.data.year || 0;
+  const yearB = b.data.year || 0;
+  return yearB - yearA; // Most recent first
+});
+---
+
+<BaseLayout title="Photo Gallery | Lou Gehrig Fan Club">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Photo Gallery</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {photos.map((photo) => (
+        <article class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="h-64 bg-gray-200">
+            <img 
+              src={photo.data.image} 
+              alt={photo.data.title}
+              class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+            />
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">{photo.data.title}</h3>
+            
+            {photo.data.description && (
+              <p class="text-gray-600 text-sm mb-3">{photo.data.description}</p>
+            )}
+            
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              {photo.data.year && (
+                <span>{photo.data.year}</span>
+              )}
+              {photo.data.photographer && (
+                <span>by {photo.data.photographer}</span>
+              )}
+            </div>
+            
+            {photo.data.tags && photo.data.tags.length > 0 && (
+              <div class="flex flex-wrap gap-1 mt-3">
+                {photo.data.tags.map((tag) => (
+                  <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+    
+    {photos.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">No photos have been added to the gallery yet.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

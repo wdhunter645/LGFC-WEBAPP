@@ -1,0 +1,72 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get all memorabilia items
+const memorabilia = await getCollection('memorabilia');
+
+// Group by category
+const categories = memorabilia.reduce((acc, item) => {
+  const category = item.data.category;
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(item);
+  return acc;
+}, {} as Record<string, typeof memorabilia>);
+---
+
+<BaseLayout title="Memorabilia | Lou Gehrig Fan Club">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Lou Gehrig Memorabilia</h1>
+    
+    {Object.entries(categories).map(([category, items]) => (
+      <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-6 text-gray-800">{category}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map((item) => (
+            <article class="bg-white rounded-lg shadow-md overflow-hidden">
+              <div class="h-48 bg-gray-200">
+                <img 
+                  src={item.data.image} 
+                  alt={item.data.title}
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="p-4">
+                <h3 class="text-lg font-semibold mb-2">{item.data.title}</h3>
+                <p class="text-gray-600 text-sm mb-3">{item.data.description}</p>
+                
+                {item.data.year && (
+                  <p class="text-sm text-gray-500 mb-2">Year: {item.data.year}</p>
+                )}
+                
+                {item.data.details && (
+                  <div class="prose prose-sm max-w-none mb-3">
+                    {item.render()}
+                  </div>
+                )}
+                
+                {item.data.tags && item.data.tags.length > 0 && (
+                  <div class="flex flex-wrap gap-1">
+                    {item.data.tags.map((tag) => (
+                      <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    ))}
+    
+    {memorabilia.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">No memorabilia items have been added yet.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

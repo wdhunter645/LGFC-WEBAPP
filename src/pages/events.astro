@@ -1,101 +1,144 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get all events and sort by start date
+const events = await getCollection('events');
+const now = new Date();
+
+// Separate upcoming and past events
+const upcomingEvents = events
+  .filter(event => new Date(event.data.startDate) >= now)
+  .sort((a, b) => new Date(a.data.startDate).getTime() - new Date(b.data.startDate).getTime());
+
+const pastEvents = events
+  .filter(event => new Date(event.data.startDate) < now)
+  .sort((a, b) => new Date(b.data.startDate).getTime() - new Date(a.data.startDate).getTime());
 ---
 
-<BaseLayout title="Events | Lou Gehrig Fan Club" description="Upcoming fan club events and other Lou Gehrig related events.">
-  <section class="max-w-5xl mx-auto p-6">
-    <h1 class="text-3xl font-bold mb-4">Events</h1>
-    <p class="text-gray-700 mb-6">Fan club events are listed first, followed by other Lou Gehrig related events. MLB Lou Gehrig Day is specially highlighted.</p>
-
-    <h2 class="text-2xl font-semibold mt-6 mb-2">Club Events</h2>
-    <div id="club-status" class="text-gray-600">Loading…</div>
-    <ul id="club-list" class="space-y-3 mt-2"></ul>
-
-    <h2 class="text-2xl font-semibold mt-8 mb-2">Other Events</h2>
-    <div id="other-status" class="text-gray-600">Loading…</div>
-    <ul id="other-list" class="space-y-3 mt-2"></ul>
-  </section>
-
-  <script type="module">
-    import { createClient } from '@supabase/supabase-js';
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const clubStatus = document.getElementById('club-status');
-    const otherStatus = document.getElementById('other-status');
-    const clubList = document.getElementById('club-list');
-    const otherList = document.getElementById('other-list');
-
-    function normalizeEvent(e) {
-      return {
-        id: e.id,
-        title: e.title ?? e.name ?? 'Untitled Event',
-        description: e.description ?? e.details ?? '',
-        start_at: e.start_at ?? e.start_time ?? e.start ?? e.date ?? e.startDate ?? null,
-        location: e.location ?? e.place ?? '',
-        link_url: e.link_url ?? e.url ?? e.link ?? '',
-        is_mlb_lou_gehrig_day: e.is_mlb_lou_gehrig_day ?? e.is_lg_day ?? e.is_lou_gehrig_day ?? false,
-        is_club_event: e.is_club_event ?? e.club_event ?? e.is_club ?? false,
-      };
-    }
-
-    function renderEvent(li, e) {
-      const when = e.start_at ? new Date(e.start_at).toLocaleString() : '';
-      const badge = e.is_mlb_lou_gehrig_day ? '<span class="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded">Lou Gehrig Day</span>' : '';
-      li.className = 'border p-3 rounded bg-white';
-      li.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="font-semibold">${e.title}${badge}</div>
-            <div class="text-sm text-gray-600">${when}${e.location ? ` • ${e.location}` : ''}</div>
-            ${e.description ? `<p class="mt-1 text-sm">${e.description}</p>` : ''}
-          </div>
-          ${e.link_url ? `<a class="text-blue-700 underline" href="${e.link_url}" target="_blank" rel="noreferrer">Details</a>` : ''}
+<BaseLayout title="Events | Lou Gehrig Fan Club">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Events</h1>
+    
+    <!-- Upcoming Events -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-semibold mb-6 text-green-800">Upcoming Events</h2>
+      {upcomingEvents.length > 0 ? (
+        <div class="grid gap-6">
+          {upcomingEvents.map((event) => (
+            <article class="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-green-500">
+              {event.data.image && (
+                <div class="h-48 bg-gray-200">
+                  <img 
+                    src={event.data.image} 
+                    alt={event.data.title}
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                  <h3 class="text-xl font-semibold text-gray-900">{event.data.title}</h3>
+                  {event.data.isClubEvent && (
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                      Club Event
+                    </span>
+                  )}
+                </div>
+                
+                <div class="flex items-center text-sm text-gray-600 mb-3">
+                  <span class="mr-4">
+                    📅 {new Date(event.data.startDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                  {event.data.location && (
+                    <span>📍 {event.data.location}</span>
+                  )}
+                </div>
+                
+                {event.data.endDate && (
+                  <p class="text-sm text-gray-600 mb-3">
+                    Ends: {new Date(event.data.endDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                )}
+                
+                <p class="text-gray-700 mb-4">{event.data.description}</p>
+                
+                {event.data.body && (
+                  <div class="prose prose-sm max-w-none mb-4">
+                    {event.render()}
+                  </div>
+                )}
+                
+                {event.data.externalLink && (
+                  <a 
+                    href={event.data.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Learn More →
+                  </a>
+                )}
+                
+                {event.data.tags && event.data.tags.length > 0 && (
+                  <div class="flex flex-wrap gap-2 mt-4">
+                    {event.data.tags.map((tag) => (
+                      <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
-      `;
-    }
-
-    async function loadEvents() {
-      try {
-        const { data: all, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('start_at', { ascending: true })
-          .limit(200);
-        if (error) throw error;
-
-        const normalized = (all ?? []).map(normalizeEvent);
-        const club = normalized.filter(ev => ev.is_club_event);
-        const other = normalized.filter(ev => !ev.is_club_event);
-
-        if (!club.length) {
-          clubStatus.textContent = 'No upcoming club events.';
-        } else {
-          clubStatus.remove();
-          for (const ev of club) {
-            const li = document.createElement('li');
-            renderEvent(li, ev);
-            clubList.appendChild(li);
-          }
-        }
-
-        if (!other.length) {
-          otherStatus.textContent = 'No other events found.';
-        } else {
-          otherStatus.remove();
-          for (const ev of other) {
-            const li = document.createElement('li');
-            renderEvent(li, ev);
-            otherList.appendChild(li);
-          }
-        }
-      } catch (e) {
-        clubStatus.textContent = `Error: ${e.message}`;
-        otherStatus.textContent = `Error: ${e.message}`;
-      }
-    }
-
-    loadEvents();
-  </script>
+      ) : (
+        <p class="text-gray-500 text-center py-8">No upcoming events scheduled.</p>
+      )}
+    </section>
+    
+    <!-- Past Events -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-6 text-gray-800">Past Events</h2>
+      {pastEvents.length > 0 ? (
+        <div class="grid gap-4">
+          {pastEvents.slice(0, 10).map((event) => (
+            <article class="bg-white rounded-lg shadow-sm border p-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-gray-900">{event.data.title}</h3>
+                  <p class="text-sm text-gray-600 mb-2">
+                    {new Date(event.data.startDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                    {event.data.location && ` • ${event.data.location}`}
+                  </p>
+                  <p class="text-gray-700">{event.data.description}</p>
+                </div>
+                {event.data.isClubEvent && (
+                  <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-4">
+                    Club Event
+                  </span>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500 text-center py-8">No past events to display.</p>
+      )}
+    </section>
+  </div>
 </BaseLayout>

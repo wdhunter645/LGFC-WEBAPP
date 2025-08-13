@@ -1,20 +1,67 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Admin | Lou Gehrig Fan Club" requireAuth={true} requireAdmin={true}>
-  <h2 class="text-2xl font-semibold">⚙️ Admin Dashboard</h2>
-  <p class="mb-4">Select a dashboard section:</p>
-  <ul class="list-disc list-inside space-y-1">
-    <li><a class="underline" href="/admin/media">🗂️ Media</a></li>
-    <li><a class="underline" href="/admin/users">👥 Users</a></li>
-    <li><a class="underline" href="/admin/assets">🖼️ Assets</a></li>
-    <li><a class="underline" href="/admin/reports">📊 Reports</a></li>
-    <li><a class="underline" href="/admin/posts">📝 Member Posts</a></li>
-    <li><a class="underline" href="/admin/qa">💬 Q&amp;A Moderation</a></li>
-    <li><a class="underline" href="/admin/milestones">📅 Milestones</a></li>
-    <li><a class="underline" href="/admin/settings">⚙️ Settings</a></li>
-    <li><a class="underline" href="/admin/auth">🔐 Auth</a></li>
-  </ul>
-  <p class="mt-4"><a class="underline" href="/">← Back to Home</a></p>
+<BaseLayout title="Content Management">
+  <div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Content Management</h1>
+        <p class="text-lg text-gray-600 mb-8">
+          Manage your site content through our CMS interface
+        </p>
+        
+        <div class="space-y-4">
+          <a 
+            href="/admin/" 
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Open CMS Dashboard
+          </a>
+          
+          <div class="text-sm text-gray-500">
+            <p>Access the full content management system to edit:</p>
+            <ul class="mt-2 space-y-1">
+              <li>• Pages (About, Privacy, Terms, etc.)</li>
+              <li>• Milestones and historical events</li>
+              <li>• News articles and updates</li>
+              <li>• Memorabilia and photo galleries</li>
+              <li>• Book reviews and recommendations</li>
+              <li>• Site settings and configuration</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a href="/admin/#/collections/pages" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">Pages</h3>
+            <p class="text-sm text-gray-600">Edit static pages</p>
+          </a>
+          <a href="/admin/#/collections/news" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">News</h3>
+            <p class="text-sm text-gray-600">Manage articles</p>
+          </a>
+          <a href="/admin/#/collections/events" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">Events</h3>
+            <p class="text-sm text-gray-600">Add upcoming events</p>
+          </a>
+          <a href="/admin/#/collections/memorabilia" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">Memorabilia</h3>
+            <p class="text-sm text-gray-600">Manage collection</p>
+          </a>
+          <a href="/admin/#/collections/photos" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">Photos</h3>
+            <p class="text-sm text-gray-600">Photo gallery</p>
+          </a>
+          <a href="/admin/#/collections/settings" class="block p-4 border rounded-lg hover:bg-gray-50">
+            <h3 class="font-medium">Settings</h3>
+            <p class="text-sm text-gray-600">Site configuration</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </BaseLayout>

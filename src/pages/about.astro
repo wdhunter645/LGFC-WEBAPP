@@ -1,39 +1,27 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get the about page content
+const aboutPage = await getCollection('pages', ({ slug }) => slug === 'about');
+const about = aboutPage[0];
 ---
 
-<BaseLayout title="About the Club | Lou Gehrig Fan Club" description="Overview and history of the Lou Gehrig Fan Club with photo highlights.">
-  <section class="max-w-5xl mx-auto p-6">
-    <h1 class="text-3xl font-bold mb-4">About the Club</h1>
-    <div class="grid gap-4 md:grid-cols-2 mb-6">
-      <img id="p1" src="/placeholder.svg" alt="Club photo 1" class="w-full h-64 object-cover rounded" />
-      <img id="p2" src="/placeholder.svg" alt="Club photo 2" class="w-full h-64 object-cover rounded" />
-    </div>
-    <p class="text-gray-800 mb-6">
-      The Lou Gehrig Fan Club is dedicated to celebrating the life and legacy of Lou Gehrig while supporting the ALS community.
-      We bring together fans, historians, and advocates to preserve stories, share resources, and power good.
-    </p>
-    <h2 class="text-2xl font-semibold mb-2">Club History</h2>
-    <div class="prose">
-      <p>
-        Founded by dedicated fans and community leaders, the club has grown into a collaborative hub for stories, memorabilia,
-        and charitable initiatives honoring Lou Gehrig’s legacy. More historical details and membership archives will be added here.
-      </p>
-    </div>
-  </section>
-
-  <script type="module">
-    import { createClient } from '@supabase/supabase-js';
-    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
-
-    async function loadPhotos() {
-      const targets = [document.getElementById('p1'), document.getElementById('p2')];
-      const { data } = await supabase.from('media_files').select('*').eq('media_type', 'image').order('random').limit(2);
-      (data ?? []).forEach((m, i) => {
-        const url = m.media_url || '/placeholder.svg';
-        if (targets[i]) targets[i].src = url;
-      });
-    }
-    loadPhotos();
-  </script>
+<BaseLayout title={about?.data.title || "About | Lou Gehrig Fan Club"}>
+  <div class="max-w-4xl mx-auto p-6">
+    {about ? (
+      <article class="prose prose-lg max-w-none">
+        <h1>{about.data.title}</h1>
+        {about.render()}
+      </article>
+    ) : (
+      <div class="text-center py-12">
+        <h1 class="text-3xl font-bold mb-4">About the Lou Gehrig Fan Club</h1>
+        <p class="text-gray-600">
+          Content for this page can be managed through the CMS. 
+          <a href="/admin" class="text-blue-600 hover:underline">Go to Admin</a>
+        </p>
+      </div>
+    )}
+  </div>
 </BaseLayout>

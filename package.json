@@ -19,14 +19,15 @@
     "@supabase/supabase-js": "^2.43.2",
     "@xmldom/xmldom": "^0.8.10",
     "astro": "^4.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "decap-cms-app": "^3.8.3",
     "lucide-react": "^0.536.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "cheerio": "^1.0.0-rc.12"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "astro-eslint-parser": "^0.16.3",
     "@typescript-eslint/parser": "^6.21.0",
+    "astro-eslint-parser": "^0.16.3",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

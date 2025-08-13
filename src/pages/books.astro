@@ -1,0 +1,80 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Get all books and sort by year published
+const books = await getCollection('books');
+books.sort((a, b) => {
+  const yearA = a.data.yearPublished || 0;
+  const yearB = b.data.yearPublished || 0;
+  return yearB - yearA; // Most recent first
+});
+---
+
+<BaseLayout title="Books | Lou Gehrig Fan Club">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-8">Books About Lou Gehrig</h1>
+    
+    <div class="grid gap-8">
+      {books.map((book) => (
+        <article class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="md:flex">
+            {book.data.coverImage && (
+              <div class="md:w-48 md:flex-shrink-0">
+                <img 
+                  src={book.data.coverImage} 
+                  alt={`Cover of ${book.data.title}`}
+                  class="w-full h-64 md:h-full object-cover"
+                />
+              </div>
+            )}
+            <div class="p-6 flex-1">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h2 class="text-2xl font-semibold text-gray-900 mb-2">
+                    {book.data.title}
+                  </h2>
+                  <p class="text-lg text-gray-600">by {book.data.author}</p>
+                </div>
+                {book.data.yearPublished && (
+                  <span class="text-sm text-gray-500">
+                    {book.data.yearPublished}
+                  </span>
+                )}
+              </div>
+              
+              <p class="text-gray-600 mb-4">{book.data.description}</p>
+              
+              {book.data.isbn && (
+                <p class="text-sm text-gray-500 mb-4">ISBN: {book.data.isbn}</p>
+              )}
+              
+              {book.data.review && (
+                <div class="prose max-w-none mb-4">
+                  <h3 class="text-lg font-semibold mb-2">Review</h3>
+                  {book.render()}
+                </div>
+              )}
+              
+              {book.data.tags && book.data.tags.length > 0 && (
+                <div class="flex flex-wrap gap-2">
+                  {book.data.tags.map((tag) => (
+                    <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+    
+    {books.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">No books have been added to the collection yet.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

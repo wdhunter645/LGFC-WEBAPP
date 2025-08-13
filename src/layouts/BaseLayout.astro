@@ -69,6 +69,12 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           <a class={`hover:underline ${currentPath === '/' ? 'font-semibold underline' : ''}`} href="/">Home</a>
           <a class={`hover:underline ${currentPath === '/members/home' ? 'font-semibold underline' : ''} ${isDevMode ? '' : 'hidden'}`} id="nav-club-home" href="/members/home">Club Home</a>
           <a class={`hover:underline ${currentPath === '/about' ? 'font-semibold underline' : ''}`} href="/about">About</a>
+          <a class={`hover:underline ${currentPath === '/milestones' ? 'font-semibold underline' : ''}`} href="/milestones">Milestones</a>
+          <a class={`hover:underline ${currentPath === '/news' ? 'font-semibold underline' : ''}`} href="/news">News</a>
+          <a class={`hover:underline ${currentPath === '/events' ? 'font-semibold underline' : ''}`} href="/events">Events</a>
+          <a class={`hover:underline ${currentPath === '/memorabilia' ? 'font-semibold underline' : ''}`} href="/memorabilia">Memorabilia</a>
+          <a class={`hover:underline ${currentPath === '/photos' ? 'font-semibold underline' : ''}`} href="/photos">Photos</a>
+          <a class={`hover:underline ${currentPath === '/books' ? 'font-semibold underline' : ''}`} href="/books">Books</a>
           <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a>
           <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a>
           <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''} ${isDevMode ? '' : 'hidden'}`} id="nav-admin" href="/admin">Admin</a>

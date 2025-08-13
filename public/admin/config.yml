@@ -1,0 +1,152 @@
+backend:
+  name: git-gateway
+  branch: main
+  commit_messages:
+    create: 'content: create {{collection}} "{{slug}}"'
+    update: 'content: update {{collection}} "{{slug}}"'
+    delete: 'content: delete {{collection}} "{{slug}}"'
+    uploadMedia: 'content: upload {{media}}'
+    deleteMedia: 'content: delete {{media}}'
+
+local_backend: true
+
+media_folder: "src/content/media"
+public_folder: "/media"
+
+collections:
+  - name: "pages"
+    label: "Pages"
+    files:
+      - name: "about"
+        label: "About Page"
+        file: "src/content/pages/about.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Description", name: "description", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+
+      - name: "community-guidelines"
+        label: "Community Guidelines"
+        file: "src/content/pages/community-guidelines.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Description", name: "description", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+
+      - name: "privacy"
+        label: "Privacy Policy"
+        file: "src/content/pages/privacy.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Description", name: "description", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+
+      - name: "terms"
+        label: "Terms of Service"
+        file: "src/content/pages/terms.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Description", name: "description", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+
+  - name: "milestones"
+    label: "Milestones"
+    folder: "src/content/milestones"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Body", name: "body", widget: "markdown" }
+      - { label: "Image", name: "image", widget: "image", required: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "events"
+    label: "Events"
+    folder: "src/content/events"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Start Date", name: "startDate", widget: "datetime" }
+      - { label: "End Date", name: "endDate", widget: "datetime", required: false }
+      - { label: "Location", name: "location", widget: "string", required: false }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Body", name: "body", widget: "markdown", required: false }
+      - { label: "Image", name: "image", widget: "image", required: false }
+      - { label: "External Link", name: "externalLink", widget: "string", required: false }
+      - { label: "Is Club Event", name: "isClubEvent", widget: "boolean", default: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "news"
+    label: "News Articles"
+    folder: "src/content/news"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime" }
+      - { label: "Author", name: "author", widget: "string", default: "Lou Gehrig Fan Club" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Body", name: "body", widget: "markdown" }
+      - { label: "Featured Image", name: "featuredImage", widget: "image", required: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "memorabilia"
+    label: "Memorabilia"
+    folder: "src/content/memorabilia"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Year", name: "year", widget: "number", required: false }
+      - { label: "Category", name: "category", widget: "select", options: ["Baseball Card", "Autograph", "Photograph", "Document", "Trophy", "Uniform", "Other"] }
+      - { label: "Image", name: "image", widget: "image" }
+      - { label: "Details", name: "details", widget: "markdown", required: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "photos"
+    label: "Photo Gallery"
+    folder: "src/content/photos"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description", name: "description", widget: "text", required: false }
+      - { label: "Year", name: "year", widget: "number", required: false }
+      - { label: "Photographer", name: "photographer", widget: "string", required: false }
+      - { label: "Image", name: "image", widget: "image" }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "books"
+    label: "Books"
+    folder: "src/content/books"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Author", name: "author", widget: "string" }
+      - { label: "Year Published", name: "yearPublished", widget: "number", required: false }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Cover Image", name: "coverImage", widget: "image", required: false }
+      - { label: "ISBN", name: "isbn", widget: "string", required: false }
+      - { label: "Review", name: "review", widget: "markdown", required: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+
+  - name: "settings"
+    label: "Site Settings"
+    files:
+      - name: "site"
+        label: "Site Configuration"
+        file: "src/content/settings/site.json"
+        fields:
+          - { label: "Site Title", name: "title", widget: "string" }
+          - { label: "Site Description", name: "description", widget: "text" }
+          - { label: "Contact Email", name: "contactEmail", widget: "string" }
+          - { label: "Social Links", name: "socialLinks", widget: "object", fields: [
+              { label: "Twitter", name: "twitter", widget: "string", required: false },
+              { label: "Facebook", name: "facebook", widget: "string", required: false },
+              { label: "Instagram", name: "instagram", widget: "string", required: false }
+            ]}

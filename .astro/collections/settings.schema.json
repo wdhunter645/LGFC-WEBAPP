@@ -1,0 +1,45 @@
+{
+  "$ref": "#/definitions/settings",
+  "definitions": {
+    "settings": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "contactEmail": {
+          "type": "string"
+        },
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "twitter": {
+              "type": "string"
+            },
+            "facebook": {
+              "type": "string"
+            },
+            "instagram": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "contactEmail",
+        "socialLinks"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
