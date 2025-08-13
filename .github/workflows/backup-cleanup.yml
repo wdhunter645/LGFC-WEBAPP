@@ -1,0 +1,54 @@
+name: Backup Cleanup - Retention Policy Enforcement
+
+on:
+  schedule:
+    # Run weekly on Saturday at 5 AM UTC
+    - cron: "0 5 * * 6"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  cleanup-backups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Create backup directories if they don't exist
+        run: |
+          mkdir -p backups/daily
+          mkdir -p backups/weekly
+          mkdir -p backups/monthly
+          
+      - name: Cleanup Daily Backups (14 days retention)
+        run: |
+          echo "Cleaning up daily backups older than 14 days..."
+          find backups/daily -name "*.sql" -type f -mtime +14 -delete
+          echo "Daily cleanup completed"
+          
+      - name: Cleanup Weekly Backups (8 weeks retention)
+        run: |
+          echo "Cleaning up weekly backups older than 8 weeks..."
+          find backups/weekly -name "*.sql" -type f -mtime +56 -delete
+          echo "Weekly cleanup completed"
+          
+      - name: Cleanup Monthly Backups (13 months retention)
+        run: |
+          echo "Cleaning up monthly backups older than 13 months..."
+          find backups/monthly -name "*.sql" -type f -mtime +395 -delete
+          echo "Monthly cleanup completed"
+          
+      - name: Commit cleanup changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "Backup cleanup - $(date +"%Y-%m-%d")" || echo "No cleanup changes to commit"
+          git push
+          
+      - name: Log completion
+        run: |
+          echo "Backup cleanup completed at $(date)"
+          echo "Retention policies enforced:"
+          echo "- Daily backups: 14 days"
+          echo "- Weekly backups: 8 weeks"
+          echo "- Monthly backups: 13 months"
