@@ -79,3 +79,4 @@ Development is actively in progress. The focus for **July 2025** includes:
 
 📥 **To install this README:**  
 Create a new file called `README.md` in your GitHub repo (`LGFC-WEBAPP`), paste in this content, and commit it to `main`.
+# Netlify deployment test
