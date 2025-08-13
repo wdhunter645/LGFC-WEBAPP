@@ -57,15 +57,19 @@ const currentPath = Astro.url.pathname;
     )}
 
     <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         <a href="/" class="font-semibold">Lou Gehrig Fan Club</a>
-        <nav class="flex flex-wrap gap-4 text-sm">
+        <nav class="flex flex-wrap items-center gap-4 text-sm">
           <a class={`hover:underline ${currentPath === '/' ? 'font-semibold underline' : ''}`} href="/">Home</a>
           <a class={`hover:underline ${currentPath === '/members/home' ? 'font-semibold underline' : ''} hidden`} id="nav-club-home" href="/members/home">Club Home</a>
           <a class={`hover:underline ${currentPath === '/about' ? 'font-semibold underline' : ''}`} href="/about">About</a>
           <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a>
-          <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a>
+          <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a>
           <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''} hidden`} id="nav-admin" href="/admin">Admin</a>
+          <form action="/search" method="get" class="flex items-center gap-1">
+            <input name="q" placeholder="Search" class="border rounded px-2 py-1 h-8" />
+            <button class="border rounded px-2 py-1 h-8">Go</button>
+          </form>
           <a class={`hover:underline ${currentPath === '/login' ? 'font-semibold underline' : ''}`} href="/login">Login</a>
         </nav>
       </div>

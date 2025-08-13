@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Terms of Service | Lou Gehrig Fan Club</title><meta name="description" content="Terms of Service"><meta property="og:title" content="Terms of Service | Lou Gehrig Fan Club"><meta property="og:description" content="Terms of Service"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Terms of Service | Lou Gehrig Fan Club"><meta name="twitter:description" content="Terms of Service"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.CD274njd.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap items-center gap-4 text-sm"> <a class="hover:underline " href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <form action="/search" method="get" class="flex items-center gap-1"> <input name="q" placeholder="Search" class="border rounded px-2 py-1 h-8"> <button class="border rounded px-2 py-1 h-8">Go</button> </form> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (async () => {
+        const { data } = await supabase.auth.getSession();
+        const club = document.getElementById('nav-club-home');
+        const admin = document.getElementById('nav-admin');
+        if (data?.session) {
+          club?.classList.remove('hidden');
+          const { data: m } = await supabase
+            .from('members')
+            .select('is_admin')
+            .eq('user_id', data.session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (m?.is_admin) admin?.classList.remove('hidden');
+        }
+      })();
+    </script> <main class="min-h-screen">  <section class="max-w-3xl mx-auto p-6 prose"> <h1>Terms of Service</h1> <p>This is a placeholder for the Lou Gehrig Fan Club Terms of Service. Content will be updated.</p> </section>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>"Today I consider myself the luckiest man on the face of the earth."</p> </div> <div class="max-w-6xl mx-auto px-4 pb-8"> <nav class="flex flex-wrap gap-6 text-sm text-gray-700"> <a class="hover:underline" href="/privacy">Privacy Policy</a> <a class="hover:underline" href="/terms">Terms of Service</a> <a class="hover:underline" href="/community-guidelines">Community Guidelines</a> </nav> </div> </footer> </body></html>
