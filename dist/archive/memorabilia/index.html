@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive • Memorabilia | Lou Gehrig Fan Club</title><meta name="description" content="Memorabilia items and stories."><meta property="og:title" content="Archive • Memorabilia | Lou Gehrig Fan Club"><meta property="og:description" content="Memorabilia items and stories."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive • Memorabilia | Lou Gehrig Fan Club"><meta name="twitter:description" content="Memorabilia items and stories."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.D2c0HO2O.css"></head> <body class="font-sans text-gray-900"> <script type="module">
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive • Memorabilia | Lou Gehrig Fan Club</title><meta name="description" content="Memorabilia items and stories."><meta property="og:title" content="Archive • Memorabilia | Lou Gehrig Fan Club"><meta property="og:description" content="Memorabilia items and stories."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive • Memorabilia | Lou Gehrig Fan Club"><meta name="twitter:description" content="Memorabilia items and stories."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.BvZVqN5M.css"></head> <body class="font-sans text-gray-900"> <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
         const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
         const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -11,19 +11,39 @@
             return;
           }
           if ({requireAdmin}) {
-            const { data: members, error } = await supabase
+            const { data: members } = await supabase
               .from('members')
               .select('is_admin')
               .eq('user_id', data.session.user.id)
               .limit(1)
               .maybeSingle();
-            if (error || !members?.is_admin) {
+            if (!members?.is_admin) {
               window.location.href = '/';
               return;
             }
           }
         })();
-      </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/community">Community</a> <a class="hover:underline " href="/qa">Q&A</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="max-w-5xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Memorabilia</h1> <form id="search-form" class="flex gap-2"> <input id="q" class="flex-1 border rounded px-3 py-2" placeholder="Search title or description…"> <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button> </form> <p id="status" class="text-gray-600 mt-4">Loading…</p> <ul id="list" class="space-y-4 mt-4"></ul> </section> <script type="module">
+      </script> <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (async () => {
+        const { data } = await supabase.auth.getSession();
+        const club = document.getElementById('nav-club-home');
+        const admin = document.getElementById('nav-admin');
+        if (data?.session) {
+          club?.classList.remove('hidden');
+          const { data: m } = await supabase
+            .from('members')
+            .select('is_admin')
+            .eq('user_id', data.session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (m?.is_admin) admin?.classList.remove('hidden');
+        }
+      })();
+    </script> <main class="min-h-screen">  <section class="max-w-5xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Memorabilia</h1> <form id="search-form" class="flex gap-2"> <input id="q" class="flex-1 border rounded px-3 py-2" placeholder="Search title or description…"> <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button> </form> <p id="status" class="text-gray-600 mt-4">Loading…</p> <ul id="list" class="space-y-4 mt-4"></ul> </section> <script type="module">
     import { createClient } from '@supabase/supabase-js';
     const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 
@@ -81,6 +101,4 @@
     });
 
     load();
-  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
-"Today I consider myself the luckiest man on the face of the earth."
-</p> </div> </footer> </body></html>
+  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>"Today I consider myself the luckiest man on the face of the earth."</p> </div> </footer> </body></html>

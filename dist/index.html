@@ -1,80 +1,130 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lou Gehrig Fan Club</title><meta name="description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><meta property="og:title" content="Lou Gehrig Fan Club"><meta property="og:description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Lou Gehrig Fan Club"><meta name="twitter:description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.D2c0HO2O.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/community">Community</a> <a class="hover:underline " href="/qa">Q&A</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="text-center p-8"> <h1 class="text-4xl font-bold mb-4">Welcome to the Lou Gehrig Fan Club</h1> <p class="max-w-xl mx-auto mb-6">
-Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.
-</p> </section> <section class="max-w-4xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">Daily Picture Vote</h2> <p class="text-gray-600 mb-4">Vote for your favorite image. Winners advance daily until we crown the best picture. <a class="underline" href="/leaderboard">View leaderboard</a>.</p> <div id="vote" class="grid gap-4 md:grid-cols-2"></div> <p id="vote-status" class="text-sm text-gray-600 mt-3"></p> </section> <script type="module">
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lou Gehrig Fan Club</title><meta name="description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><meta property="og:title" content="Lou Gehrig Fan Club"><meta property="og:description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Lou Gehrig Fan Club"><meta name="twitter:description" content="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.BvZVqN5M.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline font-semibold underline" href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (async () => {
+        const { data } = await supabase.auth.getSession();
+        const club = document.getElementById('nav-club-home');
+        const admin = document.getElementById('nav-admin');
+        if (data?.session) {
+          club?.classList.remove('hidden');
+          const { data: m } = await supabase
+            .from('members')
+            .select('is_admin')
+            .eq('user_id', data.session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (m?.is_admin) admin?.classList.remove('hidden');
+        }
+      })();
+    </script> <main class="min-h-screen">  <section id="section1" class="max-w-5xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">Vote for your favorite pic</h2> <div id="vote" class="grid gap-4 md:grid-cols-2"></div> <p id="vote-status" class="text-sm text-gray-600 mt-3"></p> <p class="text-sm mt-2"><a class="underline" href="/leaderboard">View leaderboard</a></p> </section> <section id="section2" class="max-w-5xl mx-auto p-6"> <div class="grid gap-6 md:grid-cols-2"> <div class="border rounded p-4 bg-white"> <h3 class="text-xl font-semibold mb-2">Join Free</h3> <p class="text-gray-600 mb-3">Free membership</p> <a href="/login" class="inline-block border rounded px-4 py-2 bg-blue-600 text-white">Join Free</a> </div> <div class="border rounded p-4 bg-white"> <h3 class="text-xl font-semibold mb-2">Sign In</h3> <p class="text-gray-600 mb-3">Free membership</p> <a href="/login" class="inline-block border rounded px-4 py-2">Sign In</a> </div> </div> </section> <section id="section3" class="max-w-5xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">Club News Feed</h2> <p class="text-gray-600 mb-4">Top posts across Q&amp;A and Member Posts.</p> <ul id="news" class="space-y-3"></ul> </section> <section id="section4" class="max-w-5xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">The Lou Gehrig Fan Club Supports the ALS Community</h2> <div class="grid gap-4 md:grid-cols-3"> <div class="border rounded p-4 bg-white"> <h3 class="font-semibold">ALS CURE PROJECT</h3> <a class="underline" href="https://www.alscure.org/" target="_blank" rel="noreferrer">alscure.org</a> <a class="mt-2 inline-block border rounded px-3 py-1" href="https://paybee.io/quickpay.html?handle=alscure&ppid=32#optionList" target="_blank" rel="noreferrer">Donate</a> </div> <div class="border rounded p-4 bg-white"> <h3 class="font-semibold">I AM ALS</h3> <a class="underline" href="https://www.iamals.org/" target="_blank" rel="noreferrer">iamals.org</a> <a class="mt-2 inline-block border rounded px-3 py-1" href="https://www.iamals.org/give/" target="_blank" rel="noreferrer">Donate</a> <div><a class="text-sm underline" href="https://www.iamals.org/action/" target="_blank" rel="noreferrer">Volunteer</a></div> </div> <div class="border rounded p-4 bg-white"> <h3 class="font-semibold">Live Like Lou</h3> <a class="underline" href="https://www.livelikelou.org/" target="_blank" rel="noreferrer">livelikelou.org</a> <a class="mt-2 inline-block border rounded px-3 py-1" href="https://www.livelikelou.org/donate" target="_blank" rel="noreferrer">Donate</a> <div><a class="text-sm underline" href="https://www.livelikelou.org/als-families" target="_blank" rel="noreferrer">Volunteer</a></div> </div> </div> </section> <section id="section5" class="max-w-5xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">ALS Community Calendar</h2> <ul id="als-events" class="space-y-3"></ul> <p id="als-status" class="text-sm text-gray-600 mt-2"></p> </section> <section id="section6" class="max-w-5xl mx-auto p-6"> <div class="grid gap-6 md:grid-cols-2"> <div> <h3 class="text-xl font-semibold mb-2">Q&amp;A</h3> <p class="text-gray-600 mb-2">Ask questions, share answers.</p> <a class="underline" href="/qa">Go to Q&amp;A</a> </div> <div> <h3 class="text-xl font-semibold mb-2">Milestones</h3> <p class="text-gray-600 mb-2">Explore the Gehrig timeline.</p> <a class="underline" href="/milestones">Open Milestones</a> </div> </div> </section> <section id="section7" class="max-w-5xl mx-auto p-6"> <h2 class="text-2xl font-semibold mb-3">Fan Club Events Calendar</h2> <ul id="club-events" class="space-y-3"></ul> <p id="club-status" class="text-sm text-gray-600 mt-2"></p> </section> <script type="module">
     import { createClient } from '@supabase/supabase-js';
     const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 
+    // Vote widget
     const voteEl = document.getElementById('vote');
     const voteStatus = document.getElementById('vote-status');
-
-    function normalize(m) {
-      return {
-        id: m.id,
-        url: m.media_url ?? m.url,
-        alt: m.alt_text ?? m.file_name ?? 'Photo'
-      };
-    }
-
+    function normalize(m) { return { id: m.id, url: m.media_url ?? '/placeholder.svg', alt: m.alt_text ?? m.file_name ?? 'Photo' }; }
     async function getTwoRandomImages() {
-      const { data, error } = await supabase
-        .from('media_files')
-        .select('*')
-        .eq('media_type', 'image')
-        .order('random')
-        .limit(2);
-      if (error) throw error;
+      const { data } = await supabase.from('media_files').select('*').eq('media_type','image').order('random').limit(2);
       return (data ?? []).map(normalize);
     }
-
     async function ensureAuthOrPrompt() {
       const { data } = await supabase.auth.getSession();
-      if (!data?.session) {
-        window.location.href = `/login?redirect=${encodeURIComponent('/')}`;
-        return null;
-      }
+      if (!data?.session) { window.location.href = `/login?redirect=${encodeURIComponent('/')}`; return null; }
       return data.session;
     }
-
     async function recordVote(imageId) {
-      const session = await ensureAuthOrPrompt();
-      if (!session) return;
-      const { error } = await supabase
-        .from('picture_votes')
-        .insert({ image_id: imageId, user_id: session.user.id });
+      const session = await ensureAuthOrPrompt(); if (!session) return;
+      const { error } = await supabase.from('picture_votes').insert({ image_id: imageId, user_id: session.user.id });
       voteStatus.textContent = error ? `Vote failed: ${error.message}` : 'Thanks for voting!';
-      if (!error) loadRound();
+      if (!error) loadVote();
     }
-
-    function renderPair([a, b]) {
+    function renderPair([a,b]) {
       voteEl.innerHTML = '';
-      for (const img of [a, b]) {
+      for (const img of [a,b]) {
         const btn = document.createElement('button');
         btn.className = 'block border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600';
-        btn.innerHTML = `
-          <img src="${img.url || '/placeholder.svg'}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" />
-          <div class="p-3 text-center font-medium">Vote</div>
-        `;
+        btn.innerHTML = `<img src="${img.url}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" /><div class="p-3 text-center font-medium">Vote</div>`;
         btn.addEventListener('click', () => recordVote(img.id));
         voteEl.appendChild(btn);
       }
     }
-
-    async function loadRound() {
+    async function loadVote() {
       voteStatus.textContent = 'Loading pictures…';
-      try {
-        const pair = await getTwoRandomImages();
-        if (pair.length < 2) {
-          voteStatus.textContent = 'Not enough images to vote yet.';
-          return;
-        }
-        renderPair(pair);
-        voteStatus.textContent = '';
-      } catch (e) {
-        voteStatus.textContent = `Error: ${e.message}`;
+      const pair = await getTwoRandomImages();
+      if (pair.length < 2) { voteStatus.textContent = 'Not enough images to vote yet.'; voteEl.innerHTML=''; return; }
+      renderPair(pair); voteStatus.textContent = '';
+    }
+
+    // News feed (top 5 from two sources if available)
+    const newsEl = document.getElementById('news');
+    async function loadNews() {
+      newsEl.innerHTML = '';
+      const [qa, posts] = await Promise.all([
+        supabase.from('qa_threads').select('id,title,created_at').order('created_at',{ascending:false}).limit(5),
+        supabase.from('member_posts').select('id,title,created_at').order('created_at',{ascending:false}).limit(5)
+      ]);
+      const items = [];
+      for (const r of (qa.data||[])) items.push({type:'Q&A', id:r.id, title:r.title, href:'/qa', created_at:r.created_at});
+      for (const r of (posts.data||[])) items.push({type:'Post', id:r.id, title:r.title||'Post', href:'#', created_at:r.created_at});
+      items.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+      for (const it of items.slice(0,5)) {
+        const li = document.createElement('li');
+        li.className = 'border rounded bg-white p-3';
+        li.innerHTML = `<div class="text-xs text-gray-500">${it.type}</div><a class="underline" href="${it.href}">${it.title}</a>`;
+        newsEl.appendChild(li);
       }
     }
 
-    loadRound();
-  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
-"Today I consider myself the luckiest man on the face of the earth."
-</p> </div> </footer> </body></html>
+    // ALS Community Calendar (non-club)
+    const alsList = document.getElementById('als-events');
+    const alsStatus = document.getElementById('als-status');
+    async function loadAlsEvents() {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id,title,start_at,location,link_url,is_club_event,source')
+        .eq('is_club_event', false)
+        .order('start_at', { ascending: true })
+        .limit(20);
+      if (error) { alsStatus.textContent = `Error: ${error.message}`; return; }
+      const upcoming = (data||[]).filter(e=> new Date(e.start_at) >= new Date());
+      const next30 = upcoming.filter(e=> (new Date(e.start_at)-new Date())/(1000*60*60*24) <= 30);
+      const list = (next30.length? next30: upcoming).slice(0,10);
+      alsList.innerHTML = '';
+      for (const e of list) {
+        const li = document.createElement('li');
+        li.className = 'border rounded bg-white p-3';
+        li.innerHTML = `<div class="font-semibold">${e.title}</div><div class="text-sm text-gray-600">${new Date(e.start_at).toLocaleString()}${e.location? ' • '+e.location:''}</div>${e.link_url? `<a class=\"underline\" href=\"${e.link_url}\" target=\"_blank\" rel=\"noreferrer\">Details</a>`:''}`;
+        alsList.appendChild(li);
+      }
+      alsStatus.textContent = list.length? '': 'No upcoming events found.';
+    }
+
+    // Fan Club Events (club-only)
+    const clubList = document.getElementById('club-events');
+    const clubStatus = document.getElementById('club-status');
+    async function loadClubEvents() {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id,title,start_at,location,link_url,is_club_event')
+        .eq('is_club_event', true)
+        .order('start_at', { ascending: true })
+        .limit(10);
+      if (error) { clubStatus.textContent = `Error: ${error.message}`; return; }
+      clubList.innerHTML = '';
+      for (const e of (data||[])) {
+        const li = document.createElement('li');
+        li.className = 'border rounded bg-white p-3';
+        li.innerHTML = `<div class="font-semibold">${e.title}</div><div class="text-sm text-gray-600">${new Date(e.start_at).toLocaleString()}${e.location? ' • '+e.location:''}</div>${e.link_url? `<a class=\"underline\" href=\"${e.link_url}\" target=\"_blank\" rel=\"noreferrer\">Details</a>`:''}`;
+        clubList.appendChild(li);
+      }
+      clubStatus.textContent = (data||[]).length? '': 'No club events scheduled.';
+    }
+
+    loadVote();
+    loadNews();
+    loadAlsEvents();
+    loadClubEvents();
+  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>"Today I consider myself the luckiest man on the face of the earth."</p> </div> </footer> </body></html>

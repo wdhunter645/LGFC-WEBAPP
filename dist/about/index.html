@@ -1,9 +1,40 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>About | Lou Gehrig Fan Club</title><meta name="description" content="About the Lou Gehrig Fan Club and our mission to support ALS awareness and research."><meta property="og:title" content="About | Lou Gehrig Fan Club"><meta property="og:description" content="About the Lou Gehrig Fan Club and our mission to support ALS awareness and research."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="About | Lou Gehrig Fan Club"><meta name="twitter:description" content="About the Lou Gehrig Fan Club and our mission to support ALS awareness and research."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.D2c0HO2O.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/milestones">Milestones</a> <a class="hover:underline " href="/events">Events</a> <a class="hover:underline " href="/archive">Archive</a> <a class="hover:underline " href="/community">Community</a> <a class="hover:underline " href="/qa">Q&A</a> <a class="hover:underline " href="/search">Search</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline " href="/contribute">Contribute</a> <a class="hover:underline " href="/my-submissions">My Submissions</a> <a class="hover:underline " href="/admin">Admin</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <main class="min-h-screen">  <section class="max-w-3xl mx-auto p-6 prose"> <h1>About</h1> <p>
-The Lou Gehrig Fan Club honors the life and legacy of Lou Gehrig and supports
-      ongoing ALS awareness and research efforts in his memory.
-</p> <h2>Our Mission</h2> <ul> <li>Celebrate and preserve the story of Lou Gehrig</li> <li>Support ALS research and patient advocacy</li> <li>Build a community of fans and contributors</li> </ul> <p>
-Learn more about ALS and how you can help through trusted organizations and
-      initiatives.
-</p> </section>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>
-"Today I consider myself the luckiest man on the face of the earth."
-</p> </div> </footer> </body></html>
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>About the Club | Lou Gehrig Fan Club</title><meta name="description" content="Overview and history of the Lou Gehrig Fan Club with photo highlights."><meta property="og:title" content="About the Club | Lou Gehrig Fan Club"><meta property="og:description" content="Overview and history of the Lou Gehrig Fan Club with photo highlights."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="About the Club | Lou Gehrig Fan Club"><meta name="twitter:description" content="Overview and history of the Lou Gehrig Fan Club with photo highlights."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.BvZVqN5M.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap gap-4 text-sm"> <a class="hover:underline " href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (async () => {
+        const { data } = await supabase.auth.getSession();
+        const club = document.getElementById('nav-club-home');
+        const admin = document.getElementById('nav-admin');
+        if (data?.session) {
+          club?.classList.remove('hidden');
+          const { data: m } = await supabase
+            .from('members')
+            .select('is_admin')
+            .eq('user_id', data.session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (m?.is_admin) admin?.classList.remove('hidden');
+        }
+      })();
+    </script> <main class="min-h-screen">  <section class="max-w-5xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">About the Club</h1> <div class="grid gap-4 md:grid-cols-2 mb-6"> <img id="p1" src="/placeholder.svg" alt="Club photo 1" class="w-full h-64 object-cover rounded"> <img id="p2" src="/placeholder.svg" alt="Club photo 2" class="w-full h-64 object-cover rounded"> </div> <p class="text-gray-800 mb-6">
+The Lou Gehrig Fan Club is dedicated to celebrating the life and legacy of Lou Gehrig while supporting the ALS community.
+      We bring together fans, historians, and advocates to preserve stories, share resources, and power good.
+</p> <h2 class="text-2xl font-semibold mb-2">Club History</h2> <div class="prose"> <p>
+Founded by dedicated fans and community leaders, the club has grown into a collaborative hub for stories, memorabilia,
+        and charitable initiatives honoring Lou Gehrig’s legacy. More historical details and membership archives will be added here.
+</p> </div> </section> <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    async function loadPhotos() {
+      const targets = [document.getElementById('p1'), document.getElementById('p2')];
+      const { data } = await supabase.from('media_files').select('*').eq('media_type', 'image').order('random').limit(2);
+      (data ?? []).forEach((m, i) => {
+        const url = m.media_url || '/placeholder.svg';
+        if (targets[i]) targets[i].src = url;
+      });
+    }
+    loadPhotos();
+  </script>  </main> <footer class="border-t bg-gray-50"> <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between"> <p>&copy; 2025 Lou Gehrig Fan Club</p> <p>"Today I consider myself the luckiest man on the face of the earth."</p> </div> </footer> </body></html>

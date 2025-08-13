@@ -1,0 +1,49 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Club Home | Lou Gehrig Fan Club" description="Member homepage with social wall, posts, archive, and timeline." requireAuth={true}>
+  <section class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Club Home</h1>
+    <div class="grid gap-4 md:grid-cols-3 mb-6">
+      <img id="r1" src="/placeholder.svg" alt="Random 1" class="w-full h-48 object-cover rounded" />
+      <img id="r2" src="/placeholder.svg" alt="Random 2" class="w-full h-48 object-cover rounded" />
+      <img id="r3" src="/placeholder.svg" alt="Random 3" class="w-full h-48 object-cover rounded" />
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <a href="#social" class="block border rounded p-4 bg-white hover:shadow">
+        <h2 class="text-xl font-semibold">Social Wall</h2>
+        <p class="text-gray-600">Aggregated social feeds (coming soon).</p>
+      </a>
+      <a href="#posts" class="block border rounded p-4 bg-white hover:shadow">
+        <h2 class="text-xl font-semibold">Member Posts</h2>
+        <p class="text-gray-600">Share and discuss inside the club.</p>
+      </a>
+      <a href="/archive" class="block border rounded p-4 bg-white hover:shadow">
+        <h2 class="text-xl font-semibold">Archive</h2>
+        <p class="text-gray-600">Library, Photo Gallery, Memorabilia.</p>
+      </a>
+      <a href="/milestones" class="block border rounded p-4 bg-white hover:shadow">
+        <h2 class="text-xl font-semibold">Gehrig Timeline</h2>
+        <p class="text-gray-600">Heavily enriched timeline of Lou’s life.</p>
+      </a>
+    </div>
+  </section>
+
+  <script type="module">
+    import { createClient } from '@supabase/supabase-js';
+    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+    async function load() {
+      const { data } = await supabase
+        .from('media_files')
+        .select('media_url')
+        .eq('media_type', 'image')
+        .order('random')
+        .limit(3);
+      const imgs = (data ?? []).map(d => d.media_url || '/placeholder.svg');
+      ['r1','r2','r3'].forEach((id, i) => { const el = document.getElementById(id); if (el && imgs[i]) el.src = imgs[i]; });
+    }
+    load();
+  </script>
+</BaseLayout>

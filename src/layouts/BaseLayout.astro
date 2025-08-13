@@ -41,13 +41,13 @@ const currentPath = Astro.url.pathname;
             return;
           }
           if ({requireAdmin}) {
-            const { data: members, error } = await supabase
+            const { data: members } = await supabase
               .from('members')
               .select('is_admin')
               .eq('user_id', data.session.user.id)
               .limit(1)
               .maybeSingle();
-            if (error || !members?.is_admin) {
+            if (!members?.is_admin) {
               window.location.href = '/';
               return;
             }
@@ -55,35 +55,51 @@ const currentPath = Astro.url.pathname;
         })();
       </script>
     )}
+
     <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <a href="/" class="font-semibold">Lou Gehrig Fan Club</a>
         <nav class="flex flex-wrap gap-4 text-sm">
-          <a class={`hover:underline ${currentPath === '/milestones' ? 'font-semibold underline' : ''}`} href="/milestones">Milestones</a>
-          <a class={`hover:underline ${currentPath === '/events' ? 'font-semibold underline' : ''}`} href="/events">Events</a>
-          <a class={`hover:underline ${currentPath === '/archive' ? 'font-semibold underline' : ''}`} href="/archive">Archive</a>
-          <a class={`hover:underline ${currentPath === '/community' ? 'font-semibold underline' : ''}`} href="/community">Community</a>
-          <a class={`hover:underline ${currentPath === '/qa' ? 'font-semibold underline' : ''}`} href="/qa">Q&A</a>
-          <a class={`hover:underline ${currentPath === '/search' ? 'font-semibold underline' : ''}`} href="/search">Search</a>
+          <a class={`hover:underline ${currentPath === '/' ? 'font-semibold underline' : ''}`} href="/">Home</a>
+          <a class={`hover:underline ${currentPath === '/members/home' ? 'font-semibold underline' : ''} hidden`} id="nav-club-home" href="/members/home">Club Home</a>
           <a class={`hover:underline ${currentPath === '/about' ? 'font-semibold underline' : ''}`} href="/about">About</a>
-          <a class={`hover:underline ${currentPath === '/contribute' ? 'font-semibold underline' : ''}`} href="/contribute">Contribute</a>
-          <a class={`hover:underline ${currentPath === '/my-submissions' ? 'font-semibold underline' : ''}`} href="/my-submissions">My Submissions</a>
-          <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''}`} href="/admin">Admin</a>
-          <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Shop</a>
+          <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a>
           <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Linktree</a>
+          <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''} hidden`} id="nav-admin" href="/admin">Admin</a>
           <a class={`hover:underline ${currentPath === '/login' ? 'font-semibold underline' : ''}`} href="/login">Login</a>
         </nav>
       </div>
     </header>
+
+    <script type="module">
+      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (async () => {
+        const { data } = await supabase.auth.getSession();
+        const club = document.getElementById('nav-club-home');
+        const admin = document.getElementById('nav-admin');
+        if (data?.session) {
+          club?.classList.remove('hidden');
+          const { data: m } = await supabase
+            .from('members')
+            .select('is_admin')
+            .eq('user_id', data.session.user.id)
+            .limit(1)
+            .maybeSingle();
+          if (m?.is_admin) admin?.classList.remove('hidden');
+        }
+      })();
+    </script>
+
     <main class="min-h-screen">
       <slot />
     </main>
     <footer class="border-t bg-gray-50">
       <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600 flex flex-wrap gap-4 items-center justify-between">
         <p>&copy; {new Date().getFullYear()} Lou Gehrig Fan Club</p>
-        <p>
-          "Today I consider myself the luckiest man on the face of the earth."
-        </p>
+        <p>"Today I consider myself the luckiest man on the face of the earth."</p>
       </div>
     </footer>
   </body>
