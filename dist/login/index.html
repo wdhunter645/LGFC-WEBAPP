@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Login | Lou Gehrig Fan Club</title><meta name="description" content="Sign in to contribute content and manage submissions."><meta property="og:title" content="Login | Lou Gehrig Fan Club"><meta property="og:description" content="Sign in to contribute content and manage submissions."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Login | Lou Gehrig Fan Club"><meta name="twitter:description" content="Sign in to contribute content and manage submissions."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.DCR835JA.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap items-center gap-4 text-sm"> <a class="hover:underline " href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <form action="/search" method="get" class="flex items-center gap-1"> <input name="q" placeholder="Search" class="border rounded px-2 py-1 h-8"> <button class="border rounded px-2 py-1 h-8">Go</button> </form> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
+<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Login | Lou Gehrig Fan Club</title><meta name="description" content="Sign in to contribute content and manage submissions."><meta property="og:title" content="Login | Lou Gehrig Fan Club"><meta property="og:description" content="Sign in to contribute content and manage submissions."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Login | Lou Gehrig Fan Club"><meta name="twitter:description" content="Sign in to contribute content and manage submissions."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/_astro/about.c_e0etmq.css"></head> <body class="font-sans text-gray-900">  <header class="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4"> <a href="/" class="font-semibold">Lou Gehrig Fan Club</a> <nav class="flex flex-wrap items-center gap-4 text-sm"> <a class="hover:underline " href="/">Home</a> <a class="hover:underline  hidden" id="nav-club-home" href="/members/home">Club Home</a> <a class="hover:underline " href="/about">About</a> <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a> <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <form action="/search" method="get" class="flex items-center gap-1"> <input name="q" placeholder="Search" class="border rounded px-2 py-1 h-8"> <button class="border rounded px-2 py-1 h-8">Go</button> </form> <a class="hover:underline " href="/login">Login</a> </nav> </div> </header> <script type="module">
       import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -18,15 +18,21 @@
           if (m?.is_admin) admin?.classList.remove('hidden');
         }
       })();
-    </script> <main class="min-h-screen">  <section class="max-w-md mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Login</h1> <p class="text-gray-700 mb-4">Use your email to receive a magic link.</p> <form id="login-form" class="space-y-3"> <input id="email" type="email" required class="w-full border rounded px-3 py-2" placeholder="you@example.com"> <button class="border rounded px-4 py-2 bg-blue-600 text-white">Send Magic Link</button> </form> <p id="message" class="text-sm text-gray-600 mt-3"></p> <div id="session" class="mt-6 hidden"> <h2 class="font-semibold mb-2">Session</h2> <pre id="session-json" class="text-xs bg-gray-100 p-2 rounded"></pre> <button id="signout" class="mt-2 border rounded px-3 py-1">Sign out</button> </div> </section> <script type="module">
+    </script> <main class="min-h-screen">  <section class="max-w-md mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Join the Fan Club</h1> <p class="text-gray-700 mb-6">Choose your login method:</p> <!-- OAuth Options --> <div class="space-y-3 mb-6"> <button id="google-login" class="w-full border rounded px-4 py-3 bg-white hover:bg-gray-50 flex items-center justify-center gap-3"> <span class="text-xl">🔵</span> <span class="font-medium">Continue with Google</span> </button> <button id="facebook-login" class="w-full border rounded px-4 py-3 bg-white hover:bg-gray-50 flex items-center justify-center gap-3"> <span class="text-xl">📘</span> <span class="font-medium">Continue with Facebook</span> </button> </div> <div class="relative mb-6"> <div class="absolute inset-0 flex items-center"> <div class="w-full border-t border-gray-300"></div> </div> <div class="relative flex justify-center text-sm"> <span class="px-2 bg-white text-gray-500">or</span> </div> </div> <!-- Other Email Form --> <form id="other-email-form" class="space-y-3"> <input id="email" type="email" required class="w-full border rounded px-3 py-2" placeholder="Enter any email address"> <button type="submit" class="w-full border rounded px-4 py-2 bg-blue-600 text-white hover:bg-blue-700">
+Continue with Email
+</button> </form> <p id="message" class="text-sm text-gray-600 mt-3"></p> <!-- Email Validation Step --> <div id="email-validation" class="mt-6 hidden"> <div class="bg-blue-50 border border-blue-200 rounded p-4"> <h2 class="font-semibold text-blue-800 mb-2">Check Your Email</h2> <p class="text-blue-700 text-sm mb-3">We've sent a validation email to <span id="validation-email" class="font-medium"></span></p> <p class="text-blue-600 text-xs">Click the link in the email to complete your registration.</p> </div> </div> <div id="session" class="mt-6 hidden"> <h2 class="font-semibold mb-2">Session</h2> <pre id="session-json" class="text-xs bg-gray-100 p-2 rounded"></pre> <button id="signout" class="mt-2 border rounded px-3 py-1">Sign out</button> </div> </section> <script type="module">
     import { createClient } from '@supabase/supabase-js';
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
     const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const form = document.getElementById('login-form');
+    const googleBtn = document.getElementById('google-login');
+    const facebookBtn = document.getElementById('facebook-login');
+    const otherEmailForm = document.getElementById('other-email-form');
     const email = document.getElementById('email');
     const message = document.getElementById('message');
+    const emailValidation = document.getElementById('email-validation');
+    const validationEmail = document.getElementById('validation-email');
     const sessionDiv = document.getElementById('session');
     const sessionJson = document.getElementById('session-json');
     const signoutBtn = document.getElementById('signout');
@@ -46,12 +52,90 @@
       }
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      message.textContent = 'Sending magic link…';
-      const { error } = await supabase.auth.signInWithOtp({ email: email.value });
-      message.textContent = error ? `Error: ${error.message}` : 'Check your email for the magic link.';
+    // Google OAuth
+    googleBtn.addEventListener('click', async () => {
+      message.textContent = 'Redirecting to Google...';
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin
+        }
+      });
+      if (error) {
+        message.textContent = `Error: ${error.message}`;
+      }
     });
+
+    // Facebook OAuth
+    facebookBtn.addEventListener('click', async () => {
+      message.textContent = 'Redirecting to Facebook...';
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin
+        }
+      });
+      if (error) {
+        message.textContent = `Error: ${error.message}`;
+      }
+    });
+
+    // Other Email Form
+    otherEmailForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailValue = email.value.trim();
+      
+      if (!emailValue) {
+        message.textContent = 'Please enter an email address.';
+        return;
+      }
+
+      message.textContent = 'Sending validation email...';
+      
+      // Check if user exists
+      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(emailValue);
+      
+      if (existingUser?.user) {
+        // User exists, send magic link
+        const { error } = await supabase.auth.signInWithOtp({ 
+          email: emailValue,
+          options: {
+            emailRedirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin
+          }
+        });
+        
+        if (error) {
+          message.textContent = `Error: ${error.message}`;
+        } else {
+          showEmailValidation(emailValue);
+          message.textContent = '';
+        }
+      } else {
+        // New user, send confirmation email
+        const { error } = await supabase.auth.signInWithOtp({ 
+          email: emailValue,
+          options: {
+            emailRedirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin,
+            data: {
+              is_new_user: true
+            }
+          }
+        });
+        
+        if (error) {
+          message.textContent = `Error: ${error.message}`;
+        } else {
+          showEmailValidation(emailValue);
+          message.textContent = '';
+        }
+      }
+    });
+
+    function showEmailValidation(emailValue) {
+      emailValidation.classList.remove('hidden');
+      validationEmail.textContent = emailValue;
+      otherEmailForm.classList.add('hidden');
+    }
 
     signoutBtn.addEventListener('click', async () => {
       await supabase.auth.signOut();
