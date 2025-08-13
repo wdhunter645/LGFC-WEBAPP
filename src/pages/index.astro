@@ -5,8 +5,28 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="Lou Gehrig Fan Club" description="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.">
   <section id="section1" class="max-w-5xl mx-auto p-6">
     <h2 class="text-2xl font-semibold mb-3">Vote for your favorite pic</h2>
-    <div id="vote" class="grid gap-4 md:grid-cols-2"></div>
-    <p id="vote-status" class="text-sm text-gray-600 mt-3"></p>
+    <div id="vote" class="grid gap-4 md:grid-cols-2">
+      <!-- Placeholder voting cards -->
+      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
+        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+          <div class="text-center text-gray-500">
+            <div class="text-4xl mb-2">⚾</div>
+            <div class="text-sm">Loading...</div>
+          </div>
+        </div>
+        <div class="p-3 text-center font-medium">Vote</div>
+      </div>
+      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
+        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+          <div class="text-center text-gray-500">
+            <div class="text-4xl mb-2">🏟️</div>
+            <div class="text-sm">Loading...</div>
+          </div>
+        </div>
+        <div class="p-3 text-center font-medium">Vote</div>
+      </div>
+    </div>
+    <p id="vote-status" class="text-sm text-gray-600 mt-3">Loading pictures...</p>
     <p class="text-sm mt-2"><a class="underline" href="/leaderboard">View leaderboard</a></p>
   </section>
 
