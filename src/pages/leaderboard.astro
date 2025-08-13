@@ -6,6 +6,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="max-w-5xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-4">Leaderboard</h1>
 
+    <!-- Last Week's Winner -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold mb-3">Last Week's Winner</h2>
+      <div class="border rounded overflow-hidden bg-white max-w-sm">
+        <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+          <div class="text-center text-gray-500">
+            <div class="text-4xl mb-2">🏆</div>
+            <div class="text-sm">Winner Photo</div>
+          </div>
+        </div>
+        <div class="p-3 text-center">
+          <div class="font-semibold text-gray-800">Last Week's Winner!</div>
+          <div class="text-sm text-gray-600 mt-1">Congratulations to our champion!</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Previous Round Winner -->
     <div id="previous-winner" class="mb-8 hidden">
       <h2 class="text-2xl font-semibold mb-3">Previous Round Winner</h2>
