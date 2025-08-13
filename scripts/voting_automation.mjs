@@ -27,23 +27,20 @@ async function endCurrentRound(roundId) {
     console.error('Error ending round:', error);
     return null;
   }
+  console.log(`Round ended with ${data?.length || 0} winner(s):`, data);
   return data;
 }
 
 async function getWinnerImages() {
-  // Get all completed rounds with winners
-  const { data, error } = await supabase
-    .from('voting_rounds')
-    .select('winner_image_id')
-    .eq('status', 'completed')
-    .not('winner_image_id', 'is', null);
+  // Get all winners from completed rounds using the new function
+  const { data, error } = await supabase.rpc('get_all_round_winners');
   
   if (error) {
     console.error('Error getting winner images:', error);
     return [];
   }
   
-  return data.map(row => row.winner_image_id);
+  return data || [];
 }
 
 async function getAllImages() {

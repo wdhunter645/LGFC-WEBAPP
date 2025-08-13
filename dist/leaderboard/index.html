@@ -18,7 +18,7 @@
           if (m?.is_admin) admin?.classList.remove('hidden');
         }
       })();
-    </script> <main class="min-h-screen">  <section class="max-w-5xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Leaderboard</h1> <!-- Last Week's Winner --> <div class="mb-8"> <h2 class="text-2xl font-semibold mb-3">Last Week's Winner</h2> <div class="border rounded overflow-hidden bg-white max-w-sm"> <div class="w-full h-48 bg-gray-200 flex items-center justify-center"> <div class="text-center text-gray-500"> <div class="text-4xl mb-2">🏆</div> <div class="text-sm">Winner Photo</div> </div> </div> <div class="p-3 text-center"> <div class="font-semibold text-gray-800">Last Week's Winner!</div> <div class="text-sm text-gray-600 mt-1">Congratulations to our champion!</div> </div> </div> </div> <!-- Previous Round Winner --> <div id="previous-winner" class="mb-8 hidden"> <h2 class="text-2xl font-semibold mb-3">Previous Round Winner</h2> <div id="winner-card" class="border rounded overflow-hidden bg-white max-w-sm"> <img id="winner-image" src="" alt="" class="w-full h-48 object-cover"> <div class="p-3"> <div id="winner-title" class="font-semibold"></div> <div id="winner-votes" class="text-sm text-gray-600"></div> </div> </div> </div> <!-- Current Round Status --> <div id="current-round" class="mb-8 hidden"> <h2 class="text-2xl font-semibold mb-3">Current Round</h2> <div id="round-info" class="bg-blue-50 border border-blue-200 rounded p-4"> <div id="round-number" class="font-semibold text-blue-800"></div> <div id="round-dates" class="text-sm text-blue-600"></div> <div id="round-progress" class="text-sm text-blue-600"></div> </div> </div> <h2 class="text-2xl font-semibold mt-4">Today</h2> <p id="today-status" class="text-gray-600">Loading…</p> <div id="today" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div> <h2 class="text-2xl font-semibold mt-8">Overall</h2> <p id="all-status" class="text-gray-600">Loading…</p> <div id="all" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div> </section> <script type="module">
+    </script> <main class="min-h-screen">  <section class="max-w-5xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Leaderboard</h1> <!-- Last Week's Winner --> <div class="mb-8"> <h2 class="text-2xl font-semibold mb-3">Last Week's Winner</h2> <div class="border rounded overflow-hidden bg-white max-w-sm"> <div class="w-full h-48 bg-gray-200 flex items-center justify-center"> <div class="text-center text-gray-500"> <div class="text-4xl mb-2">🏆</div> <div class="text-sm">Winner Photo</div> </div> </div> <div class="p-3 text-center"> <div class="font-semibold text-gray-800">Last Week's Winner!</div> <div class="text-sm text-gray-600 mt-1">Congratulations to our champion(s)!</div> </div> </div> </div> <!-- Previous Round Winner --> <div id="previous-winner" class="mb-8 hidden"> <h2 class="text-2xl font-semibold mb-3">Previous Round Winner</h2> <div id="winner-card" class="border rounded overflow-hidden bg-white max-w-sm"> <img id="winner-image" src="" alt="" class="w-full h-48 object-cover"> <div class="p-3"> <div id="winner-title" class="font-semibold"></div> <div id="winner-votes" class="text-sm text-gray-600"></div> </div> </div> </div> <!-- Current Round Status --> <div id="current-round" class="mb-8 hidden"> <h2 class="text-2xl font-semibold mb-3">Current Round</h2> <div id="round-info" class="bg-blue-50 border border-blue-200 rounded p-4"> <div id="round-number" class="font-semibold text-blue-800"></div> <div id="round-dates" class="text-sm text-blue-600"></div> <div id="round-progress" class="text-sm text-blue-600"></div> </div> </div> <h2 class="text-2xl font-semibold mt-4">Today</h2> <p id="today-status" class="text-gray-600">Loading…</p> <div id="today" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div> <h2 class="text-2xl font-semibold mt-8">Overall</h2> <p id="all-status" class="text-gray-600">Loading…</p> <div id="all" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"></div> </section> <script type="module">
     import { createClient } from '@supabase/supabase-js';
     const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 
@@ -114,26 +114,49 @@
         roundProgress.textContent = `${totalVotes} total votes`;
       }
       
-      // Load previous winner
+      // Load previous winners
       const { data: previousWinnerData, error: previousError } = await supabase
         .from('voting_rounds')
         .select(`
-          winner_image_id,
-          total_votes,
-          media_files!inner(id, media_url, alt_text, file_name)
+          id,
+          round_number,
+          total_votes
         `)
         .eq('status', 'completed')
-        .not('winner_image_id', 'is', null)
         .order('round_number', { ascending: false })
         .limit(1);
       
       if (!previousError && previousWinnerData?.[0]) {
-        const winner = previousWinnerData[0];
-        previousWinner.classList.remove('hidden');
-        winnerImage.src = winner.media_files.media_url || '/placeholder.svg';
-        winnerImage.alt = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
-        winnerTitle.textContent = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
-        winnerVotes.textContent = `${winner.total_votes} votes`;
+        const round = previousWinnerData[0];
+        
+        // Get winners for this round
+        const { data: winnersData, error: winnersError } = await supabase
+          .from('round_winners')
+          .select(`
+            image_id,
+            votes_received,
+            media_files!inner(id, media_url, alt_text, file_name)
+          `)
+          .eq('round_id', round.id);
+        
+        if (!winnersError && winnersData?.length > 0) {
+          previousWinner.classList.remove('hidden');
+          
+          if (winnersData.length === 1) {
+            // Single winner
+            const winner = winnersData[0];
+            winnerImage.src = winner.media_files.media_url || '/placeholder.svg';
+            winnerImage.alt = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
+            winnerTitle.textContent = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
+            winnerVotes.textContent = `${winner.votes_received} votes`;
+          } else {
+            // Multiple winners (tie)
+            winnerImage.src = '/placeholder.svg';
+            winnerImage.alt = 'Multiple Winners';
+            winnerTitle.textContent = `${winnersData.length} Winners (Tie!)`;
+            winnerVotes.textContent = `${winnersData[0].votes_received} votes each`;
+          }
+        }
       }
     }
 
