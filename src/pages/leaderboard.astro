@@ -62,6 +62,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const allEl = document.getElementById('all');
     const todayStatus = document.getElementById('today-status');
     const allStatus = document.getElementById('all-status');
+    const previousWinner = document.getElementById('previous-winner');
+    const currentRound = document.getElementById('current-round');
+    const winnerCard = document.getElementById('winner-card');
+    const winnerImage = document.getElementById('winner-image');
+    const winnerTitle = document.getElementById('winner-title');
+    const winnerVotes = document.getElementById('winner-votes');
+    const roundInfo = document.getElementById('round-info');
+    const roundNumber = document.getElementById('round-number');
+    const roundDates = document.getElementById('round-dates');
+    const roundProgress = document.getElementById('round-progress');
 
     function card(img, votes) {
       const div = document.createElement('div');
@@ -121,7 +131,50 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       allStatus.textContent = items.length ? '' : 'No votes recorded.';
     }
 
+    async function loadVotingRounds() {
+      // Load current round
+      const { data: currentRoundData, error: currentError } = await supabase.rpc('get_current_voting_round');
+      if (!currentError && currentRoundData?.[0]) {
+        const round = currentRoundData[0];
+        currentRound.classList.remove('hidden');
+        roundNumber.textContent = `Round ${round.round_number}`;
+        roundDates.textContent = `${new Date(round.start_date).toLocaleDateString()} - ${new Date(round.end_date).toLocaleDateString()}`;
+        
+        // Get round progress
+        const { data: roundImages } = await supabase
+          .from('round_images')
+          .select('votes_received')
+          .eq('round_id', round.round_id);
+        
+        const totalVotes = (roundImages || []).reduce((sum, img) => sum + img.votes_received, 0);
+        roundProgress.textContent = `${totalVotes} total votes`;
+      }
+      
+      // Load previous winner
+      const { data: previousWinnerData, error: previousError } = await supabase
+        .from('voting_rounds')
+        .select(`
+          winner_image_id,
+          total_votes,
+          media_files!inner(id, media_url, alt_text, file_name)
+        `)
+        .eq('status', 'completed')
+        .not('winner_image_id', 'is', null)
+        .order('round_number', { ascending: false })
+        .limit(1);
+      
+      if (!previousError && previousWinnerData?.[0]) {
+        const winner = previousWinnerData[0];
+        previousWinner.classList.remove('hidden');
+        winnerImage.src = winner.media_files.media_url || '/placeholder.svg';
+        winnerImage.alt = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
+        winnerTitle.textContent = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
+        winnerVotes.textContent = `${winner.total_votes} votes`;
+      }
+    }
+
     loadToday();
     loadAll();
+    loadVotingRounds();
   </script>
 </BaseLayout>

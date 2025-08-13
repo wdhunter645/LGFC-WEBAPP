@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
-    "scrape:als": "node scripts/scrape_als_events.mjs"
+    "scrape:als": "node scripts/scrape_als_events.mjs",
+    "voting:automate": "node scripts/voting_automation.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",

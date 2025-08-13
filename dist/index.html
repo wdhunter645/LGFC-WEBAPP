@@ -35,27 +35,80 @@
       if (!data?.session) { window.location.href = `/login?redirect=${encodeURIComponent('/')}`; return null; }
       return data.session;
     }
-    async function recordVote(imageId) {
+    
+    async function recordRoundVote(imageId) {
       const session = await ensureAuthOrPrompt(); if (!session) return;
-      const { error } = await supabase.from('picture_votes').insert({ image_id: imageId, user_id: session.user.id });
-      voteStatus.textContent = error ? `Vote failed: ${error.message}` : 'Thanks for voting!';
-      if (!error) loadVote();
+      const { data, error } = await supabase.rpc('record_round_vote', { image_id: imageId });
+      if (error) {
+        voteStatus.textContent = `Vote failed: ${error.message}`;
+      } else if (data) {
+        voteStatus.textContent = 'Thanks for voting!';
+        loadVote();
+      } else {
+        voteStatus.textContent = 'You have already voted in this round or image not available.';
+      }
     }
-    function renderPair([a,b]) {
+    
+    async function getCurrentRoundImages() {
+      // Get current round info
+      const { data: roundData, error: roundError } = await supabase.rpc('get_current_voting_round');
+      if (roundError || !roundData?.[0]) {
+        console.error('Error getting current round:', roundError);
+        return [];
+      }
+      
+      const round = roundData[0];
+      
+      // Get images for current round
+      const { data: imagesData, error: imagesError } = await supabase
+        .from('round_images')
+        .select(`
+          image_id,
+          votes_received,
+          media_files!inner(id, media_url, alt_text, file_name)
+        `)
+        .eq('round_id', round.round_id);
+      
+      if (imagesError) {
+        console.error('Error getting round images:', imagesError);
+        return [];
+      }
+      
+      return (imagesData || []).map(item => ({
+        id: item.image_id,
+        url: item.media_files.media_url || '/placeholder.svg',
+        alt: item.media_files.alt_text || item.media_files.file_name || 'Photo',
+        votes: item.votes_received
+      }));
+    }
+    
+    function renderRoundImages(images) {
       voteEl.innerHTML = '';
-      for (const img of [a,b]) {
+      for (const img of images) {
         const btn = document.createElement('button');
         btn.className = 'block border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600';
-        btn.innerHTML = `<img src="${img.url}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" /><div class="p-3 text-center font-medium">Vote</div>`;
-        btn.addEventListener('click', () => recordVote(img.id));
+        btn.innerHTML = `
+          <img src="${img.url}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" />
+          <div class="p-3 text-center">
+            <div class="font-medium">Vote</div>
+            <div class="text-sm text-gray-600">${img.votes} votes</div>
+          </div>
+        `;
+        btn.addEventListener('click', () => recordRoundVote(img.id));
         voteEl.appendChild(btn);
       }
     }
+    
     async function loadVote() {
-      voteStatus.textContent = 'Loading pictures…';
-      const pair = await getTwoRandomImages();
-      if (pair.length < 2) { voteStatus.textContent = 'Not enough images to vote yet.'; voteEl.innerHTML=''; return; }
-      renderPair(pair); voteStatus.textContent = '';
+      voteStatus.textContent = 'Loading current round...';
+      const images = await getCurrentRoundImages();
+      if (images.length < 2) { 
+        voteStatus.textContent = 'No active voting round or not enough images available.'; 
+        voteEl.innerHTML=''; 
+        return; 
+      }
+      renderRoundImages(images); 
+      voteStatus.textContent = '';
     }
 
     // News feed (top 5 from two sources if available)
