@@ -1,0 +1,35 @@
+name: Traffic Simulator
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Run every 5 minutes
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  simulate-traffic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Keep Alive Pinger
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          echo "🚀 Starting keep alive pinger..."
+          echo "This will keep Supabase project active"
+          echo "Pinging every 30 seconds for 4 minutes"
+          
+          # Run the keep alive pinger for 4 minutes
+          timeout 240s node lgfc_keep_alive.cjs --interval=30000
+          
+          echo "✅ Keep alive completed"
+          echo "Next run in 5 minutes..."
