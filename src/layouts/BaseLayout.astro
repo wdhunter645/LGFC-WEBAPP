@@ -76,7 +76,8 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           <a class={`hover:underline ${currentPath === '/books' ? 'font-semibold underline' : ''}`} href="/books">Books</a>
           <a class="hover:underline" href="https://www.bonfire.com/store/lou-gehrig-fan-club/" target="_blank" rel="noreferrer">Club Store</a>
           <a class="hover:underline" href="https://linktr.ee/lougehrigfanclub" target="_blank" rel="noreferrer">Contact</a>
-          <a class={`hover:underline ${currentPath.startsWith('/admin') ? 'font-semibold underline' : ''}`} href="/admin/">CMS</a>
+          <a class={`hover:underline ${currentPath === '/admin' ? 'font-semibold underline' : ''}`} href="/admin">Admin</a>
+          <a class={`hover:underline ${currentPath.startsWith('/admin/') ? 'font-semibold underline' : ''}`} href="/admin/">CMS</a>
           
           <!-- Member-only navigation (hidden by default, shown when logged in) -->
           <div id="member-nav" class={`${isDevMode ? '' : 'hidden'}`}>
