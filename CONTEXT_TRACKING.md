@@ -98,6 +98,16 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 ---
 
+## 🔐 **DATABASE SECURITY CONTEXT (RLS Implementation)**
+
+### **Row Level Security**
+- **[`RLS_IMPLEMENTATION_GUIDE.md`](RLS_IMPLEMENTATION_GUIDE.md)**
+  - **Purpose**: Complete RLS implementation for all database tables
+  - **Content**: SQL policies, implementation steps, security considerations
+  - **Status**: Current - ready for implementation
+
+---
+
 ## ⚙️ **ENVIRONMENT & CONFIGURATION CONTEXT**
 
 ### **Environment Variables**
