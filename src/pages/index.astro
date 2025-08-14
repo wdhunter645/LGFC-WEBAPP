@@ -3,111 +3,407 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout title="Lou Gehrig Fan Club" description="Honoring the legacy of Lou Gehrig while raising awareness and support for ALS research.">
-  <section id="section1" class="max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-3">Vote for your favorite pic</h2>
-    <div id="vote" class="grid gap-4 md:grid-cols-2">
-      <!-- Placeholder voting cards -->
-      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
-        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
-          <div class="text-center text-gray-500">
-            <div class="text-4xl mb-2">⚾</div>
-            <div class="text-sm">Loading...</div>
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="absolute inset-0 bg-[url('https://images.pexels.com/photos/1661950/pexels-photo-1661950.jpeg')] bg-cover bg-center opacity-10"></div>
+    <div class="relative z-10 text-center max-w-5xl mx-auto px-6">
+      <div class="mb-6">
+        <p class="text-slate-400 text-lg font-medium tracking-wider uppercase mb-4">A Digital Tribute Platform</p>
+        <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 font-serif leading-tight">
+          HONOR OUR<br>
+          <span class="text-red-500">IRON HORSE</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+          Create beautiful digital tributes to celebrate the courage, dedication, and sacrifice of Lou Gehrig and the ALS community
+        </p>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a href="/join" class="inline-flex items-center px-8 py-4 bg-red-600 text-white rounded-lg text-lg font-semibold hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+          START A TRIBUTE
+        </a>
+        <a href="/milestones" class="inline-flex items-center px-8 py-4 border-2 border-slate-600 text-white rounded-lg text-lg font-semibold hover:bg-slate-800 transition-all duration-200">
+          WALL OF HONOR
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Tributes Section -->
+  <section class="py-20 bg-slate-800">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 font-serif">
+          Highlighted Tributes
+        </h2>
+        <p class="text-xl text-slate-400 font-medium tracking-wide uppercase">
+          By Their Loved Ones
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Lou Gehrig Tribute Card -->
+        <div class="group relative bg-slate-900 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-500/20 transition-all duration-300 transform hover:-translate-y-2">
+          <div class="absolute top-4 left-4 z-10">
+            <span class="inline-flex items-center px-3 py-1 bg-yellow-500 text-slate-900 text-xs font-bold rounded-full">
+              ⭐ FEATURED
+            </span>
+          </div>
+          <div class="h-64 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+            <div class="text-center">
+              <div class="text-6xl mb-4">⚾</div>
+              <div class="text-slate-400 text-sm">Lou Gehrig</div>
+              <div class="text-white font-semibold">The Iron Horse</div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-white mb-1">LOU GEHRIG</h3>
+              <p class="text-slate-400 text-sm">Baseball Legend • ALS Warrior</p>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed mb-4">
+              "Today I consider myself the luckiest man on the face of the earth."
+            </p>
+            <a href="/milestones" class="inline-flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+              View Tribute →
+            </a>
           </div>
         </div>
-        <div class="p-3 text-center font-medium">Vote</div>
-      </div>
-      <div class="border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600 cursor-pointer">
-        <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
-          <div class="text-center text-gray-500">
-            <div class="text-4xl mb-2">🏟️</div>
-            <div class="text-sm">Loading...</div>
+        
+        <!-- ALS Community Tribute Card -->
+        <div class="group relative bg-slate-900 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-500/20 transition-all duration-300 transform hover:-translate-y-2">
+          <div class="h-64 bg-gradient-to-br from-blue-700 to-blue-800 flex items-center justify-center">
+            <div class="text-center">
+              <div class="text-6xl mb-4">🎗️</div>
+              <div class="text-blue-200 text-sm">ALS Community</div>
+              <div class="text-white font-semibold">Warriors & Families</div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-white mb-1">ALS WARRIORS</h3>
+              <p class="text-slate-400 text-sm">Courage in the Face of Challenge</p>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed mb-4">
+              Honoring those who fight ALS with the same determination Lou Gehrig showed.
+            </p>
+            <a href="/community" class="inline-flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+              Support ALS Research →
+            </a>
           </div>
         </div>
-        <div class="p-3 text-center font-medium">Vote</div>
-      </div>
-    </div>
-    <p id="vote-status" class="text-sm text-gray-600 mt-3">Loading pictures...</p>
-    <p class="text-sm mt-2"><a class="underline" href="/leaderboard">View leaderboard</a></p>
-  </section>
-
-  <section id="section2" class="max-w-5xl mx-auto p-6">
-    <div class="grid gap-6 md:grid-cols-2">
-      <div class="border rounded p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-        <h3 class="text-xl font-semibold mb-2">Join the Fan Club</h3>
-        <p class="text-gray-600 mb-3">Become part of the community honoring Lou Gehrig's legacy and supporting ALS research</p>
-        <a href="/login" class="inline-block border rounded px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors">Join Free</a>
-      </div>
-      <div class="border rounded p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-        <h3 class="text-xl font-semibold mb-2">Welcome Back</h3>
-        <p class="text-gray-600 mb-3">Sign in to access your member benefits and contribute to the community</p>
-        <a href="/login" class="inline-block border rounded px-4 py-2 hover:bg-gray-50 transition-colors">Sign In</a>
-        <div class="mt-3 pt-3 border-t">
-          <p class="text-sm text-gray-600 mb-2">Already a member?</p>
-          <a href="/members/home" class="text-sm text-blue-600 hover:underline">Go to Club Home →</a>
+        
+        <!-- Yankees Legacy Tribute Card -->
+        <div class="group relative bg-slate-900 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-500/20 transition-all duration-300 transform hover:-translate-y-2">
+          <div class="h-64 bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center">
+            <div class="text-center">
+              <div class="text-6xl mb-4">🏟️</div>
+              <div class="text-slate-400 text-sm">Yankees Legacy</div>
+              <div class="text-white font-semibold">2,130 Games</div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-white mb-1">YANKEES LEGEND</h3>
+              <p class="text-slate-400 text-sm">The Consecutive Games Record</p>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed mb-4">
+              A testament to dedication and perseverance that inspired generations.
+            </p>
+            <a href="/memorabilia" class="inline-flex items-center text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+              Explore Legacy →
+            </a>
+          </div>
         </div>
       </div>
     </div>
-    <div class="mt-6 text-center">
-      <div class="text-xl font-semibold text-blue-600">FREE MEMBERSHIP CARDS</div>
-      <p class="text-sm text-gray-600 mt-1">Get your official Lou Gehrig Fan Club membership card</p>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="py-20 bg-slate-900">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 font-serif">
+          How It Works
+        </h2>
+        <p class="text-xl text-slate-400 max-w-3xl mx-auto">
+          Create, share, and honor with just a few simple steps.
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="relative">
+          <div class="border-2 border-red-600 rounded-xl p-8 bg-slate-800/50 backdrop-blur-sm">
+            <div class="absolute -top-4 left-8">
+              <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                1
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-4 mt-4">
+              Start a<br>Tribute
+            </h3>
+            <p class="text-slate-300 leading-relaxed">
+              Begin by sharing your connection to Lou Gehrig's story, photos, and memories in a beautiful digital tribute.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="relative">
+          <div class="border-2 border-red-600 rounded-xl p-8 bg-slate-800/50 backdrop-blur-sm">
+            <div class="absolute -top-4 left-8">
+              <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                2
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-4 mt-4">
+              Share Their<br>Legacy
+            </h3>
+            <p class="text-slate-300 leading-relaxed">
+              Easily share your tribute with family, friends, and the community to inspire others and preserve history.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="relative">
+          <div class="border-2 border-red-600 rounded-xl p-8 bg-slate-800/50 backdrop-blur-sm">
+            <div class="absolute -top-4 left-8">
+              <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                3
+              </div>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-4 mt-4">
+              Honor &<br>Remember
+            </h3>
+            <p class="text-slate-300 leading-relaxed">
+              Your tribute featured on the Wall of Honor and helps preserve Lou Gehrig's legacy for future generations.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section id="section3" class="max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-3">Club News Feed</h2>
-    <p class="text-gray-600 mb-4">Top posts across Q&amp;A and Member Posts.</p>
-    <ul id="news" class="space-y-3"></ul>
-  </section>
-
-  <section id="section4" class="max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-3">The Lou Gehrig Fan Club Supports the ALS Community</h2>
-    <div class="grid gap-4 md:grid-cols-3">
-      <div class="border rounded p-4 bg-white">
-        <h3 class="font-semibold">ALS CURE PROJECT</h3>
-        <a class="underline" href="https://www.alscure.org/" target="_blank" rel="noreferrer">alscure.org</a>
-        <a class="mt-2 inline-block border rounded px-3 py-1" href="https://paybee.io/quickpay.html?handle=alscure&ppid=32#optionList" target="_blank" rel="noreferrer">Donate</a>
-        <div><a class="text-sm underline" href="https://www.alscure.org/research" target="_blank" rel="noreferrer">Research News</a></div>
-      </div>
-      <div class="border rounded p-4 bg-white">
-        <h3 class="font-semibold">I AM ALS</h3>
-        <a class="underline" href="https://www.iamals.org/" target="_blank" rel="noreferrer">iamals.org</a>
-        <a class="mt-2 inline-block border rounded px-3 py-1" href="https://www.iamals.org/give/" target="_blank" rel="noreferrer">Donate</a>
-        <div><a class="text-sm underline" href="https://www.iamals.org/action/" target="_blank" rel="noreferrer">Volunteer</a></div>
-      </div>
-      <div class="border rounded p-4 bg-white">
-        <h3 class="font-semibold">Live Like Lou</h3>
-        <a class="underline" href="https://www.livelikelou.org/" target="_blank" rel="noreferrer">livelikelou.org</a>
-        <a class="mt-2 inline-block border rounded px-3 py-1" href="https://www.livelikelou.org/donate" target="_blank" rel="noreferrer">Donate</a>
-        <div><a class="text-sm underline" href="https://www.livelikelou.org/als-families" target="_blank" rel="noreferrer">Volunteer</a></div>
+  <!-- Tribute Showcase -->
+  <section class="py-20 bg-slate-800">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 font-serif leading-tight">
+            A Tribute Page<br>
+            as Unique as<br>
+            <span class="text-red-500">Their Service</span>
+          </h2>
+          <p class="text-slate-300 text-lg leading-relaxed mb-8">
+            Every tribute on our platform comes with a dedicated, beautifully designed page — created to honor your hero in a way that feels personal and proud. These pages reflect Lou Gehrig's legacy with meaningful colors, emblems, and styling, making each tribute feel truly their own.
+          </p>
+          <p class="text-slate-400 leading-relaxed mb-8">
+            It's more than just a memory — it's a lasting digital space where their story lives on, ready to be visited, shared, and cherished by family and friends for generations to come.
+          </p>
+          <a href="/about" class="inline-flex items-center text-red-400 hover:text-red-300 font-medium transition-colors">
+            Learn More About Lou Gehrig →
+          </a>
+        </div>
+        
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Sample tribute cards -->
+          <div class="bg-slate-900 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center space-x-4 mb-4">
+              <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                LG
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">Lou Gehrig Memorial</h3>
+                <p class="text-slate-400 text-sm">Baseball • 1903-1941</p>
+              </div>
+            </div>
+            <p class="text-slate-300 text-sm">
+              The Iron Horse's incredible career and courageous battle with ALS continues to inspire...
+            </p>
+          </div>
+          
+          <div class="bg-slate-900 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center space-x-4 mb-4">
+              <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                ALS
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">ALS Community Heroes</h3>
+                <p class="text-slate-400 text-sm">Ongoing • Worldwide</p>
+              </div>
+            </div>
+            <p class="text-slate-300 text-sm">
+              Honoring the brave individuals and families fighting ALS with Lou Gehrig's spirit...
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="section5" class="max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-3">ALS Community Calendar</h2>
-    <ul id="als-events" class="space-y-3"></ul>
-    <p id="als-status" class="text-sm text-gray-600 mt-2"></p>
-  </section>
-
-  <section id="section6" class="max-w-5xl mx-auto p-6">
-    <div class="grid gap-6 md:grid-cols-2">
-      <div>
-        <h3 class="text-xl font-semibold mb-2">Q&amp;A</h3>
-        <p class="text-gray-600 mb-2">Ask questions, share answers.</p>
-        <a class="underline" href="/qa">Go to Q&amp;A</a>
+  <!-- Call to Action Section -->
+  <section class="py-20 bg-red-600">
+    <div class="max-w-5xl mx-auto px-6 text-center">
+      <div class="mb-8">
+        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 font-serif">
+          Every Hero Deserves to be<br>Remembered
+        </h2>
+        <p class="text-xl text-red-100 max-w-3xl mx-auto leading-relaxed">
+          Join thousands of families and communities honoring Lou Gehrig's legacy and supporting those who continue the fight against ALS
+        </p>
       </div>
-      <div>
-        <h3 class="text-xl font-semibold mb-2">Milestones</h3>
-        <p class="text-gray-600 mb-2">Explore the Gehrig timeline.</p>
-        <a class="underline" href="/milestones">Open Milestones</a>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/join" class="inline-flex items-center px-8 py-4 bg-white text-red-600 rounded-lg text-lg font-semibold hover:bg-slate-100 transition-all duration-200 shadow-lg">
+          CREATE A TRIBUTE
+        </a>
+        <a href="/milestones" class="inline-flex items-center px-8 py-4 border-2 border-white text-white rounded-lg text-lg font-semibold hover:bg-white hover:text-red-600 transition-all duration-200">
+          VIEW WALL OF HONOR
+        </a>
       </div>
     </div>
   </section>
 
-  <section id="section7" class="max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-3">Fan Club Events Calendar</h2>
-    <ul id="club-events" class="space-y-3"></ul>
-    <p id="club-status" class="text-sm text-gray-600 mt-2"></p>
+  <!-- Interactive Features -->
+  <section class="py-20 bg-slate-900">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <!-- Photo Voting -->
+        <div class="bg-slate-800 rounded-xl p-8">
+          <h3 class="text-2xl font-bold text-white mb-6">Community Photo Voting</h3>
+          <p class="text-slate-400 mb-6">Vote for your favorite historical photos of Lou Gehrig and help curate our digital archive.</p>
+          <div id="vote" class="grid gap-4 md:grid-cols-2 mb-6">
+            <!-- Placeholder voting cards -->
+            <div class="border-2 border-slate-600 rounded-lg overflow-hidden bg-slate-700 hover:border-red-500 cursor-pointer transition-all duration-200">
+              <div class="w-full h-32 bg-slate-600 flex items-center justify-center">
+                <div class="text-center text-slate-400">
+                  <div class="text-2xl mb-1">⚾</div>
+                  <div class="text-xs">Loading...</div>
+                </div>
+              </div>
+              <div class="p-3 text-center">
+                <button class="text-white font-medium hover:text-red-400 transition-colors">Vote</button>
+              </div>
+            </div>
+            <div class="border-2 border-slate-600 rounded-lg overflow-hidden bg-slate-700 hover:border-red-500 cursor-pointer transition-all duration-200">
+              <div class="w-full h-32 bg-slate-600 flex items-center justify-center">
+                <div class="text-center text-slate-400">
+                  <div class="text-2xl mb-1">🏟️</div>
+                  <div class="text-xs">Loading...</div>
+                </div>
+              </div>
+              <div class="p-3 text-center">
+                <button class="text-white font-medium hover:text-red-400 transition-colors">Vote</button>
+              </div>
+            </div>
+          </div>
+          <p id="vote-status" class="text-sm text-slate-500 mb-3">Loading pictures...</p>
+          <a href="/leaderboard" class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors">View leaderboard →</a>
+        </div>
+        
+        <!-- Community Features -->
+        <div class="space-y-6">
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-xl font-semibold text-white mb-3">Join the Community</h4>
+            <p class="text-slate-400 mb-4">Become part of the community honoring Lou Gehrig's legacy and supporting ALS research</p>
+            <a href="/login" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
+              Join Free
+            </a>
+          </div>
+          
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-xl font-semibold text-white mb-3">Q&A Forum</h4>
+            <p class="text-slate-400 mb-4">Ask questions, share answers, and connect with fellow Lou Gehrig enthusiasts</p>
+            <a href="/qa" class="text-red-400 hover:text-red-300 font-medium transition-colors">
+              Go to Q&A →
+            </a>
+          </div>
+          
+          <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h4 class="text-xl font-semibold text-white mb-3">Historical Timeline</h4>
+            <p class="text-slate-400 mb-4">Explore the enriched timeline of Lou Gehrig's remarkable life and career</p>
+            <a href="/milestones" class="text-red-400 hover:text-red-300 font-medium transition-colors">
+              Open Timeline →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALS Support Section -->
+  <section class="py-20 bg-slate-900">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-6">Supporting the ALS Community</h2>
+        <p class="text-xl text-slate-400 max-w-3xl mx-auto">
+          The Lou Gehrig Fan Club proudly supports organizations advancing ALS research and patient care
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-slate-800 rounded-xl p-8 border border-slate-700 hover:border-red-500 transition-all duration-200">
+          <h3 class="text-xl font-bold text-white mb-3">ALS CURE PROJECT</h3>
+          <p class="text-slate-400 text-sm mb-4">Leading research initiatives for ALS treatment and cure</p>
+          <div class="space-y-3">
+            <a class="block text-red-400 hover:text-red-300 text-sm transition-colors" href="https://www.alscure.org/" target="_blank" rel="noreferrer">alscure.org</a>
+            <a class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors" href="https://paybee.io/quickpay.html?handle=alscure&ppid=32#optionList" target="_blank" rel="noreferrer">Donate</a>
+            <a class="block text-slate-400 hover:text-white text-xs transition-colors" href="https://www.alscure.org/research" target="_blank" rel="noreferrer">Research News</a>
+          </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-xl p-8 border border-slate-700 hover:border-red-500 transition-all duration-200">
+          <h3 class="text-xl font-bold text-white mb-3">I AM ALS</h3>
+          <p class="text-slate-400 text-sm mb-4">Patient-led organization driving ALS research and advocacy</p>
+          <div class="space-y-3">
+            <a class="block text-red-400 hover:text-red-300 text-sm transition-colors" href="https://www.iamals.org/" target="_blank" rel="noreferrer">iamals.org</a>
+            <a class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors" href="https://www.iamals.org/give/" target="_blank" rel="noreferrer">Donate</a>
+            <a class="block text-slate-400 hover:text-white text-xs transition-colors" href="https://www.iamals.org/action/" target="_blank" rel="noreferrer">Volunteer</a>
+          </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-xl p-8 border border-slate-700 hover:border-red-500 transition-all duration-200">
+          <h3 class="text-xl font-bold text-white mb-3">Live Like Lou</h3>
+          <p class="text-slate-400 text-sm mb-4">Supporting ALS families with Lou Gehrig's inspiring example</p>
+          <div class="space-y-3">
+            <a class="block text-red-400 hover:text-red-300 text-sm transition-colors" href="https://www.livelikelou.org/" target="_blank" rel="noreferrer">livelikelou.org</a>
+            <a class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors" href="https://www.livelikelou.org/donate" target="_blank" rel="noreferrer">Donate</a>
+            <a class="block text-slate-400 hover:text-white text-xs transition-colors" href="https://www.livelikelou.org/als-families" target="_blank" rel="noreferrer">Volunteer</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Events and News -->
+  <section class="py-20 bg-slate-800">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <!-- Events -->
+        <div>
+          <h3 class="text-2xl font-bold text-white mb-6">Upcoming Events</h3>
+          <div class="space-y-4">
+            <ul id="club-events" class="space-y-4"></ul>
+            <p id="club-status" class="text-slate-500 text-sm"></p>
+          </div>
+        </div>
+        
+        <!-- News Feed -->
+        <div>
+          <h3 class="text-2xl font-bold text-white mb-6">Community Updates</h3>
+          <div class="space-y-4">
+            <ul id="news" class="space-y-4"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <script type="module">
@@ -178,12 +474,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       voteEl.innerHTML = '';
       for (const img of images) {
         const btn = document.createElement('button');
-        btn.className = 'block border rounded overflow-hidden bg-white hover:shadow focus:outline-blue-600';
+        btn.className = 'block border-2 border-slate-600 rounded-lg overflow-hidden bg-slate-700 hover:border-red-500 cursor-pointer transition-all duration-200';
         btn.innerHTML = `
-          <img src="${img.url}" alt="${img.alt}" class="w-full h-64 object-cover bg-gray-100" loading="lazy" />
+          <img src="${img.url}" alt="${img.alt}" class="w-full h-32 object-cover bg-slate-600" loading="lazy" />
           <div class="p-3 text-center">
-            <div class="font-medium">Vote</div>
-            <div class="text-sm text-gray-600">${img.votes} votes</div>
+            <div class="text-white font-medium hover:text-red-400 transition-colors">Vote</div>
+            <div class="text-xs text-slate-500">${img.votes} votes</div>
           </div>
         `;
         btn.addEventListener('click', () => recordRoundVote(img.id));
@@ -217,34 +513,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       items.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
       for (const it of items.slice(0,5)) {
         const li = document.createElement('li');
-        li.className = 'border rounded bg-white p-3';
-        li.innerHTML = `<div class="text-xs text-gray-500">${it.type}</div><a class="underline" href="${it.href}">${it.title}</a>`;
+        li.className = 'bg-slate-900 rounded-lg p-4 border border-slate-700';
+        li.innerHTML = `
+          <div class="text-xs text-slate-500 mb-1">${it.type}</div>
+          <a class="text-white hover:text-red-400 transition-colors font-medium" href="${it.href}">${it.title}</a>
+        `;
         newsEl.appendChild(li);
       }
-    }
-
-    // ALS Community Calendar (non-club)
-    const alsList = document.getElementById('als-events');
-    const alsStatus = document.getElementById('als-status');
-    async function loadAlsEvents() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id,title,start_at,location,link_url,is_club_event,source')
-        .eq('is_club_event', false)
-        .order('start_at', { ascending: true })
-        .limit(20);
-      if (error) { alsStatus.textContent = `Error: ${error.message}`; return; }
-      const upcoming = (data||[]).filter(e=> new Date(e.start_at) >= new Date());
-      const next30 = upcoming.filter(e=> (new Date(e.start_at)-new Date())/(1000*60*60*24) <= 30);
-      const list = (next30.length? next30: upcoming).slice(0,10);
-      alsList.innerHTML = '';
-      for (const e of list) {
-        const li = document.createElement('li');
-        li.className = 'border rounded bg-white p-3';
-        li.innerHTML = `<div class="font-semibold">${e.title}</div><div class="text-sm text-gray-600">${new Date(e.start_at).toLocaleString()}${e.location? ' • '+e.location:''}</div>${e.link_url? `<a class=\"underline\" href=\"${e.link_url}\" target=\"_blank\" rel=\"noreferrer\">Details</a>`:''}`;
-        alsList.appendChild(li);
-      }
-      alsStatus.textContent = list.length? '': 'No upcoming events found.';
     }
 
     // Fan Club Events (club-only)
@@ -261,8 +536,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       clubList.innerHTML = '';
       for (const e of (data||[])) {
         const li = document.createElement('li');
-        li.className = 'border rounded bg-white p-3';
-        li.innerHTML = `<div class="font-semibold">${e.title}</div><div class="text-sm text-gray-600">${new Date(e.start_at).toLocaleString()}${e.location? ' • '+e.location:''}</div>${e.link_url? `<a class=\"underline\" href=\"${e.link_url}\" target=\"_blank\" rel=\"noreferrer\">Details</a>`:''}`;
+        li.className = 'bg-slate-900 rounded-lg p-4 border border-slate-700';
+        li.innerHTML = `
+          <div class="text-white font-semibold mb-1">${e.title}</div>
+          <div class="text-slate-400 text-sm mb-2">${new Date(e.start_at).toLocaleString()}${e.location? ' • '+e.location:''}</div>
+          ${e.link_url? `<a class="text-red-400 hover:text-red-300 text-sm transition-colors" href="${e.link_url}" target="_blank" rel="noreferrer">Details →</a>`:''}
+        `;
         clubList.appendChild(li);
       }
       clubStatus.textContent = (data||[]).length? '': 'No club events scheduled.';
@@ -270,7 +549,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     loadVote();
     loadNews();
-    loadAlsEvents();
     loadClubEvents();
   </script>
 </BaseLayout>
