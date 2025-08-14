@@ -2,25 +2,57 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('=== Search Cron Diagnostic Test ===');
+console.log('=== Search Cron Diagnostic Test (JWT-Only) ===');
 console.log('Time:', new Date().toISOString());
 
 // Check environment variables
 console.log('\n1. Environment Variables:');
 console.log('SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
-console.log('SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
+console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing required environment variables');
+if (!SUPABASE_URL) {
+  console.error('❌ Missing SUPABASE_URL environment variable');
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// JWT client - still needs anon key for library initialization
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || 'jwt-only-placeholder-key', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+});
+
+async function authenticateWithJWT() {
+  console.log('\n2. Testing JWT Authentication:');
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+    
+    if (authError) {
+      console.error('❌ JWT authentication failed:', authError.message);
+      return false;
+    }
+    
+    if (authData.user) {
+      console.log('✅ JWT authentication successful!');
+      console.log('   User ID:', authData.user.id);
+      console.log('   Session:', authData.session ? 'Active' : 'None');
+      return true;
+    } else {
+      console.log('⚠️ JWT authentication succeeded but no user data');
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ JWT authentication error:', err.message);
+    return false;
+  }
+}
 
 async function testConnection() {
-  console.log('\n2. Testing Supabase Connection:');
+  console.log('\n3. Testing Supabase Connection:');
   try {
     const { data, error } = await supabase.from('search_state').select('*').limit(1);
     if (error) {
@@ -37,7 +69,7 @@ async function testConnection() {
 }
 
 async function testTables() {
-  console.log('\n3. Testing Required Tables:');
+  console.log('\n4. Testing Required Tables:');
   
   const tables = ['search_state', 'content_items', 'media_files'];
   
@@ -56,7 +88,7 @@ async function testTables() {
 }
 
 async function testSearchState() {
-  console.log('\n4. Testing Search State:');
+  console.log('\n5. Testing Search State:');
   try {
     const { data: stateRows } = await supabase.from('search_state').select('last_run_at').eq('id', 1).limit(1);
     console.log('Search state query result:', stateRows);
@@ -79,6 +111,12 @@ async function testSearchState() {
 
 async function main() {
   console.log('Starting diagnostic tests...\n');
+  
+  const authOk = await authenticateWithJWT();
+  if (!authOk) {
+    console.log('\n❌ Cannot proceed - JWT authentication failed');
+    process.exit(1);
+  }
   
   const connectionOk = await testConnection();
   if (!connectionOk) {

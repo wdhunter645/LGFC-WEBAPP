@@ -3,12 +3,21 @@ import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL) {
+  console.error('Missing SUPABASE_URL');
   process.exit(1);
 }
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// JWT client - still needs anon key for library initialization
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || 'jwt-only-placeholder-key', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+});
 
 const query = process.argv[2] || 'Lou Gehrig';
 const maxResults = Math.max(1, Math.min(Number(process.argv[3]) || 50, 100));
@@ -21,7 +30,24 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+async function authenticateWithJWT() {
+  console.log('🔐 Authenticating with JWT...');
+  const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+  
+  if (authError) {
+    console.error('❌ JWT authentication failed:', authError.message);
+    process.exit(1);
+  }
+  
+  console.log('✅ JWT authentication successful');
+  console.log('   User ID:', authData.user.id);
+  return authData.user;
+}
+
 async function main() {
+  // First authenticate with JWT
+  await authenticateWithJWT();
+  
   const { data: stateRows } = await supabase.from('search_state').select('last_run_at').eq('id', 1).limit(1);
   const lastRunAt = stateRows && stateRows[0]?.last_run_at ? new Date(stateRows[0].last_run_at) : undefined;
 
