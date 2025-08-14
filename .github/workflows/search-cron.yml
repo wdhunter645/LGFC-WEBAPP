@@ -17,6 +17,10 @@ jobs:
           cache: 'npm'
       - name: Install deps
         run: npm ci
+      - name: Debug environment
+        env:
+          SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
+        run: node scripts/github_actions_debug.mjs
       - name: Check database migrations
         env:
           SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
