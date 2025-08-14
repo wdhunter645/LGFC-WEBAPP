@@ -18,13 +18,18 @@ jobs:
       - name: Install deps
         run: npm ci
       - name: Check database migrations
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node scripts/check_migrations.mjs
         
       - name: Run diagnostic test
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node scripts/test_ingest.mjs
         
       - name: Run ingestion (50 max)
         env:
           RSS_FEEDS: ${{ secrets.RSS_FEEDS }}
           NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node scripts/ingest.mjs "Lou Gehrig" 50

@@ -3,9 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // JWT uses internal Supabase server variables - no need for external env vars
 // The client will automatically connect using internal configuration
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'jwt-only-placeholder-key';
 const supabase = createClient(
   'https://vkwhrbjkdznncjkzkiuo.supabase.co', // Direct URL since no env var needed
-  'jwt-only-placeholder-key', // Placeholder since JWT handles auth internally
+  supabaseAnonKey, // Use environment variable or fallback to placeholder
   {
     auth: {
       autoRefreshToken: true,
