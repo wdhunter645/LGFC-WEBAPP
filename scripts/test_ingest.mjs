@@ -1,33 +1,25 @@
 #!/usr/bin/env node
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-console.log('=== Search Cron Diagnostic Test (JWT-Only) ===');
+console.log('=== Search Cron Diagnostic Test (JWT Internal Variables) ===');
 console.log('Time:', new Date().toISOString());
 
-// Check environment variables
-console.log('\n1. Environment Variables:');
-console.log('SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
-console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
-
-if (!SUPABASE_URL) {
-  console.error('❌ Missing SUPABASE_URL environment variable');
-  process.exit(1);
-}
-
-// JWT client - still needs anon key for library initialization
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || 'jwt-only-placeholder-key', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: false,
-    detectSessionInUrl: false
+// JWT uses internal Supabase server variables - no need for external env vars
+// The client will automatically connect using internal configuration
+const supabase = createClient(
+  'https://vkwhrbjkdznncjkzkiuo.supabase.co', // Direct URL since no env var needed
+  'jwt-only-placeholder-key', // Placeholder since JWT handles auth internally
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: false,
+      detectSessionInUrl: false
+    }
   }
-});
+);
 
 async function authenticateWithJWT() {
-  console.log('\n2. Testing JWT Authentication:');
+  console.log('\n1. Testing JWT Authentication (Internal Variables):');
   try {
     const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
     
@@ -52,7 +44,7 @@ async function authenticateWithJWT() {
 }
 
 async function testConnection() {
-  console.log('\n3. Testing Supabase Connection:');
+  console.log('\n2. Testing Supabase Connection:');
   try {
     const { data, error } = await supabase.from('search_state').select('*').limit(1);
     if (error) {
@@ -69,7 +61,7 @@ async function testConnection() {
 }
 
 async function testTables() {
-  console.log('\n4. Testing Required Tables:');
+  console.log('\n3. Testing Required Tables:');
   
   const tables = ['search_state', 'content_items', 'media_files'];
   
@@ -88,7 +80,7 @@ async function testTables() {
 }
 
 async function testSearchState() {
-  console.log('\n5. Testing Search State:');
+  console.log('\n4. Testing Search State:');
   try {
     const { data: stateRows } = await supabase.from('search_state').select('last_run_at').eq('id', 1).limit(1);
     console.log('Search state query result:', stateRows);
