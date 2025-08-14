@@ -2,19 +2,23 @@
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// JWT uses internal Supabase server variables - no need for external env vars
-// The client will automatically connect using internal configuration
-const supabase = createClient(
-  'https://vkwhrbjkdznncjkzkiuo.supabase.co', // Direct URL since no env var needed
-  'jwt-only-placeholder-key', // Placeholder since JWT handles auth internally
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: false,
-      detectSessionInUrl: false
-    }
+// JWT approach: Anon key for connection, JWT for authentication
+const SUPABASE_URL = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_ANON_KEY) {
+  console.error('❌ Missing SUPABASE_ANON_KEY environment variable');
+  console.log('Note: Anon key is needed for initial API connection, JWT handles authentication internally');
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false,
+    detectSessionInUrl: false
   }
-);
+});
 
 const query = process.argv[2] || 'Lou Gehrig';
 const maxResults = Math.max(1, Math.min(Number(process.argv[3]) || 50, 100));

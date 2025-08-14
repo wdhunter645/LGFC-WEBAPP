@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 import { createClient } from '@supabase/supabase-js';
 
-// JWT uses internal Supabase server variables - no need for external env vars
-// The client will automatically connect using internal configuration
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'jwt-only-placeholder-key';
-const supabase = createClient(
-  'https://vkwhrbjkdznncjkzkiuo.supabase.co', // Direct URL since no env var needed
-  supabaseAnonKey, // Use environment variable or fallback to placeholder
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: false,
-      detectSessionInUrl: false
-    }
+// JWT approach: Anon key for connection, JWT for authentication
+const SUPABASE_URL = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_ANON_KEY) {
+  console.error('❌ Missing SUPABASE_ANON_KEY environment variable');
+  console.log('Note: Anon key is needed for initial API connection, JWT handles authentication internally');
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false,
+    detectSessionInUrl: false
   }
-);
+});
 
 async function checkMigrations() {
   console.log('=== Database Migration Check (JWT Internal Variables) ===');
