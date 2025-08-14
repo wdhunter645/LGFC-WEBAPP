@@ -20,16 +20,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run JWT-Only Traffic Simulator
+      - name: Run Pure JWT Traffic Simulator
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
-          echo "🚀 Starting JWT-only traffic simulator..."
-          echo "This will keep Supabase project active with JWT-only auth"
+          echo "🚀 Starting pure JWT traffic simulator..."
+          echo "This will keep Supabase project active with pure JWT mode"
           echo "Running for 4 minutes with 10 users"
           
-          # Run the JWT-only traffic simulator for 4 minutes
-          timeout 240s node lgfc_jwt_only_traffic_simulator.cjs --interval=30000 --users=10
+          # Run the pure JWT traffic simulator for 4 minutes
+          timeout 240s node lgfc_pure_jwt_traffic_simulator.cjs --interval=30000 --users=10
           
-          echo "✅ JWT-only traffic simulation completed"
+          echo "✅ Pure JWT traffic simulation completed"
           echo "Next run in 5 minutes..."
