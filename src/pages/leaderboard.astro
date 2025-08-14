@@ -55,8 +55,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </section>
 
   <script type="module">
-    import { createClient } from '@supabase/supabase-js';
-    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+    import { createClient } from '../lib/supabase-client.js';
+    const supabase = createClient();
 
     const todayEl = document.getElementById('today');
     const allEl = document.getElementById('all');

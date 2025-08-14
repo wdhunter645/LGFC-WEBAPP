@@ -1,9 +1,7 @@
 <!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Archive • Library (Books) | Lou Gehrig Fan Club</title><meta name="description" content="Curated books about or featuring Lou Gehrig."><meta property="og:title" content="Archive • Library (Books) | Lou Gehrig Fan Club"><meta property="og:description" content="Curated books about or featuring Lou Gehrig."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Archive • Library (Books) | Lou Gehrig Fan Club"><meta name="twitter:description" content="Curated books about or featuring Lou Gehrig."><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/_astro/about.BExmIo-j.css">
 <link rel="stylesheet" href="/_astro/about.CQw2zGwN.css"></head> <body class="font-sans text-white bg-slate-900 antialiased"> <script type="module">
-        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        import { createClient } from '../lib/supabase-client.js';
+        const supabase = createClient();
         (async () => {
           const { data } = await supabase.auth.getSession();
           if (!data?.session) {
@@ -27,10 +25,8 @@
       </script>  <header class="relative z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50"> <div class="max-w-7xl mx-auto px-6 py-4"> <div class="flex items-center justify-between"> <a href="/" class="flex items-center space-x-3"> <div class="flex items-center space-x-2"> <span class="text-red-500 font-bold text-lg">in</span> <div class="flex space-x-1"> <span class="text-red-500 text-xs">★</span> <span class="text-red-500 text-xs">★</span> <span class="text-red-500 text-xs">★</span> <span class="text-red-500 text-xs">★</span> <span class="text-red-500 text-xs">★</span> </div> </div> <span class="text-xl font-semibold text-white tracking-wide">HONOR of</span> </a> <nav class="hidden lg:flex items-center space-x-8"> <a class="text-sm font-medium transition-colors hover:text-red-400 text-slate-300" href="/">HOME</a> <a class="text-sm font-medium transition-colors hover:text-red-400 text-slate-300" href="/about">ABOUT LOU</a> <a class="text-sm font-medium transition-colors hover:text-red-400 text-slate-300" href="/milestones">MILESTONES</a> <a class="text-sm font-medium transition-colors hover:text-red-400 text-slate-300" href="/memorabilia">MEMORABILIA</a> <a class="text-sm font-medium transition-colors hover:text-red-400 text-slate-300" href="/events">EVENTS</a> <a class="text-sm font-medium text-slate-300 hover:text-red-400 transition-colors" href="/community">ALS SUPPORT</a> </nav> <div class="flex items-center space-x-4"> <form action="/search" method="get" class="hidden md:flex items-center"> <input name="q" placeholder="Search..." class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"> </form> <a href="/login" class="inline-flex items-center px-4 py-2 border border-slate-600 rounded-lg text-sm font-medium text-white hover:bg-slate-800 transition-colors">
 SIGN IN
 </a> <a class="hover:underline  hidden" id="nav-admin" href="/admin">Admin</a> <a class="hover:underline hidden" id="nav-club-home" href="/members/home">Club Home</a> </div> </div> </div> </header> <script type="module">
-      import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      import { createClient } from '../lib/supabase-client.js';
+      const supabase = createClient();
       (async () => {
         const { data } = await supabase.auth.getSession();
         const club = document.getElementById('nav-club-home');
@@ -47,8 +43,8 @@ SIGN IN
         }
       })();
     </script> <main class="min-h-screen">  <section class="max-w-4xl mx-auto p-6"> <h1 class="text-3xl font-bold mb-4">Library (Books)</h1> <form id="search-form" class="flex gap-2"> <input id="q" class="flex-1 border rounded px-3 py-2" placeholder="Search title, author, or keywords…"> <button class="border rounded px-4 py-2 bg-blue-600 text-white">Search</button> </form> <p id="status" class="text-gray-600 mt-4">Loading…</p> <ul id="list" class="space-y-4 mt-4"></ul> </section> <script type="module">
-    import { createClient } from '@supabase/supabase-js';
-    const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+    import { createClient } from '../lib/supabase-client.js';
+    const supabase = createClient();
 
     const q = document.getElementById('q');
     const form = document.getElementById('search-form');
