@@ -1,0 +1,74 @@
+name: Traffic Simulator (Monitored)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Run every 5 minutes
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  simulate-traffic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Create logs directory
+        run: mkdir -p logs
+      
+      - name: Run Enhanced JWT Traffic Simulator with Monitoring
+        run: |
+          echo "🚀 Starting enhanced JWT traffic simulator with monitoring..."
+          echo "This will keep Supabase project active with enhanced JWT mode"
+          echo "Running for 4 minutes with 15 users (URL pinging + API calls)"
+          echo "Monitoring for failures and restarting if needed..."
+          
+          # Function to check if simulator is healthy
+          check_health() {
+            if pgrep -f "lgfc_enhanced_jwt_traffic_simulator.cjs" > /dev/null; then
+              echo "✅ Traffic simulator is running"
+              return 0
+            else
+              echo "❌ Traffic simulator is not running"
+              return 1
+            fi
+          }
+          
+          # Start the simulator
+          echo "Starting traffic simulator..."
+          timeout 240s node lgfc_enhanced_jwt_traffic_simulator.cjs --interval=30000 --users=15 &
+          SIMULATOR_PID=$!
+          
+          # Monitor the process
+          for i in {1..48}; do  # Check every 5 seconds for 4 minutes
+            if ! kill -0 $SIMULATOR_PID 2>/dev/null; then
+              echo "⚠️  Traffic simulator stopped unexpectedly, restarting..."
+              timeout 240s node lgfc_enhanced_jwt_traffic_simulator.cjs --interval=30000 --users=15 &
+              SIMULATOR_PID=$!
+            fi
+            
+            sleep 5
+          done
+          
+          # Clean up
+          if kill -0 $SIMULATOR_PID 2>/dev/null; then
+            kill $SIMULATOR_PID
+          fi
+          
+          echo "✅ Enhanced JWT traffic simulation completed"
+          echo "Next run in 5 minutes..."
+      
+      - name: Upload logs (if any)
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: traffic-simulator-logs
+          path: logs/
+          retention-days: 7
