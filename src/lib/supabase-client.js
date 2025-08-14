@@ -1,32 +1,46 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
   
   if (!supabaseUrl) {
     throw new Error('Missing SUPABASE_URL environment variable');
   }
   
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  
   return createBrowserClient(
     supabaseUrl,
-    // Use empty string as fallback - JWT authentication will handle auth
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+    supabaseAnonKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    }
   )
 }
 
 // Server-side client for use in API routes or server components
 export function createServerClient(cookies) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
   
   if (!supabaseUrl) {
     throw new Error('Missing SUPABASE_URL environment variable');
   }
   
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  
   return createServerClient(
     supabaseUrl,
-    // Use empty string as fallback - JWT authentication will handle auth
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+    supabaseAnonKey,
     {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
       cookies: {
         getAll() {
           return cookies.getAll()
@@ -49,16 +63,17 @@ export function createServerClient(cookies) {
 
 // JWT-only client that doesn't require anon key for authentication
 export function createJWTClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
   
   if (!supabaseUrl) {
     throw new Error('Missing SUPABASE_URL environment variable');
   }
   
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  
   return createBrowserClient(
     supabaseUrl,
-    // JWT-only mode - using minimal placeholder key
-    'jwt-only-placeholder-key',
+    supabaseAnonKey,
     {
       auth: {
         autoRefreshToken: true,
