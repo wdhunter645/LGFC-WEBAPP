@@ -2,17 +2,11 @@
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// JWT approach: Anon key for connection, JWT for authentication
+// JWT approach: Public API key for connection, JWT for authentication
 const SUPABASE_URL = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 
-if (!SUPABASE_ANON_KEY) {
-  console.error('❌ Missing SUPABASE_ANON_KEY environment variable');
-  console.log('Note: Anon key is needed for initial API connection, JWT handles authentication internally');
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, {
   auth: {
     autoRefreshToken: true,
     persistSession: false,
