@@ -24,8 +24,9 @@ const config = {
   variancePercent: 0.4
 };
 
-// Direct URL - no environment variables needed since JWT uses internal server variables
+// Direct URL with public API key for JWT traffic simulation
 const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+const supabaseApiKey = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 
 // Vary user agents to avoid detection
 const userAgents = [
@@ -186,6 +187,8 @@ class EnhancedJWTTrafficSimulator {
           'User-Agent': userAgent,
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'apikey': supabaseApiKey,
+          'Authorization': `Bearer ${supabaseApiKey}`,
           'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br',
           'Connection': 'keep-alive',
