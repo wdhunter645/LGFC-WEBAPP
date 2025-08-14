@@ -20,16 +20,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run Keep Alive Pinger
+      - name: Run JWT Traffic Simulator
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "🚀 Starting keep alive pinger..."
-          echo "This will keep Supabase project active"
-          echo "Pinging every 30 seconds for 4 minutes"
+          echo "🚀 Starting JWT traffic simulator..."
+          echo "This will keep Supabase project active with JWT auth"
+          echo "Running for 4 minutes with 10 users"
           
-          # Run the keep alive pinger for 4 minutes
-          timeout 240s node lgfc_keep_alive.cjs --interval=30000
+          # Run the JWT traffic simulator for 4 minutes
+          timeout 240s node lgfc_jwt_traffic_simulator.cjs --interval=30000 --users=10
           
-          echo "✅ Keep alive completed"
+          echo "✅ JWT traffic simulation completed"
           echo "Next run in 5 minutes..."
