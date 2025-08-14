@@ -23,13 +23,13 @@ const config = {
   variancePercent: 0.4
 };
 
-// Environment variables
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+// Direct URL - no environment variables needed since JWT uses internal server variables
+const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
 
-if (!supabaseUrl) {
-  console.error('❌ Missing SUPABASE_URL environment variable');
-  process.exit(1);
-}
+console.log('🚀 Pure JWT Traffic Simulator Starting...');
+console.log('📡 Target URL:', supabaseUrl);
+console.log('⏱️  Interval:', config.interval, 'ms');
+console.log('👥 Max Users:', config.maxConcurrentUsers);
 
 // Pure JWT Traffic Simulator Class
 class PureJWTTrafficSimulator {
