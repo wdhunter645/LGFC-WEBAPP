@@ -107,8 +107,7 @@ class JWTOnlyTrafficSimulator {
         method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'apikey': process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+          'Content-Type': 'application/json'
         }
       };
 

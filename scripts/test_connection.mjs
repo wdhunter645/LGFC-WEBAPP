@@ -3,20 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
 console.log('=== Supabase JWT Connection Test ===');
 console.log('Time:', new Date().toISOString());
 console.log('SUPABASE_URL:', SUPABASE_URL);
-console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 20)}...` : 'NOT SET');
+console.log('JWT-Only Mode: No anon key required');
 
 if (!SUPABASE_URL) {
   console.error('❌ Missing SUPABASE_URL environment variable');
   process.exit(1);
 }
 
-// Create JWT-compatible client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
+// Create JWT-only client (using minimal placeholder key)
+const supabase = createClient(SUPABASE_URL, 'jwt-only-placeholder-key', {
   auth: {
     autoRefreshToken: true,
     persistSession: false,
@@ -89,12 +87,11 @@ async function testHealthCheck() {
   console.log('\n3. Testing health check...');
   
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY || '',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY || ''}`
-      }
-    });
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     
     console.log('   Status:', response.status);
     console.log('   Status text:', response.statusText);

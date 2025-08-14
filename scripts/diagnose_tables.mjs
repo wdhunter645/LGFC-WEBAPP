@@ -2,20 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://vkwhrbjkdznncjkzkiuo.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-
 console.log('=== Database Table JWT Diagnostic ===');
 console.log('Time:', new Date().toISOString());
 console.log('SUPABASE_URL:', SUPABASE_URL);
-console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 20)}...` : 'NOT SET');
+console.log('JWT-Only Mode: No anon key required');
 
 if (!SUPABASE_URL) {
   console.error('❌ Missing SUPABASE_URL environment variable');
   process.exit(1);
 }
 
-// Create JWT-compatible client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Create JWT-only client (using minimal placeholder key)
+const supabase = createClient(SUPABASE_URL, 'jwt-only-placeholder-key', {
   auth: {
     autoRefreshToken: true,
     persistSession: false,
