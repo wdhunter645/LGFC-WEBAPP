@@ -22,9 +22,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const statusEl = document.getElementById('status');
     const resultsEl = document.getElementById('results');
 
-    // Initialize Supabase client with new JWT approach
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+    // Initialize Supabase client with direct URL and public API key - same as backend scripts
+    const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+    const supabaseAnonKey = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
