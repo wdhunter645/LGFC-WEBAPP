@@ -15,7 +15,6 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",
     "@astrojs/tailwind": "^6.0.2",
-    "@google/gemini-cli": "^0.1.18",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.43.2",
     "@xmldom/xmldom": "^0.8.10",

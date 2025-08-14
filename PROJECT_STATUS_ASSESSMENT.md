@@ -21,7 +21,7 @@
 - ✅ **Netlify integration**: Connected to GitHub for deployment
 - ✅ **Supabase backend**: Fully configured with JWT authentication
 - ✅ **Backblaze B2**: Ready for media file storage
-- ✅ **Gemini CLI**: Integrated with GitHub Codespaces
+- ✅ **Gemini CLI**: Integrated with GitHub Codespaces (removed as not needed)
 
 ### **✅ 1.3 Data Modeling & Schema Design - COMPLETED**
 - ✅ **Database schema**: Comprehensive Supabase schema implemented

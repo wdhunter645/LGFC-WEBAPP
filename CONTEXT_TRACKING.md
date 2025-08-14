@@ -106,6 +106,12 @@ _Last updated: 2025-01-27 (America/New_York)_
   - **Content**: JWT internal variables, environment cleanup
   - **Status**: Current - decision implemented
 
+### **Tool Integration & Removal**
+- **[`GEMINI_CLI_INTEGRATION.md`](GEMINI_CLI_INTEGRATION.md)**
+  - **Purpose**: Documentation of Gemini CLI integration and removal
+  - **Content**: Administrative task automation, GitHub Actions workflow, removal process
+  - **Status**: Historical - removed as not needed (uninstalled 2025-01-27)
+
 ---
 
 ## 🌿 **GIT BRANCH CONTEXT (Development History)**
