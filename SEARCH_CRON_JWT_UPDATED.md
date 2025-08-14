@@ -3,7 +3,7 @@
 ## ✅ **SEARCH-CRON UPDATED FOR JWT-ONLY AUTHENTICATION**
 
 ### **Key Insight:**
-You were absolutely right! The new JWT approach still requires the anon key for library initialization, but we no longer need service role keys. The authentication is handled by JWT, not by the service role key.
+You were absolutely right! JWT uses the anon key to create connections to the Supabase API, so apps only need the API key (anon key) now. The anon key establishes the connection, then JWT handles the actual authentication and session management.
 
 ---
 
@@ -11,7 +11,7 @@ You were absolutely right! The new JWT approach still requires the anon key for 
 
 ### **What Changed:**
 - ❌ **Removed**: `SUPABASE_SERVICE_ROLE_KEY` requirement
-- ✅ **Kept**: `SUPABASE_ANON_KEY` for library initialization
+- ✅ **Kept**: `SUPABASE_ANON_KEY` for API connection setup
 - ✅ **Added**: JWT authentication with `signInAnonymously()`
 
 ### **Updated Scripts:**
@@ -19,7 +19,7 @@ You were absolutely right! The new JWT approach still requires the anon key for 
 // OLD: Service role key approach
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// NEW: JWT approach with anon key
+// NEW: JWT approach - anon key for connection, JWT for auth
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
