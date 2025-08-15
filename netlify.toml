@@ -32,7 +32,7 @@
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https: data:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
-# Avoid stale HTML (homepage and other pages) by disabling cache for HTML
+# Avoid stale HTML (homepage and other pages)
 [[headers]]
   for = "/"
   [headers.values]
@@ -40,5 +40,11 @@
 
 [[headers]]
   for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+# Force-refresh Astro built assets (CSS/JS) to avoid mixed old/new HTML/CSS
+[[headers]]
+  for = "/_astro/*"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
