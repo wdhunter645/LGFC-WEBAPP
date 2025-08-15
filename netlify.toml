@@ -31,3 +31,14 @@
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https: data:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+# Avoid stale HTML (homepage and other pages) by disabling cache for HTML
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
