@@ -87,6 +87,8 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
             <a class={`text-sm font-medium transition-colors hover:text-red-400 ${currentPath === '/memorabilia' ? 'text-red-400' : 'text-slate-300'}`} href="/memorabilia">MEMORABILIA</a>
             <a class={`text-sm font-medium transition-colors hover:text-red-400 ${currentPath === '/events' ? 'text-red-400' : 'text-slate-300'}`} href="/events">EVENTS</a>
             <a class="text-sm font-medium text-slate-300 hover:text-red-400 transition-colors" href="/community">ALS SUPPORT</a>
+            <a class="text-sm font-medium text-slate-300 hover:text-red-400 transition-colors" href="/news">NEWS</a>
+            <a class="text-sm font-medium text-slate-300 hover:text-red-400 transition-colors" href="/qa">Q&A</a>
           </nav>
           
           <div class="flex items-center space-x-4">
@@ -182,23 +184,7 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           </div>
         </div>
         
-        <div class="border-t border-slate-700 mt-12 pt-8">
-          <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div class="text-center md:text-left">
-              <p class="text-slate-400 text-sm">&copy; {new Date().getFullYear()} Lou Gehrig Fan Club. Made with ❤️ for our heroes.</p>
-            </div>
-            <div class="flex items-center space-x-6">
-              <a href="/privacy" class="text-slate-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
-              <a href="/terms" class="text-slate-400 hover:text-white text-sm transition-colors">Terms & Conditions</a>
-            </div>
-          </div>
-          <div class="text-center mt-6">
-            <p class="text-slate-500 italic font-serif text-lg">
-              "Today I consider myself the luckiest man on the face of the earth."
-            </p>
-            <p class="text-slate-600 text-sm mt-1">— Lou Gehrig, July 4, 1939</p>
-          </div>
-        </div>
+
       </div>
     </footer>
   </body>
