@@ -5,7 +5,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="The Lou Gehrig Fan Club" description="Honoring the Iron Horse legacy and supporting the ALS community.">
   <section class="relative min-h-screen bg-white text-slate-900">
     <!-- Hero -->
-    <div class="bg-white text-slate-900 py-16 px-6 border-b border-slate-200">
+    <div class="relative bg-white text-slate-900 py-16 px-6 border-b border-slate-200">
+      <a href="/members/home" class="absolute top-4 right-4 inline-flex items-center px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-900 hover:bg-slate-100 transition-colors">Club Home</a>
       <div class="max-w-6xl mx-auto text-center">
         <h1 class="text-5xl font-bold mb-4">The Lou Gehrig Fan Club</h1>
         <p class="text-xl opacity-90">Honoring the Iron Horse Legacy • Supporting the ALS Community</p>
@@ -46,13 +47,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </div>
     </div>
 
-    <!-- Join / Login / Club Home quick link -->
+    <!-- Join / Login -->
     <div class="py-12 px-6 bg-white">
-      <div class="max-w-3xl mx-auto text-center">
+      <div class="max-w-2xl mx-auto text-center">
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <a class="btn-primary text-lg px-8 py-6" href="/join">Join the Club</a>
           <a class="btn-secondary !text-slate-900 text-lg px-8 py-6" href="/login">Members Login</a>
-          <a class="btn-secondary text-lg px-8 py-6" href="/members/home">Club Home</a>
         </div>
       </div>
     </div>
