@@ -1,9 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  // Use direct URL and public API key - same as backend scripts
-  const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-  const supabaseAnonKey = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
   
   return createBrowserClient(
     supabaseUrl,
@@ -20,9 +19,8 @@ export function createClient() {
 
 // Server-side client for use in API routes or server components
 export function createServerClient(cookies) {
-  // Use direct URL and public API key - same as backend scripts
-  const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-  const supabaseAnonKey = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
   
   return createServerClient(
     supabaseUrl,
@@ -55,9 +53,8 @@ export function createServerClient(cookies) {
 
 // JWT-only client that doesn't require anon key for authentication
 export function createJWTClient() {
-  // Use direct URL and public API key - same as backend scripts
-  const supabaseUrl = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-  const supabaseAnonKey = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
   
   return createBrowserClient(
     supabaseUrl,
