@@ -25,9 +25,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
               <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-lg">The Iron Horse at Bat</h3>
-                <a href="/photos" class="btn-secondary">Vote</a>
+                <a href="/leaderboard" class="btn-secondary">Vote</a>
               </div>
               <p class="text-slate-600 mt-2">Classic batting stance, 1932</p>
+              <div class="mt-2"><a href="/leaderboard" class="text-sm text-blue-700 hover:underline">Go to leaderboard →</a></div>
             </div>
           </div>
 
@@ -38,7 +39,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
               <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-lg">Farewell Speech</h3>
-                <a href="/photos" class="btn-secondary">Vote</a>
+                <a href="/leaderboard" class="btn-secondary">Vote</a>
               </div>
               <p class="text-slate-600 mt-2">July 4, 1939 - "Luckiest man"</p>
             </div>
@@ -93,23 +94,35 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <!-- ALS Community Support -->
     <div class="py-16 px-6 bg-slate-50">
       <div class="max-w-6xl mx-auto">
-        <h2 class="text-3xl font-bold text-center mb-4">The Lou Gehrig Fan Club Supports the ALS Community</h2>
+        <h2 class="text-3xl font-bold text-center mb-4">Lou Gehrig Fan Club Supports the ALS Community</h2>
         <p class="text-center text-slate-600 mb-12 max-w-2xl mx-auto">In honor of Lou Gehrig's legacy, we proudly support organizations fighting ALS and helping patients and families.</p>
         <div class="grid md:grid-cols-3 gap-8 mb-12">
           <div class="border border-slate-200 rounded-xl bg-white p-6 text-center shadow-sm">
             <h3 class="text-lg font-semibold mb-2 text-red-600">ALS CURE PROJECT</h3>
             <p class="text-slate-600 mb-4">Accelerating ALS research and drug development</p>
-            <a href="https://alscure.org" target="_blank" rel="noopener" class="btn-primary inline-block">Learn More</a>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <a href="https://www.alscure.org" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Learn More</a>
+              <a href="https://paybee.io/quickpay.html?handle=alscure&ppid=32" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Donate</a>
+              <a href="https://www.alscure.org/research" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Research</a>
+            </div>
           </div>
           <div class="border border-slate-200 rounded-xl bg-white p-6 text-center shadow-sm">
             <h3 class="text-lg font-semibold mb-2 text-red-600">I AM ALS</h3>
             <p class="text-slate-600 mb-4">Patient-led organization transforming ALS care</p>
-            <a href="https://iamals.org" target="_blank" rel="noopener" class="btn-primary inline-block">Learn More</a>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <a href="https://www.iamals.org" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Learn More</a>
+              <a href="https://www.iamals.org/give/" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Donate</a>
+              <a href="https://www.iamals.org/action/volunteer/" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Volunteer</a>
+            </div>
           </div>
           <div class="border border-slate-200 rounded-xl bg-white p-6 text-center shadow-sm">
             <h3 class="text-lg font-semibold mb-2 text-red-600">Live Like Lou</h3>
             <p class="text-slate-600 mb-4">Supporting ALS patients and their families</p>
-            <a href="https://livelikelou.org" target="_blank" rel="noopener" class="btn-primary inline-block">Learn More</a>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <a href="https://www.livelikelou.org" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Learn More</a>
+              <a href="https://www.livelikelou.org/donate" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Donate</a>
+              <a href="https://www.livelikelou.org/als-families" target="_blank" rel="noopener" class="btn-primary inline-block text-center">Volunteer</a>
+            </div>
           </div>
         </div>
 
