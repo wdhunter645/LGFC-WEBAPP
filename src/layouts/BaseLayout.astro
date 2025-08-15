@@ -71,7 +71,6 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           </a>
           
           <nav class="flex items-center space-x-8">
-            <a class={`text-sm font-medium transition-colors hover:text-red-400 ${currentPath === '/' ? 'text-red-400' : 'text-slate-300'}`} href="/">HOME</a>
             <a class={`text-sm font-medium transition-colors hover:text-red-400 ${currentPath === '/about' ? 'text-red-400' : 'text-slate-300'}`} href="/about">ABOUT</a>
             <a class={`text-sm font-medium transition-colors hover:text-red-400 ${currentPath === '/search' ? 'text-red-400' : 'text-slate-300'}`} href="/search">SEARCH</a>
             <form action="/search" method="get" class="hidden md:inline-flex items-center ml-2">
