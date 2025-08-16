@@ -9,7 +9,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <!-- Last Week's Winner -->
     <div class="mb-8">
       <h2 class="text-2xl font-semibold mb-3">Last Week's Winner</h2>
-      <div class="border rounded overflow-hidden bg-white max-w-sm">
+      <div id="weekly" class="border rounded overflow-hidden bg-white max-w-sm">
         <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
           <div class="text-center text-gray-500">
             <div class="text-4xl mb-2">🏆</div>
@@ -17,31 +17,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </div>
         </div>
         <div class="p-3 text-center">
-          <div class="font-semibold text-gray-800">Last Week's Winner!</div>
-          <div class="text-sm text-gray-600 mt-1">Congratulations to our champion(s)!</div>
+          <div id="weekly-title" class="font-semibold text-gray-800">Loading…</div>
+          <div id="weekly-votes" class="text-sm text-gray-600 mt-1"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Previous Round Winner -->
-    <div id="previous-winner" class="mb-8 hidden">
-      <h2 class="text-2xl font-semibold mb-3">Previous Round Winner</h2>
-      <div id="winner-card" class="border rounded overflow-hidden bg-white max-w-sm">
-        <img id="winner-image" src="" alt="" class="w-full h-48 object-cover" />
-        <div class="p-3">
-          <div id="winner-title" class="font-semibold"></div>
-          <div id="winner-votes" class="text-sm text-gray-600"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Current Round Status -->
-    <div id="current-round" class="mb-8 hidden">
-      <h2 class="text-2xl font-semibold mb-3">Current Round</h2>
-      <div id="round-info" class="bg-blue-50 border border-blue-200 rounded p-4">
-        <div id="round-number" class="font-semibold text-blue-800"></div>
-        <div id="round-dates" class="text-sm text-blue-600"></div>
-        <div id="round-progress" class="text-sm text-blue-600"></div>
       </div>
     </div>
 
@@ -62,142 +40,99 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const allEl = document.getElementById('all');
     const todayStatus = document.getElementById('today-status');
     const allStatus = document.getElementById('all-status');
-    const previousWinner = document.getElementById('previous-winner');
-    const currentRound = document.getElementById('current-round');
-    const winnerCard = document.getElementById('winner-card');
-    const winnerImage = document.getElementById('winner-image');
-    const winnerTitle = document.getElementById('winner-title');
-    const winnerVotes = document.getElementById('winner-votes');
-    const roundInfo = document.getElementById('round-info');
-    const roundNumber = document.getElementById('round-number');
-    const roundDates = document.getElementById('round-dates');
-    const roundProgress = document.getElementById('round-progress');
+    const weeklyTitle = document.getElementById('weekly-title');
+    const weeklyVotes = document.getElementById('weekly-votes');
 
-    function card(img, votes) {
+    const imageMeta = {
+      gehrig1: {
+        url: 'https://readdy.ai/api/search-image?query=Lou%20Gehrig%20in%20classic%20New%20York%20Yankees%20pinstripe%20uniform%20swinging%20baseball%20bat%20at%20home%20plate%2C%20vintage%20black%20and%20white%20photography%20style%2C%20Yankee%20Stadium%20background%2C%201930s%20baseball%20action%20shot%2C%20iconic%20sports%20moment&width=400&height=500&seq=gehrig1&orientation=portrait',
+        title: 'The Iron Horse at Bat'
+      },
+      gehrig2: {
+        url: 'https://readdy.ai/api/search-image?query=Lou%20Gehrig%20in%20New%20York%20Yankees%20uniform%20giving%20farewell%20speech%20at%20Yankee%20Stadium%2C%20emotional%20moment%2C%20crowd%20in%20background%2C%20vintage%201939%20baseball%20photography%2C%20historic%20sports%20farewell%20ceremony&width=400&height=500&seq=gehrig2&orientation=portrait',
+        title: 'Farewell Speech'
+      }
+    };
+
+    function card(imageId, votes) {
+      const img = imageMeta[imageId] || { url: '/placeholder.svg', title: imageId };
       const div = document.createElement('div');
       div.className = 'border rounded overflow-hidden bg-white';
-      const url = img.media_url || img.url || '/placeholder.svg';
-      const alt = img.alt_text || img.file_name || 'Photo';
       div.innerHTML = `
-        <img src="${url}" alt="${alt}" class="w-full h-40 object-cover" loading="lazy" />
+        <img src="${img.url}" alt="${img.title}" class="w-full h-40 object-cover" loading="lazy" />
         <div class="p-2 text-sm flex items-center justify-between">
-          <span class="truncate">${alt}</span>
+          <span class="truncate">${img.title}</span>
           <span class="font-semibold">${votes}</span>
         </div>
       `;
       return div;
     }
 
-    async function loadToday() {
-      todayStatus.textContent = 'Loading…';
-      const { data, error } = await supabase
-        .from('picture_votes')
-        .select('image_id, voted_at, media_files!inner(id, media_url, alt_text, file_name)')
-        .gte('voted_at', new Date().toISOString().slice(0,10))
-        .limit(10000);
-      if (error) { todayStatus.textContent = `Error: ${error.message}`; return; }
+    function aggregate(rows) {
       const map = new Map();
-      for (const row of data ?? []) {
+      for (const row of rows ?? []) {
         const key = row.image_id;
         map.set(key, (map.get(key) || 0) + 1);
       }
-      const items = [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0,12);
+      return [...map.entries()].sort((a,b) => b[1]-a[1]);
+    }
+
+    async function loadToday() {
+      todayStatus.textContent = 'Loading…';
+      const start = new Date();
+      const startIso = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())).toISOString();
+      const { data, error } = await supabase
+        .from('visitor_votes')
+        .select('image_id, voted_at')
+        .gte('voted_at', startIso)
+        .limit(10000);
+      if (error) { todayStatus.textContent = `Error: ${error.message}`; return; }
+      const items = aggregate(data).slice(0,12);
       todayEl.innerHTML = '';
-      for (const [image_id, votes] of items) {
-        const img = (data ?? []).find(d => d.image_id === image_id)?.media_files || {};
-        todayEl.appendChild(card(img, votes));
-      }
+      for (const [image_id, votes] of items) todayEl.appendChild(card(image_id, votes));
       todayStatus.textContent = items.length ? '' : 'No votes today.';
     }
 
     async function loadAll() {
       allStatus.textContent = 'Loading…';
       const { data, error } = await supabase
-        .from('picture_votes')
-        .select('image_id, media_files!inner(id, media_url, alt_text, file_name)')
+        .from('visitor_votes')
+        .select('image_id')
         .limit(100000);
       if (error) { allStatus.textContent = `Error: ${error.message}`; return; }
-      const map = new Map();
-      for (const row of data ?? []) {
-        const key = row.image_id;
-        map.set(key, (map.get(key) || 0) + 1);
-      }
-      const items = [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0,12);
+      const items = aggregate(data).slice(0,12);
       allEl.innerHTML = '';
-      for (const [image_id, votes] of items) {
-        const img = (data ?? []).find(d => d.image_id === image_id)?.media_files || {};
-        allEl.appendChild(card(img, votes));
-      }
+      for (const [image_id, votes] of items) allEl.appendChild(card(image_id, votes));
       allStatus.textContent = items.length ? '' : 'No votes recorded.';
     }
 
-    async function loadVotingRounds() {
-      // Load current round
-      const { data: currentRoundData, error: currentError } = await supabase.rpc('get_current_voting_round');
-      if (!currentError && currentRoundData?.[0]) {
-        const round = currentRoundData[0];
-        currentRound.classList.remove('hidden');
-        roundNumber.textContent = `Round ${round.round_number}`;
-        roundDates.textContent = `${new Date(round.start_date).toLocaleDateString()} - ${new Date(round.end_date).toLocaleDateString()}`;
-        
-        // Get round progress
-        const { data: roundImages } = await supabase
-          .from('round_images')
-          .select('votes_received')
-          .eq('round_id', round.round_id);
-        
-        const totalVotes = (roundImages || []).reduce((sum, img) => sum + img.votes_received, 0);
-        roundProgress.textContent = `${totalVotes} total votes`;
+    async function loadWeeklyWinner() {
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+      const { data, error } = await supabase
+        .from('visitor_votes')
+        .select('image_id, voted_at')
+        .gte('voted_at', weekAgo.toISOString())
+        .lt('voted_at', now.toISOString())
+        .limit(100000);
+      if (error) {
+        weeklyTitle.textContent = 'Error loading';
+        return;
       }
-      
-      // Load previous winners
-      const { data: previousWinnerData, error: previousError } = await supabase
-        .from('voting_rounds')
-        .select(`
-          id,
-          round_number,
-          total_votes
-        `)
-        .eq('status', 'completed')
-        .order('round_number', { ascending: false })
-        .limit(1);
-      
-      if (!previousError && previousWinnerData?.[0]) {
-        const round = previousWinnerData[0];
-        
-        // Get winners for this round
-        const { data: winnersData, error: winnersError } = await supabase
-          .from('round_winners')
-          .select(`
-            image_id,
-            votes_received,
-            media_files!inner(id, media_url, alt_text, file_name)
-          `)
-          .eq('round_id', round.id);
-        
-        if (!winnersError && winnersData?.length > 0) {
-          previousWinner.classList.remove('hidden');
-          
-          if (winnersData.length === 1) {
-            // Single winner
-            const winner = winnersData[0];
-            winnerImage.src = winner.media_files.media_url || '/placeholder.svg';
-            winnerImage.alt = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
-            winnerTitle.textContent = winner.media_files.alt_text || winner.media_files.file_name || 'Winner';
-            winnerVotes.textContent = `${winner.votes_received} votes`;
-          } else {
-            // Multiple winners (tie)
-            winnerImage.src = '/placeholder.svg';
-            winnerImage.alt = 'Multiple Winners';
-            winnerTitle.textContent = `${winnersData.length} Winners (Tie!)`;
-            winnerVotes.textContent = `${winnersData[0].votes_received} votes each`;
-          }
-        }
+      const items = aggregate(data);
+      if (!items.length) {
+        weeklyTitle.textContent = 'No votes last week';
+        weeklyVotes.textContent = '';
+        return;
       }
+      const [topId, count] = items[0];
+      const meta = imageMeta[topId] || { title: topId };
+      weeklyTitle.textContent = meta.title;
+      weeklyVotes.textContent = `${count} votes`;
     }
 
     loadToday();
     loadAll();
-    loadVotingRounds();
+    loadWeeklyWinner();
   </script>
 </BaseLayout>
