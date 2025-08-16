@@ -126,42 +126,19 @@ const { redirect = '' } = Astro.url.searchParams;
 
       message.textContent = 'Sending validation email...';
       
-      // Check if user exists
-      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(emailValue);
+      // Send magic link via Supabase OTP (no admin calls)
+      const { error } = await supabase.auth.signInWithOtp({ 
+        email: emailValue,
+        options: {
+          emailRedirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin
+        }
+      });
       
-      if (existingUser?.user) {
-        // User exists, send magic link
-        const { error } = await supabase.auth.signInWithOtp({ 
-          email: emailValue,
-          options: {
-            emailRedirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin
-          }
-        });
-        
-        if (error) {
-          message.textContent = `Error: ${error.message}`;
-        } else {
-          showEmailValidation(emailValue);
-          message.textContent = '';
-        }
+      if (error) {
+        message.textContent = `Error: ${error.message}`;
       } else {
-        // New user, send confirmation email
-        const { error } = await supabase.auth.signInWithOtp({ 
-          email: emailValue,
-          options: {
-            emailRedirectTo: redirectTarget ? `${window.location.origin}${redirectTarget}` : window.location.origin,
-            data: {
-              is_new_user: true
-            }
-          }
-        });
-        
-        if (error) {
-          message.textContent = `Error: ${error.message}`;
-        } else {
-          showEmailValidation(emailValue);
-          message.textContent = '';
-        }
+        showEmailValidation(emailValue);
+        message.textContent = '';
       }
     });
 

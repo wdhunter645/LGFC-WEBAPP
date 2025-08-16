@@ -7,9 +7,30 @@ export const handler = async (event: any) => {
     if (!question || typeof question !== 'string' || question.trim().length < 5) {
       return { statusCode: 400, body: 'Invalid question' };
     }
-    // TODO: integrate with storage (Supabase table) or email. For now, log.
-    console.log('Q&A Submission:', { question, email, at: new Date().toISOString() });
-    return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    let stored = false;
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { error } = await supabase
+          .from('faq_items')
+          .insert({
+            question: question.trim(),
+            submitter_email: email || null,
+            status: 'draft'
+          });
+        if (!error) stored = true;
+      } catch (e: any) {
+        console.error('Supabase insert failed:', e?.message || e);
+      }
+    }
+
+    console.log('Q&A Submission:', { question, email, at: new Date().toISOString(), stored });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, stored }) };
   } catch (err) {
     return { statusCode: 500, body: 'Server error' };
   }

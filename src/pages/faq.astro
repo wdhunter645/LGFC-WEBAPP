@@ -1,0 +1,68 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="FAQ | Lou Gehrig Fan Club" description="Frequently asked questions and answers.">
+  <section class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">FAQ</h1>
+    <input id="faq-search" class="w-full border rounded px-3 py-2 mb-4 text-slate-900 placeholder-gray-500" placeholder="Search FAQs…" />
+    <div id="status" class="text-gray-600">Loading…</div>
+    <div id="faq-list" class="mt-4 divide-y divide-slate-200"></div>
+  </section>
+
+  <script type="module">
+    import { createClient } from '../lib/supabase-client.js';
+    const supabase = createClient();
+
+    const searchEl = document.getElementById('faq-search');
+    const listEl = document.getElementById('faq-list');
+    const statusEl = document.getElementById('status');
+
+    let allItems = [];
+
+    function render(items) {
+      listEl.innerHTML = '';
+      if (!items.length) {
+        statusEl.textContent = 'No FAQs found.';
+        return;
+      }
+      statusEl.textContent = '';
+      for (const item of items) {
+        const details = document.createElement('details');
+        details.className = 'py-3 group';
+        details.innerHTML = `
+          <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+            <span>${item.question}</span>
+            <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+          </summary>
+          ${item.answer ? `<p class="text-sm text-slate-600 mt-2">${item.answer}</p>` : '<p class="text-sm text-slate-500 mt-2">Answer coming soon.</p>'}
+        `;
+        listEl.appendChild(details);
+      }
+    }
+
+    function filter() {
+      const term = (searchEl.value || '').toLowerCase();
+      const items = term ? allItems.filter(i => (i.question + ' ' + (i.answer || '')).toLowerCase().includes(term)) : allItems;
+      render(items);
+    }
+
+    async function loadFaqs() {
+      const { data, error } = await supabase
+        .from('faq_items')
+        .select('id, question, answer, status')
+        .eq('status', 'published')
+        .order('updated_at', { ascending: false })
+        .limit(200);
+      if (error) {
+        statusEl.textContent = `Error: ${error.message}`;
+        return;
+      }
+      allItems = data || [];
+      render(allItems);
+    }
+
+    searchEl.addEventListener('input', filter);
+    loadFaqs();
+  </script>
+</BaseLayout>

@@ -25,7 +25,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
               <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-lg">The Iron Horse at Bat</h3>
-                <a href="/leaderboard" class="btn-secondary">Vote</a>
+                <button data-image="gehrig1" class="btn-secondary vote-btn" type="button">Vote</button>
               </div>
               <p class="text-slate-600 mt-2">Classic batting stance, 1932</p>
               <div class="mt-2"><a href="/leaderboard" class="text-sm text-blue-700 hover:underline">Go to leaderboard →</a></div>
@@ -39,7 +39,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               </div>
               <div class="flex items-center justify-between">
                 <h3 class="font-semibold text-lg">Farewell Speech</h3>
-                <a href="/leaderboard" class="btn-secondary">Vote</a>
+                <button data-image="gehrig2" class="btn-secondary vote-btn" type="button">Vote</button>
               </div>
               <p class="text-slate-600 mt-2">July 4, 1939 - "Luckiest man"</p>
             </div>
@@ -161,19 +161,33 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
         <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
           <h3 class="text-xl font-semibold mb-4">FAQ and Q&A</h3>
-          <div class="space-y-3">
-            <div class="border-b border-slate-200 pb-3">
-              <h4 class="font-medium mb-1">When was Lou Gehrig born?</h4>
-              <p class="text-sm text-slate-600">June 19, 1903 in New York City</p>
-            </div>
-            <div class="border-b border-slate-200 pb-3">
-              <h4 class="font-medium mb-1">How many consecutive games did he play?</h4>
-              <p class="text-sm text-slate-600">2,130 consecutive games, earning him the nickname "Iron Horse"</p>
-            </div>
-            <div>
-              <h4 class="font-medium mb-1">What is ALS?</h4>
-              <p class="text-sm text-slate-600">Amyotrophic Lateral Sclerosis, also known as Lou Gehrig's disease</p>
-            </div>
+          <input id="faq-search" class="w-full border rounded px-3 py-2 mb-3 text-slate-900 placeholder-gray-500" placeholder="Search questions…" />
+          <div id="faq-list" class="divide-y divide-slate-200">
+            <details class="py-3 group">
+              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+                <span>When was Lou Gehrig born?</span>
+                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+              </summary>
+              <p class="text-sm text-slate-600 mt-2">June 19, 1903 in New York City</p>
+            </details>
+            <details class="py-3 group">
+              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+                <span>How many consecutive games did he play?</span>
+                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+              </summary>
+              <p class="text-sm text-slate-600 mt-2">2,130 consecutive games, earning him the nickname "Iron Horse"</p>
+            </details>
+            <details class="py-3 group">
+              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+                <span>What is ALS?</span>
+                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+              </summary>
+              <p class="text-sm text-slate-600 mt-2">Amyotrophic Lateral Sclerosis, also known as Lou Gehrig's disease</p>
+            </details>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <a href="/faq" class="text-blue-700 hover:underline text-sm">View all FAQs →</a>
+            <span id="faq-count" class="text-xs text-slate-500"></span>
           </div>
           <form id="ask-form" class="mt-6 space-y-3">
             <textarea id="ask-question" class="w-full border rounded px-3 py-2 text-slate-900 placeholder-gray-500" rows="3" placeholder="Ask a question…"></textarea>
@@ -235,6 +249,60 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const askQuestion = document.getElementById('ask-question');
     const askEmail = document.getElementById('ask-email');
     const askStatus = document.getElementById('ask-status');
+    const faqSearch = document.getElementById('faq-search');
+    const faqList = document.getElementById('faq-list');
+    const faqCount = document.getElementById('faq-count');
+
+    async function tryLoadEvents() {
+      try {
+        const eventsWrap = document.getElementById('fanclub-events');
+        if (!eventsWrap) return;
+        // Dynamically import client only when needed to avoid SSR issues
+        const { createClient } = await import('../lib/supabase-client.js');
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('events')
+          .select('id, title, start_at, location, link_url, is_club_event')
+          .gte('start_at', new Date(Date.now() - 24*60*60*1000).toISOString())
+          .order('start_at', { ascending: true })
+          .limit(9);
+        if (error || !data || data.length === 0) return;
+        eventsWrap.innerHTML = '';
+        for (const ev of data) {
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between p-4 bg-slate-50 rounded-lg';
+          const when = new Date(ev.start_at).toLocaleDateString();
+          div.innerHTML = `
+            <div>
+              <h4 class="font-medium">${ev.title}</h4>
+              ${ev.location ? `<p class="text-sm text-slate-600">${ev.location}</p>` : ''}
+            </div>
+            ${ev.link_url ? `<a href="${ev.link_url}" target="_blank" rel="noopener" class="text-sm text-blue-700 hover:underline">Details</a>` : `<span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">${when}</span>`}
+          `;
+          eventsWrap.appendChild(div);
+        }
+      } catch {}
+    }
+
+    function updateFaqCount() {
+      const total = faqList?.querySelectorAll('details').length || 0;
+      const visible = [...faqList?.querySelectorAll('details') || []].filter(d => d.style.display !== 'none').length;
+      faqCount.textContent = total ? `${visible}/${total} shown` : '';
+    }
+
+    faqSearch?.addEventListener('input', () => {
+      const term = faqSearch.value.trim().toLowerCase();
+      const items = faqList.querySelectorAll('details');
+      items.forEach(item => {
+        const text = item.textContent?.toLowerCase() || '';
+        item.style.display = term && !text.includes(term) ? 'none' : '';
+      });
+      updateFaqCount();
+    });
+
+    updateFaqCount();
+    tryLoadEvents();
+
     if (askForm) {
       askForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -254,5 +322,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         }
       });
     }
+
+    // Voting
+    document.querySelectorAll('.vote-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const imageId = btn.getAttribute('data-image');
+        try {
+          await fetch('/.netlify/functions/vote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_id: imageId })
+          });
+        } catch {}
+        window.location.href = '/leaderboard';
+      });
+    });
   </script>
 </BaseLayout>
