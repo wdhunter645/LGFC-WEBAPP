@@ -60,7 +60,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     const progressList = document.getElementById('progress-list');
     const taggingSection = document.getElementById('tagging-section');
     const photosGrid = document.getElementById('photos-grid');
-    const successMessage = document.getElementById('success-message');
 
     // File validation
     const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -170,7 +169,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         const filename = `member-upload-${timestamp}-${randomId}.${extension}`;
 
         // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('media')
           .upload(`photos/${filename}`, file);
 
@@ -301,20 +300,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         console.error('Error saving tags:', error);
         alert('Failed to save tags. Please try again.');
       }
-    }
-
-    // Show success message when all photos are tagged
-    function showSuccess() {
-      taggingSection.classList.add('hidden');
-      successMessage.classList.remove('hidden');
-      
-      setTimeout(() => {
-        successMessage.classList.add('hidden');
-        // Reset form
-        fileInput.value = '';
-        uploadProgress.classList.add('hidden');
-        taggingSection.classList.add('hidden');
-      }, 5000);
     }
   </script>
 </BaseLayout>

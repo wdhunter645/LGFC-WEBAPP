@@ -23,8 +23,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           <div>
             <div class="font-semibold">${p.title || 'Post'}</div>
             <div class="text-xs text-gray-500">${new Date(p.created_at).toLocaleString()}</div>
-            ${p.text ? `<p class=\"mt-1\">${p.text}</p>` : ''}
-            ${p.media_url ? `<a class=\"text-blue-700 underline\" href=\"${p.media_url}\" target=\"_blank\" rel=\"noreferrer\">Media</a>` : ''}
+            ${p.text ? `<p class="mt-1">${p.text}</p>` : ''}
+            ${p.media_url ? `<a class="text-blue-700 underline" href="${p.media_url}" target="_blank" rel="noreferrer">Media</a>` : ''}
           </div>
           <div class="flex gap-2">
             <button class="border rounded px-3 py-1" data-action="delete">Delete</button>

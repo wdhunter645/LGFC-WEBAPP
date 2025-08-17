@@ -43,7 +43,8 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
             window.location.href = `/login?redirect=${target}`;
             return;
           }
-          if (false) {
+          const needsAdmin = Boolean({requireAdmin});
+          if (needsAdmin) {
             const { data: members } = await supabase
               .from('members')
               .select('is_admin')
@@ -129,13 +130,13 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
           if (!data?.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
           box.innerHTML = data.map(d => `<a class="block px-3 py-2 hover:bg-slate-100 text-sm" href="${d.source_url}" target="_blank" rel="noopener">${d.title}</a>`).join('');
           box.classList.remove('hidden');
-        } catch {
+        } catch (e) {
           box.classList.add('hidden'); box.innerHTML = '';
         }
       }
-      q?.addEventListener('input', (e) => suggest(q.value.trim()));
-      document.addEventListener('click', (e) => {
-        if (!form?.contains(e.target)) box.classList.add('hidden');
+      q?.addEventListener('input', () => suggest(q.value.trim()));
+      document.addEventListener('click', (ev) => {
+        if (!form?.contains(ev.target)) box.classList.add('hidden');
       });
     </script>
 

@@ -39,7 +39,9 @@ export function createServerClient(cookies) {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookies.set(name, value, options)
             )
-          } catch {}
+          } catch (err) {
+            console.warn('Cookie setAll not available in this context');
+          }
         },
       },
     }

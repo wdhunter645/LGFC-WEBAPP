@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-const { redirect = '' } = Astro.url.searchParams; // eslint-disable-line @typescript-eslint/no-unused-vars
+const { redirect = '' } = Astro.url.searchParams; /* eslint-disable-line no-unused-vars */
 ---
 
 <BaseLayout title="Login | Lou Gehrig Fan Club" description="Sign in to contribute content and manage submissions.">
@@ -70,7 +70,7 @@ const { redirect = '' } = Astro.url.searchParams; // eslint-disable-line @typesc
     const sessionDiv = document.getElementById('session');
     const sessionJson = document.getElementById('session-json');
     const signoutBtn = document.getElementById('signout');
-    const redirectTarget = decodeURIComponent('{redirect}');
+         const redirectTarget = decodeURIComponent('{redirect}');
 
     async function refreshSession() {
       const { data } = await supabase.auth.getSession();

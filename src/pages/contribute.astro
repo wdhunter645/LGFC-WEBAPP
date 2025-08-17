@@ -91,7 +91,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           created_by: session.user.id
         };
 
-        const { data: rows, error } = await supabase
+        const { data, error } = await supabase
           .from('content_items')
           .insert(payload)
           .select('*')
