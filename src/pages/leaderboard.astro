@@ -10,12 +10,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="mb-8">
       <h2 class="text-2xl font-semibold mb-3">Last Week's Winner</h2>
       <div id="weekly" class="border rounded overflow-hidden bg-white max-w-sm">
-        <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-          <div class="text-center text-gray-500">
-            <div class="text-4xl mb-2">🏆</div>
-            <div class="text-sm">Winner Photo</div>
-          </div>
-        </div>
+        <img id="weekly-image" src="/placeholder.svg" alt="Weekly winner" class="w-full h-48 object-cover" />
         <div class="p-3 text-center">
           <div id="weekly-title" class="font-semibold text-gray-800">Loading…</div>
           <div id="weekly-votes" class="text-sm text-gray-600 mt-1"></div>
@@ -42,6 +37,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const allStatus = document.getElementById('all-status');
     const weeklyTitle = document.getElementById('weekly-title');
     const weeklyVotes = document.getElementById('weekly-votes');
+    const weeklyImage = document.getElementById('weekly-image');
 
     const imageMeta = {
       gehrig1: {
@@ -126,9 +122,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         return;
       }
       const [topId, count] = items[0];
-      const meta = imageMeta[topId] || { title: topId };
+      const meta = imageMeta[topId] || { title: topId, url: '/placeholder.svg' };
       weeklyTitle.textContent = meta.title;
       weeklyVotes.textContent = `${count} votes`;
+      weeklyImage.src = meta.url;
+      weeklyImage.alt = meta.title;
     }
 
     loadToday();
