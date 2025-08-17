@@ -8,14 +8,14 @@ export const handler = async (event: any) => {
       return { statusCode: 400, body: 'Invalid question' };
     }
 
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
+    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY as string | undefined;
 
     let stored = false;
-    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    if (SUPABASE_URL && SUPABASE_PUBLIC_API_KEY) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY);
         const { error } = await supabase
           .from('faq_items')
           .insert({

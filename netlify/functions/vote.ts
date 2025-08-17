@@ -9,13 +9,13 @@ export const handler: Handler = async (event) => {
 		if (!image_id) return { statusCode: 400, body: 'Missing image_id' };
 
 		const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
-		const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
-		if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+		const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY as string | undefined;
+		if (!SUPABASE_URL || !SUPABASE_PUBLIC_API_KEY) {
 			return { statusCode: 500, body: 'Server not configured' };
 		}
 
 		const { createClient } = await import('@supabase/supabase-js');
-		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+		const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY);
 
 		// Determine or set visitor cookie
 		const headers = event.headers || {};
@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
 		const session_day = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())).toISOString().slice(0,10);
 
 		// Upsert visitor record
-		await supabase.from('visitors').insert({ id: visitorId }).onConflict('id').ignore();
+		await supabase.from('visitors').insert({ id: visitorId }).select().maybeSingle();
 
 		// Prevent duplicate: unique (visitor_id, image_id, session_day)
 		const { error } = await supabase
