@@ -281,7 +281,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           `;
           eventsWrap.appendChild(div);
         }
-      } catch {}
+      } catch (e) { /* ignore */ }
     }
 
     function updateFaqCount() {
@@ -333,7 +333,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_id: imageId })
           });
-        } catch {}
+        } catch (e) { /* ignore */ }
         window.location.href = '/leaderboard';
       });
     });

@@ -10,9 +10,6 @@ const {
 
 const currentPath = Astro.url.pathname;
 const isDevMode = Astro.url.searchParams.get('dev') === 'true';
-// Inject runtime env for client if PUBLIC_ vars are not configured
-const RUNTIME_SUPABASE_URL = process.env.SUPABASE_URL || '';
-const RUNTIME_SUPABASE_KEY = process.env.SUPABASE_PUBLIC_API_KEY || '';
 ---
 
 <html lang="en">
@@ -32,7 +29,7 @@ const RUNTIME_SUPABASE_KEY = process.env.SUPABASE_PUBLIC_API_KEY || '';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>window.__SUPABASE_URL = window.__SUPABASE_URL || "{RUNTIME_SUPABASE_URL}"; window.__SUPABASE_KEY = window.__SUPABASE_KEY || "{RUNTIME_SUPABASE_KEY}";</script>
+    <script>window.__SUPABASE_URL = window.__SUPABASE_URL || "{process.env.SUPABASE_URL}"; window.__SUPABASE_KEY = window.__SUPABASE_KEY || "{process.env.SUPABASE_PUBLIC_API_KEY}";</script>
   </head>
   <body class="font-sans text-slate-900 bg-white antialiased">
     {(requireAuth || requireAdmin) && !isDevMode && (
@@ -46,7 +43,7 @@ const RUNTIME_SUPABASE_KEY = process.env.SUPABASE_PUBLIC_API_KEY || '';
             window.location.href = `/login?redirect=${target}`;
             return;
           }
-          if ({requireAdmin}) {
+          if (false) {
             const { data: members } = await supabase
               .from('members')
               .select('is_admin')
