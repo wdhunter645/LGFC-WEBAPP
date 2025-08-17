@@ -43,7 +43,7 @@ const isDevMode = Astro.url.searchParams.get('dev') === 'true';
             window.location.href = `/login?redirect=${target}`;
             return;
           }
-          const needsAdmin = Boolean({requireAdmin});
+          const needsAdmin = Boolean("{requireAdmin}" === 'true');
           if (needsAdmin) {
             const { data: members } = await supabase
               .from('members')
