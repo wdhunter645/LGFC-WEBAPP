@@ -26,5 +26,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          OPS_BACKGROUND_AGENT: ${{ secrets.OPS_BACKGROUND_AGENT }}
         run: node scripts/post_daily_ops_summary.mjs
 

@@ -11,6 +11,7 @@ import fs from 'fs';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY; // owner/repo
+const OPS_BACKGROUND_AGENT = process.env.OPS_BACKGROUND_AGENT || '';
 
 if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
   console.log('Missing GITHUB_TOKEN or GITHUB_REPOSITORY; exiting.');
@@ -83,13 +84,13 @@ async function ensureDailyIssue(title, body) {
   const existing = search.items?.find((i) => i.title === title);
   if (existing) {
     // Update body (replace)
-    await gh(existing.url, { method: 'PATCH', body: JSON.stringify({ body }) });
+    await gh(existing.url, { method: 'PATCH', body: JSON.stringify({ body, assignees: OPS_BACKGROUND_AGENT ? [OPS_BACKGROUND_AGENT] : [] }) });
     return existing.html_url;
   }
   // Create new
   const created = await gh(`https://api.github.com/repos/${GITHUB_REPOSITORY}/issues`, {
     method: 'POST',
-    body: JSON.stringify({ title, body, labels: ['ops-summary'] }),
+    body: JSON.stringify({ title, body, labels: ['ops-summary'], assignees: OPS_BACKGROUND_AGENT ? [OPS_BACKGROUND_AGENT] : [] }),
   });
   return created.html_url;
 }
