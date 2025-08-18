@@ -23,14 +23,10 @@ Impact: Ops notifications are not "active" or real-time because there are no eve
 
 ---
 
-## 🛠️ Remediation Plan
-1. Add a new workflow `ops-bot-on-failure.yml`:
-   - Trigger: `workflow_run` with `types: [completed]` for critical workflows (e.g., CI, Search Cron, Traffic Simulator, Supabase backups).
-   - Condition: `if: ${{ github.event.workflow_run.conclusion != 'success' }}` to limit to failed/timed_out/cancelled.
-   - Action: Create/update a single "Ops Alert" issue and optionally post to Slack via `SLACK_WEBHOOK_URL` (if configured).
-   - Permissions: `actions: read`, `issues: write`, `contents: read`.
-2. Consider adding `issues`/`issue_comment` triggers if you want the bot to react to ops-labeled issues.
-3. Keep the Daily Report as a morning summary; ensure it does not block real-time alerts.
+## 🛠️ Remediation Plan (aligned with dev-bot rules)
+1. Open an `ops` Issue requesting ops-bot to add `ops-bot-on-failure.yml` with `workflow_run` failure alerts for CI, Search Cron, Traffic Simulator, and Supabase backups.
+2. Include plan, validation, change, rollback, and `Next:` per ops-bot rules. Assign appropriate owner and label with `ops` and `priority:high`.
+3. Keep the Daily Report workflow as a morning summary; real-time alerts handled by the new ops workflow.
 
 ---
 
@@ -42,10 +38,38 @@ Impact: Ops notifications are not "active" or real-time because there are no eve
 ---
 
 ## 📋 Next Actions
-- [ ] Create `ops-bot-on-failure.yml` with `workflow_run` trigger and failure filter
-- [ ] Configure `SLACK_WEBHOOK_URL` (optional) for external alerts
-- [ ] Test by intentionally failing a small workflow and verifying the alert
+- [ ] Create GitHub Issue (labels: `ops`, `priority:high`) — Title: "ops-bot: add failure-triggered alerts (workflow_run)"
+- [ ] Configure `SLACK_WEBHOOK_URL` secret (optional) for external alerts once ops workflow lands
+- [ ] After ops workflow is merged, test with a controlled failure and verify alerting
 - [ ] Document behavior in `CONTEXT_TRACKING.md`
+
+### Issue Draft (copy-paste)
+Title: ops-bot: add failure-triggered alerts (workflow_run)
+
+Body:
+
+Problem
+- Ops notifications are not real-time; failures in Actions do not trigger alerts.
+
+Cause
+- No `workflow_run`-based workflow listening for failures; ops-bot only manual or time-gated.
+
+Plan
+- Add `.github/workflows/ops-bot-on-failure.yml` triggered by `workflow_run` (types: completed) for CI, Search Cron, Traffic Simulator, and Supabase backups.
+- Gate with `if: ${{ github.event.workflow_run.conclusion != 'success' }}` to only alert on failure/cancel/timeout.
+- Action: Create/update a single "Ops Alerts" issue with failing run links; optional Slack via `SLACK_WEBHOOK_URL`.
+
+Validation
+- Induce a controlled failure in a sandbox workflow; confirm issue update and optional Slack message.
+
+Rollback
+- Revert workflow file or add label-based gates to mute alerts.
+
+Impact
+- Immediate visibility on failures; faster triage and MTTR reduction.
+
+Next:
+- Implement the workflow and run validation scenario.
 
 ---
 
