@@ -42,6 +42,7 @@ Impact: Ops notifications are not "active" or real-time because there are no eve
 - [ ] Create GitHub Issue (labels: `ops`, `priority:high`) — Title: "ops-bot: add failure-triggered alerts (workflow_run)"
 - [ ] Configure `SLACK_WEBHOOK_URL` secret (optional) for external alerts once ops workflow lands
 - [x] Implement `.github/workflows/ops-bot-on-failure.yml` to alert on failures (consolidated Ops Alerts issue + optional Slack)
+- [x] Implement `.github/workflows/ops-bot-triage.yml` to open per-failure ops Issues with details and labels
 - [x] Configure Netlify to deploy only from `main` (skip non-main branches in `netlify.toml`)
 - [ ] Test with a controlled failure and verify alerting
 - [ ] Document behavior in `CONTEXT_TRACKING.md`
