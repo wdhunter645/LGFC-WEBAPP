@@ -1,0 +1,24 @@
+name: Update Issue #4 Summary
+
+on:
+  push:
+    branches:
+      - cursor/monday0818-background-task-1b3e
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Issue #4 body
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const body = `## Goal\nEstablish automated monitoring and reporting with Dev/Ops bots to coordinate daily planning and operational health.\n\n## Components\n- **Dev-Bot**\n  - Workflows: .github/workflows/dev-bot.yml, dev-bot-daily-plan.yml\n  - Purpose: example PRs on demand; daily Dev Plan Issue at 06:00 US/Eastern (self-gated)\n- **Ops-Bot**\n  - Workflows: .github/workflows/ops-bot.yml, ops-bot-daily-report.yml\n  - Purpose: infra/CI hygiene PR example; daily Ops Report Issue at 06:00 US/Eastern with open Issues, status labels, Next actions, and Actions run health\n- **Activity/Session Persistence**\n  - Workflow: .github/workflows/session-keeper.yml\n  - Behavior: updates/creates a daily Session Log Issue on pushes to cursor/** and every 30 minutes\n  - Repo logs: docs/session-logs/ and docs/activity-log/ for durable handoffs\n- **Monitored Jobs**\n  - Traffic Simulator: .github/workflows/traffic-simulator.yml, traffic-simulator-monitored.yml (every 5 min)\n  - Search Cron: .github/workflows/search-cron.yml (hourly ingestion + diagnostics)\n  - Supabase Backups: .github/workflows/supabase-backup-daily.yml, -weekly.yml, -monthly.yml\n  - Backup Cleanup: .github/workflows/backup-cleanup.yml\n  - CI: .github/workflows/ci.yml\n\n## Ownership & Reviews\n- CODEOWNERS: .github/CODEOWNERS → @wdhunter645 @gehrigfanclub for key paths\n- Branch protection (to enable): require PR, require review from Code Owners; consider required status checks\n\n## Schedules & Triggers\n- All jobs support workflow_dispatch (manual) and cron as applicable\n- Dev/Ops daily jobs: run at 06:00 US/Eastern via self-gated double-cron (10:00/11:00 UTC)\n\n## Testing & Validation\n- Local: npm ci && npm run build (green)\n- Dev-Bot/Ops-Bot: manual dispatch → expect PR/Issue creation\n- Traffic/Search: manual dispatch → expect logs/artifacts as described in docs/monitored/*\n- Backups: manual dispatch → expect new dump files under backups/*/\n\n## Reporting (to add later)\n- Expand Ops-Bot daily report outputs (artifacts/dashboards)\n- Optional Slack/Email summaries for daily plan/report\n\n## Next Actions\n- Enable branch protection on main with Code Owner reviews\n- Open PR from cursor/monday0818-background-task-1b3e bundling CODEOWNERS, Session Keeper, and docs\n- Manually dispatch Dev-Bot and Ops-Bot dailies to validate end-to-end`;
+            await github.rest.issues.update({ owner, repo, issue_number: 4, body });
+            core.summary.addHeading('Updated Issue #4').write();
