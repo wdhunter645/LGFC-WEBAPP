@@ -1,0 +1,55 @@
+name: Session Keeper
+
+on:
+  push:
+    branches:
+      - 'cursor/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  update-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update or create daily Session Log issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const today = new Date().toISOString().slice(0,10);
+            const title = `Session Log - ${today}`;
+            const branch = (context.ref || '').replace('refs/heads/','') || '(unknown)';
+
+            let commits = [];
+            try {
+              commits = await github.paginate(github.rest.repos.listCommits, { owner, repo, sha: branch, per_page: 5 });
+            } catch (e) {}
+            const commitLines = commits.map(c => `- ${c.sha.slice(0,7)} ${c.commit.message.split('\n')[0]}`).join('\n');
+
+            const body = [
+              `Branch: ${branch}`,
+              '',
+              'Last 5 commits:',
+              commitLines || '- none -',
+              '',
+              'Docs:',
+              `- Session Logs dir: https://github.com/${owner}/${repo}/tree/${branch}/docs/session-logs`,
+              `- Activity Log (today): https://github.com/${owner}/${repo}/blob/${branch}/docs/activity-log/${today}.md`,
+              `- Context Index: https://github.com/${owner}/${repo}/blob/${branch}/CONTEXT_TRACKING.md`,
+            ].join('\n');
+
+            const search = await github.rest.search.issuesAndPullRequests({ q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open` });
+            if (search.data.total_count > 0) {
+              const issue = search.data.items[0];
+              await github.rest.issues.update({ owner, repo, issue_number: issue.number, body });
+              core.summary.addHeading('Updated Session Log').addLink(title, issue.html_url).write();
+            } else {
+              const created = await github.rest.issues.create({ owner, repo, title, body, labels: ['ops','report'] });
+              core.summary.addHeading('Created Session Log').addLink(title, created.data.html_url).write();
+            }
