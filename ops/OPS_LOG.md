@@ -23,3 +23,4 @@ Next
 2025-08-18T22:18:58Z retrigger
 2025-08-18T22:46:06Z retrigger
 2025-08-18T22:59:47Z retrigger
+2025-08-18T23:35:14Z run daily
