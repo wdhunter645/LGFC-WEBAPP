@@ -10,6 +10,8 @@ on:
       - Supabase Daily Schema Backup
       - Supabase Weekly Full Backup
       - Supabase Monthly Full Backup
+      - Ops Test: Intentional Failure
+      - Ops Test: Timeout
     types:
       - completed
 

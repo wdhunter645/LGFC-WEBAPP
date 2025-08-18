@@ -1,0 +1,15 @@
+name: Ops Test: Intentional Failure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Intentional failure
+        run: |
+          echo "This job will intentionally fail to test ops alerts"
+          exit 1
