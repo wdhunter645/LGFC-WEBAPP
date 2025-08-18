@@ -179,6 +179,7 @@ _Last updated: 2025-01-27 (America/New_York)_
 ### **Ops Documentation**
 - **[`ops/OPS_LOG.md`](ops/OPS_LOG.md)** - Persistent ops log
 - **[`ops/adr/0001-ops-alerts-workflow_run.md`](ops/adr/0001-ops-alerts-workflow_run.md)** - ADR for failure-trigger alerts
+- **[`ops/MONITORED_WORKFLOWS.md`](ops/MONITORED_WORKFLOWS.md)** - List of workflows under ops monitoring
 
 ---
 

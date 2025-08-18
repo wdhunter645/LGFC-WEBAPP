@@ -13,6 +13,12 @@ on:
       - Ops Test: Intentional Failure
       - Ops Test: Timeout
       - Ops Self Test: Push Failure
+      - ALS Events Scraper
+      - Voting Automation
+      - dev-bot
+      - Dev-Bot: Daily Plan
+      - Ops-Bot: Daily Report
+      - Dev-Ops: Create Issue
     types:
       - completed
 
