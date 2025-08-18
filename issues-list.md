@@ -1,23 +1,29 @@
-website OPEN ISSUES -
+## Issues
 
-“Search” and Search window both open to a page to do a search. Search page doesn’t search and text entered is white on white background.
+### Open
 
-Voting for a pic opens a Photo Gallery page when it should open the leaderboard page. 
+| Status | Issue | Notes |
+| --- | --- | --- |
+| Open | “Search” and Search window both open to a page to do a search. Search page doesn’t search and text entered is white on white background. |  |
+| Open | Voting for a pic opens a Photo Gallery page when it should open the leaderboard page. |  |
+| Open | Leaderboard should display current voting data and “Last weeks Winner” and the winning picture. | After someone votes the leaderboard page link should appear under the left photo; ideally track who has voted to prevent repeat voters. |
+| Open | Join the Club button should open first to the Login page, then goes to the profile page where they set their screen name and see the Free Membership Card instructions. |  |
+| Open | Fan Club News: support up to 5 news items; allow fewer if not newsworthy. |  |
+| Open | ALS Community section: arrange buttons vertically for each charity and center text; adjust button size to maintain size of the charity windows. |  |
 
-Leaderboard should display current voting data and “Last weeks Winner” and the winning picture.
-** also, after someone Votes the leaderboard page link should appear under the left photo.
-** ideally we track who has voted to prevent repeat voters too.
+### Recently Closed (last 2 weeks)
 
-Join the Club button should open first to the Login page, then goes to the profile page where they set their screen name and see the Free Membership Card instructions.
+None yet.
 
-I like the Fan Club News setup. Can you check to see if we can have up to 5 news items listed. Or less than 5 if something isn’t “newsworthy” and we omit it.
+### Alerts (operational)
 
-In the Lou Gehrig Fan Club Supports the ALS Community section arrange the buttons vertically for each charity and center the text. Adjust button size to maintain Size of the charity Windows 
+| Status | Alert |
+| --- | --- |
+| Open | Schema Backup failed - Process completed with exit code 127. |
+| Open | Backup cleanup failed - Process completed with exit code 128. |
+| Open | Traffic Simulator Failing - Error: Process completed with exit code 124. |
 
+### Archives
 
-Alerts to check into -
-
-Schema Backup failed - Process completed with exit code 127.
-Backup cleanup failed - Process completed with exit code 128.
-Traffic Simulator Failing - Error: Process completed with exit code 124.
+- See: [`issues-archive-2025-08.md`](issues-archive-2025-08.md)
 
