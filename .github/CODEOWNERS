@@ -1,0 +1,21 @@
+# CODEOWNERS
+#
+# This file defines the default reviewers/owners for changes in this repository.
+# See: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything not matched below
+* @wdhunter645
+
+# Application code
+src/** @wdhunter645
+
+# Infrastructure and scripts
+infra/** @wdhunter645
+scripts/** @wdhunter645
+
+# GitHub Actions workflows
+.github/workflows/** @wdhunter645
+
+# Database and Supabase config
+supabase/** @wdhunter645
+
