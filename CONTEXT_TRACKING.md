@@ -10,6 +10,24 @@ _Last updated: 2025-01-27 (America/New_York)_
 - **[Project Issues](issues-list.md)** — Post-implementation adjustments and website tasks
 - **[Operational Incidents](ops-incidents.md)** — Jobs and monitors that regressed or failed
 
+### **Morning Ops Background Agent (6:00 America/New_York)**
+
+- Objective: Clear/triage ops incidents before starting project issues.
+- Schedule: 6:00 AM America/New_York daily (10:00 UTC during EDT, 11:00 UTC during EST).
+
+Checklist:
+1. Open `ops-incidents.md` → focus on rows in the Open section
+2. Run ops checks locally or in CI:
+   ```bash
+   git pull --rebase
+   ./check_status.sh
+   ```
+3. For any failing checks:
+   - Inspect recent GitHub Actions logs for search-cron and traffic-simulator
+   - If running on a server: `pm2 status` and `journalctl -u lgfc-traffic-simulator -n 100`
+4. Update `ops-incidents.md` with current status and next action
+5. When ops is green or mitigated, switch to `issues-list.md` to work project items
+
 ---
 
 ## 🎯 **MASTER DOCUMENTS (Primary References)**
