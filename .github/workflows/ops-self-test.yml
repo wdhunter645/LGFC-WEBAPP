@@ -1,0 +1,17 @@
+name: Ops Self Test: Push Failure
+
+on:
+  push:
+    branches:
+      - cursor/for-fuck-sake-e246
+
+jobs:
+  fail-on-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Intentional failure on push to validate alerts
+        run: |
+          echo "Intentional failure to validate ops alert workflows"
+          exit 1
