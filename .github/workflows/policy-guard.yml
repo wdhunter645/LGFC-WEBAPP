@@ -41,5 +41,14 @@ jobs:
                 return;
               }
             }
+            // Require dev docs updates when application code changes
+            const appChanged = changedPaths.some(p => p.startsWith('src/') || p.startsWith('app/') || p.startsWith('packages/'));
+            if (appChanged) {
+              const docsChanged = changedPaths.some(p => p.startsWith('docs/dev/') || p === 'README.md');
+              if (!docsChanged) {
+                core.setFailed('Application code changed but no developer docs updated (docs/dev/* or README.md)');
+                return;
+              }
+            }
             core.summary.addHeading('Policy checks passed').write();
 
