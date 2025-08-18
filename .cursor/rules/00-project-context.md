@@ -18,6 +18,7 @@ CI/CD:
 Policies:
 - Keep secrets out of code; least privilege for automation
 - Infra changes require plan/dry-run and rollback steps
+- Code ownership: Cursor Agent (@GehrigFanClub) is the designated owner for all Dev & Ops code in this environment
 
 Daily cadence:
 - At 06:00 ET, dev-bot prepares a plan; ops-bot publishes a report
