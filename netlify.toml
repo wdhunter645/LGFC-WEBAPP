@@ -1,6 +1,9 @@
 [build]
   publish = "dist"
   command = "npm run build"
+  # Skip builds for Cursor session/agent branches (Deploy Previews named after sessions)
+  # Netlify ignores a build when this command exits 0; non-zero proceeds
+  ignore = "if [[ \"$BRANCH\" =~ ^cursor\/ ]]; then echo 'Skipping Netlify build for session branch: ' \"$BRANCH\"; exit 0; else exit 1; fi"
 
 [build.environment]
   NODE_VERSION = "20.11.1"
