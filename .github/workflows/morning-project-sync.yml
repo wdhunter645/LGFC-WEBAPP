@@ -25,7 +25,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          LEAD_ENGINEER_ASSIGNEE: ${{ vars.LEAD_ENGINEER_ASSIGNEE }}
-          OWNER_ASSIGNEE: ${{ vars.OWNER_ASSIGNEE }}
+          LEAD_ENGINEER_ASSIGNEE: ${{ secrets.LEAD_ENGINEER_ASSIGNEE }}
+          OWNER_ASSIGNEE: ${{ secrets.ADMIN }}
         run: node scripts/sync_project_issues.mjs
 
