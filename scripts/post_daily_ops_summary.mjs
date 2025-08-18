@@ -144,6 +144,26 @@ async function main() {
   const title = todayTitle();
   const body = buildBody(title, results);
   const url = await ensureDailyIssue(title, body);
+  // If all workflows are healthy, optionally close yesterday's issue
+  const allHealthy = results.every((r) => r && r.conclusion === 'success');
+  if (allHealthy) {
+    // Find yesterday's issue and close it
+    const parts = todayTitle().split(' ');
+    const today = parts[parts.length - 1];
+    const [y, m, d] = today.split('-').map((s) => parseInt(s, 10));
+    const yesterday = new Date(Date.UTC(y, m - 1, d - 1));
+    const y2 = yesterday.getUTCFullYear();
+    const m2 = String(yesterday.getUTCMonth() + 1).padStart(2, '0');
+    const d2 = String(yesterday.getUTCDate()).padStart(2, '0');
+    const yTitle = `Daily Ops Summary - ${y2}-${m2}-${d2}`;
+    const q = encodeURIComponent(`repo:${GITHUB_REPOSITORY} is:issue is:open in:title "${yTitle}"`);
+    const search = await gh(`https://api.github.com/search/issues?q=${q}`);
+    const existing = search.items?.find((i) => i.title === yTitle);
+    if (existing) {
+      await gh(existing.url, { method: 'PATCH', body: JSON.stringify({ state: 'closed' }) });
+      console.log(`Closed yesterday's ops summary: ${yTitle}`);
+    }
+  }
   console.log(`Daily Ops Summary updated: ${url}`);
 }
 

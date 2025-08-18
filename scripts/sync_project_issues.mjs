@@ -124,7 +124,7 @@ async function main() {
       'Source: `/issues-list.md`',
     ].join('\n');
     const manual = needsManualIntervention(item);
-    const labels = manual ? ['project-issue', 'manual-intervention'] : ['project-issue'];
+    const labels = manual ? ['project-issue', 'role:project', 'manual-intervention'] : ['project-issue', 'role:project'];
     const assignees = manual
       ? (OWNER_ASSIGNEE ? [OWNER_ASSIGNEE] : [])
       : (LEAD_ENGINEER_ASSIGNEE ? [LEAD_ENGINEER_ASSIGNEE] : []);
