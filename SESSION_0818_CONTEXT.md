@@ -13,6 +13,7 @@ _Date: 2025-08-18 (America/New_York)_
 - Daily report workflow (`.github/workflows/ops-bot-daily-report.yml`) is on a schedule (10:00 and 11:00 UTC) but self-gates to run only at 06:00 US/Eastern. It creates/updates a GitHub Issue; it does not send real-time notifications nor react to failures immediately.
 - There is no workflow using `workflow_run`, `issues`, or `issue_comment` triggers to respond to events or failures in real time.
 - No Slack/Discord/PagerDuty/webhook step is present; notifications are limited to GitHub Issues updates.
+- Netlify previously built Deploy Previews for session/feature branches. Updated `netlify.toml` to deploy only from `main` and skip non-main branch builds.
 
 Impact: Ops notifications are not "active" or real-time because there are no event-based triggers for failures, and no external notification channels.
 
@@ -41,6 +42,7 @@ Impact: Ops notifications are not "active" or real-time because there are no eve
 - [ ] Create GitHub Issue (labels: `ops`, `priority:high`) — Title: "ops-bot: add failure-triggered alerts (workflow_run)"
 - [ ] Configure `SLACK_WEBHOOK_URL` secret (optional) for external alerts once ops workflow lands
 - [x] Implement `.github/workflows/ops-bot-on-failure.yml` to alert on failures (consolidated Ops Alerts issue + optional Slack)
+- [x] Configure Netlify to deploy only from `main` (skip non-main branches in `netlify.toml`)
 - [ ] Test with a controlled failure and verify alerting
 - [ ] Document behavior in `CONTEXT_TRACKING.md`
 
