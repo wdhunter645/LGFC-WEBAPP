@@ -15,15 +15,4 @@
 
 None yet.
 
-### Alerts (operational)
-
-| Status | Alert |
-| --- | --- |
-| Open | Schema Backup failed - Process completed with exit code 127. |
-| Open | Backup cleanup failed - Process completed with exit code 128. |
-| Open | Traffic Simulator Failing - Error: Process completed with exit code 124. |
-
-### Archives
-
-- See: [`issues-archive-2025-08.md`](issues-archive-2025-08.md)
 

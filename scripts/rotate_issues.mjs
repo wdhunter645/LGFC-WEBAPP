@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Rotate issues-list.md monthly:
- * - Rename prior month's issues-list.md snapshot to issues-archive-YYYY-MM.md
- * - Create a fresh issues-list.md for the new month
- * - Carry over current Open issues table rows and Alerts rows
+ * Rotate ops-incidents.md monthly (operational incidents only):
+ * - Rename prior month's ops-incidents.md snapshot to ops-incidents-archive-YYYY-MM.md
+ * - Create a fresh ops-incidents.md for the new month
+ * - Carry over current Open incident rows
  *
  * Usage: node scripts/rotate_issues.mjs
  * Optional env: ROTATE_DATE=YYYY-MM (useful for testing)
@@ -13,7 +13,7 @@ import fs from 'fs';
 import path from 'path';
 
 const repoRoot = process.cwd();
-const issuesListPath = path.join(repoRoot, 'issues-list.md');
+const incidentsPath = path.join(repoRoot, 'ops-incidents.md');
 
 function zeroPad(number) {
   return number.toString().padStart(2, '0');
@@ -62,22 +62,11 @@ function extractTableRows(content, heading) {
   return rows;
 }
 
-function buildNewIssuesList(openRows, alertRows, prevTag) {
-  const openTableHeader = [
-    '| Status | Issue | Notes |',
-    '| --- | --- | --- |',
-  ].join('\n');
-
-  const alertsTableHeader = [
-    '| Status | Alert |',
-    '| --- | --- |',
-  ].join('\n');
-
-  const openTable = [openTableHeader, ...(openRows.length ? openRows : [])].join('\n');
-  const alertsTable = [alertsTableHeader, ...(alertRows.length ? alertRows : [])].join('\n');
-
+function buildNewIncidents(openRows, prevTag) {
+  const header = ['| Status | Incident |', '| --- | --- |'].join('\n');
+  const openTable = [header, ...(openRows.length ? openRows : [])].join('\n');
   return [
-    '## Issues',
+    '## Operational Incidents',
     '',
     '### Open',
     '',
@@ -87,54 +76,49 @@ function buildNewIssuesList(openRows, alertRows, prevTag) {
     '',
     'None yet.',
     '',
-    '### Alerts (operational)',
-    '',
-    alertsTable,
-    '',
     '### Archives',
     '',
-    `- See: [\`issues-archive-${prevTag}.md\`](issues-archive-${prevTag}.md)`,
+    `- See: [\`ops-incidents-archive-${prevTag}.md\`](ops-incidents-archive-${prevTag}.md)`,
     '',
   ].join('\n');
 }
 
 function ensureArchiveHeader(tag, content) {
-  const header = `## Issues Archive — ${tag}`;
+  const header = `## Operational Incidents Archive — ${tag}`;
   if (content.startsWith(header)) return content;
   return [
     header,
     '',
-    'Closed items moved here from `issues-list.md`.',
+    'Closed items moved here from `ops-incidents.md`.',
     '',
     content.trimStart(),
   ].join('\n');
 }
 
 function main() {
-  if (!fs.existsSync(issuesListPath)) {
-    console.log('issues-list.md not found; nothing to rotate.');
+  if (!fs.existsSync(incidentsPath)) {
+    console.log('ops-incidents.md not found; nothing to rotate.');
     return;
   }
 
   const now = getEffectiveDate();
   const prevTag = getPreviousMonthTag(now); // YYYY-MM
-  const archivePath = path.join(repoRoot, `issues-archive-${prevTag}.md`);
+  const archivePath = path.join(repoRoot, `ops-incidents-archive-${prevTag}.md`);
 
-  const currentContent = fs.readFileSync(issuesListPath, 'utf8');
+  const currentContent = fs.readFileSync(incidentsPath, 'utf8');
 
   // Extract rows to carry forward
   const openRows = extractTableRows(currentContent, 'Open');
-  const alertRows = extractTableRows(currentContent, 'Alerts (operational)');
 
   // Write archive snapshot (overwrite to ensure the snapshot is accurate)
   const archived = ensureArchiveHeader(prevTag, currentContent);
   fs.writeFileSync(archivePath, archived, 'utf8');
 
-  // Create fresh issues-list.md for new month, carrying Open + Alerts
-  const newIssues = buildNewIssuesList(openRows, alertRows, prevTag);
-  fs.writeFileSync(issuesListPath, newIssues, 'utf8');
+  // Create fresh ops-incidents.md for new month, carrying Open incidents
+  const newIncidents = buildNewIncidents(openRows, prevTag);
+  fs.writeFileSync(incidentsPath, newIncidents, 'utf8');
 
-  console.log(`Rotated issues: archived to ${path.basename(archivePath)} and refreshed issues-list.md`);
+  console.log(`Rotated incidents: archived to ${path.basename(archivePath)} and refreshed ops-incidents.md`);
 }
 
 main();

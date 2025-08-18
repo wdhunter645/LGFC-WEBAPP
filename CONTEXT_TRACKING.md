@@ -7,7 +7,8 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 ## 🚩 **Quick Links**
 
-- **[Open Issues & Alerts](issues-list.md)** — Current website issues and operational alerts
+- **[Project Issues](issues-list.md)** — Post-implementation adjustments and website tasks
+- **[Operational Incidents](ops-incidents.md)** — Jobs and monitors that regressed or failed
 
 ---
 
@@ -30,7 +31,11 @@ _Last updated: 2025-01-27 (America/New_York)_
   - **Status**: Current tracking
 
 - **[`issues-list.md`](issues-list.md)**
-  - **Purpose**: Current open website issues and operational alerts
+  - **Purpose**: Current post-implementation project issues (Open/Closed)
+  - **Status**: Actively maintained
+  
+- **[`ops-incidents.md`](ops-incidents.md)**
+  - **Purpose**: Operational incidents and alerts (Open/Closed, monthly rotation)
   - **Status**: Actively maintained
 
 ---
