@@ -17,7 +17,7 @@ on:
       - completed
 
 permissions:
-  contents: read
+  contents: write
   actions: read
   issues: write
 
@@ -73,3 +73,30 @@ jobs:
             } catch (e) {
               core.warning('Failed to write GitHub Issue (likely permissions): ' + (e && e.message));
             }
+
+      - name: Checkout repository for PR log
+        uses: actions/checkout@v4
+
+      - name: Append triage entry to infra/OPS_ALERTS_LOG.md
+        run: |
+          NAME="${{ github.event.workflow_run.name }}"
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          HTML_URL="${{ github.event.workflow_run.html_url }}"
+          RUN_NUMBER="${{ github.event.workflow_run.run_number }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          mkdir -p infra
+          echo "" >> infra/OPS_ALERTS_LOG.md
+          echo "## TRIAGE: ${NAME} — ${CONCLUSION} (run #${RUN_NUMBER})" >> infra/OPS_ALERTS_LOG.md
+          echo "- Branch: ${BRANCH}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Logs: ${HTML_URL}" >> infra/OPS_ALERTS_LOG.md
+
+      - name: Create PR with triage log entry
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ops-bot: triage ${NAME} failure (run #${{ github.event.workflow_run.run_number }})"
+          branch: "cursor/ops-bot/triage-${{ github.run_id }}"
+          title: "ops-bot: triage ${NAME} failure (#${{ github.event.workflow_run.run_number }})"
+          body: "Automated triage log entry. See run: ${{ github.event.workflow_run.html_url }}"
+          committer: "ops-bot <ops-bot@users.noreply.github.com>"
+          author: "ops-bot <ops-bot@users.noreply.github.com>"

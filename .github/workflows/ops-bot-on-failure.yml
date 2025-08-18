@@ -17,7 +17,7 @@ on:
       - completed
 
 permissions:
-  contents: read
+  contents: write
   actions: read
   issues: write
 
@@ -103,3 +103,27 @@ jobs:
           else
             echo "No SLACK_WEBHOOK_URL configured; skipping Slack notification."
           fi
+
+      - name: Checkout repository for PR log
+        uses: actions/checkout@v4
+
+      - name: Append alert to infra/OPS_ALERTS_LOG.md
+        run: |
+          mkdir -p infra
+          echo "" >> infra/OPS_ALERTS_LOG.md
+          echo "## ${NAME} — ${CONCLUSION} (run #${RUN_NUMBER})" >> infra/OPS_ALERTS_LOG.md
+          echo "- Repo: ${REPO}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Branch: ${BRANCH}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Started: ${STARTED}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Logs: ${HTML_URL}" >> infra/OPS_ALERTS_LOG.md
+
+      - name: Create PR with alert log entry
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ops-bot: log ${NAME} failure (run #${{ github.event.workflow_run.run_number }})"
+          branch: "cursor/ops-bot/alerts-${{ github.run_id }}"
+          title: "ops-bot: log ${NAME} failure (#${{ github.event.workflow_run.run_number }})"
+          body: "Automated alert log entry. See run: ${{ github.event.workflow_run.html_url }}"
+          committer: "ops-bot <ops-bot@users.noreply.github.com>"
+          author: "ops-bot <ops-bot@users.noreply.github.com>"
