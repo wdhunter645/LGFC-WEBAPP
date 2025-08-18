@@ -32,12 +32,14 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion != 'success' }}
+    env:
+      EFFECTIVE_TOKEN: ${{ secrets.OPS_BOT_TOKEN != '' && secrets.OPS_BOT_TOKEN || github.token }}
     steps:
       - name: Create or update per-failure Issue
         uses: actions/github-script@v7
         continue-on-error: true
         with:
-          github-token: ${{ secrets.OPS_BOT_TOKEN }}
+          github-token: ${{ env.EFFECTIVE_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const wr = context.payload.workflow_run;
@@ -99,7 +101,7 @@ jobs:
       - name: Create PR with triage log entry
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.OPS_BOT_TOKEN }}
+          token: ${{ env.EFFECTIVE_TOKEN }}
           commit-message: "ops-bot: triage ${{ github.event.workflow_run.name }} failure (run #${{ github.event.workflow_run.run_number }})"
           branch: "cursor/ops-bot/triage-${{ github.run_id }}"
           title: "ops-bot: triage ${{ github.event.workflow_run.name }} failure (#${{ github.event.workflow_run.run_number }})"

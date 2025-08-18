@@ -31,7 +31,12 @@ jobs:
   alert:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion != 'success' }}
+    env:
+      EFFECTIVE_TOKEN: ${{ secrets.OPS_BOT_TOKEN != '' && secrets.OPS_BOT_TOKEN || github.token }}
     steps:
+      - name: Token detection
+        run: |
+          if [ -n "${EFFECTIVE_TOKEN}" ]; then echo "Using effective token"; fi
       - name: Prepare alert body
         id: prep
         run: |
@@ -69,7 +74,7 @@ jobs:
         env:
           PREPARED: ${{ steps.prep.outputs.body }}
         with:
-          github-token: ${{ secrets.OPS_BOT_TOKEN }}
+          github-token: ${{ env.EFFECTIVE_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const title = 'Ops Alerts (auto)';
@@ -119,7 +124,7 @@ jobs:
       - name: Create PR with alert log entry
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.OPS_BOT_TOKEN }}
+          token: ${{ env.EFFECTIVE_TOKEN }}
           commit-message: "ops-bot: log ${{ github.event.workflow_run.name }} failure (run #${{ github.event.workflow_run.run_number }})"
           branch: "cursor/ops-bot/alerts-${{ github.run_id }}"
           title: "ops-bot: log ${{ github.event.workflow_run.name }} failure (#${{ github.event.workflow_run.run_number }})"
