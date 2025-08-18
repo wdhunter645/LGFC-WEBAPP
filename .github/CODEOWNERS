@@ -1,9 +1,9 @@
 # Require code owner reviews for perm-fix via branch protection settings
 # Update these handles as needed
-* @wdhunter645 @cursor-bot
+* @wdhunter645 @GehrigFanClub
 
-/.github/workflows/ @wdhunter645 @cursor-bot
-/ops/ @wdhunter645 @cursor-bot
-/src/ @wdhunter645 @cursor-bot
-/app/ @wdhunter645 @cursor-bot
-/packages/ @wdhunter645 @cursor-bot
+/.github/workflows/ @wdhunter645 @GehrigFanClub
+/ops/ @wdhunter645 @GehrigFanClub
+/src/ @wdhunter645 @GehrigFanClub
+/app/ @wdhunter645 @GehrigFanClub
+/packages/ @wdhunter645 @GehrigFanClub
