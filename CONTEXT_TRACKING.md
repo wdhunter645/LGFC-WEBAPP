@@ -176,6 +176,10 @@ _Last updated: 2025-01-27 (America/New_York)_
 ### **Session Contexts**
 - **[`SESSION_0818_CONTEXT.md`](SESSION_0818_CONTEXT.md)** - Ops bot notifications review (2025-08-18)
 
+### **Ops Documentation**
+- **[`ops/OPS_LOG.md`](ops/OPS_LOG.md)** - Persistent ops log
+- **[`ops/adr/0001-ops-alerts-workflow_run.md`](ops/adr/0001-ops-alerts-workflow_run.md)** - ADR for failure-trigger alerts
+
 ---
 
 ## 🎯 **NAVIGATION GUIDE**
