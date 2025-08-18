@@ -1,0 +1,9 @@
+# Require code owner reviews for perm-fix via branch protection settings
+# Update these handles as needed
+* @wdhunter645 @gehrigfanclub
+
+/.github/workflows/ @wdhunter645 @gehrigfanclub
+/ops/ @wdhunter645 @gehrigfanclub
+/src/ @wdhunter645 @gehrigfanclub
+/app/ @wdhunter645 @gehrigfanclub
+/packages/ @wdhunter645 @gehrigfanclub
