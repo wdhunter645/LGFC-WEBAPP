@@ -1,0 +1,33 @@
+name: Temp Fix TTL Monitor
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan for temp-fix PRs and TTLs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
+            const now = Date.now();
+            for (const pr of prs) {
+              if (!pr.labels.map(l=>l.name).includes('temp-fix')) continue;
+              const m = /temp-fix-ttl:\s*(\d+)([dh])/i.exec(pr.body || '');
+              const ttlMs = m ? (parseInt(m[1],10) * (m[2].toLowerCase()==='d'?86400000:3600000)) : 7*86400000;
+              const ageMs = now - new Date(pr.created_at).getTime();
+              if (ageMs > ttlMs) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body: `TTL exceeded for temp-fix. Please promote to perm-fix or replace. Age ${(ageMs/86400000).toFixed(1)}d.` });
+                await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: ['temp-fix:expired'] });
+              }
+            }
+

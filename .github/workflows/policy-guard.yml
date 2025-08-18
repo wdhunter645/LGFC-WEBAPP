@@ -1,0 +1,45 @@
+name: Policy Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PR fields and runbook updates
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const pr = (await github.rest.pulls.get({ owner, repo, pull_number: prNumber })).data;
+            const labels = (pr.labels || []).map(l => l.name);
+            const isTemp = labels.includes('temp-fix');
+            const isPerm = labels.includes('perm-fix');
+            if (!isTemp && !isPerm) {
+              core.setFailed('Missing fix-type label: add either temp-fix or perm-fix');
+              return;
+            }
+            if (isPerm && pr.draft) {
+              core.setFailed('perm-fix PRs cannot be Draft');
+              return;
+            }
+            const changed = await github.rest.pulls.listFiles({ owner, repo, pull_number: prNumber, per_page: 300 });
+            const changedPaths = changed.data.map(f => f.filename);
+            const touchedScripts = changedPaths.some(p => p.startsWith('ops/jobs/') && (p.endsWith('.sh') || p.endsWith('.md')));
+            if (changedPaths.some(p => p.startsWith('ops/jobs/') && p.endsWith('.sh'))) {
+              const hasReadme = changedPaths.some(p => /ops\/jobs\/.+\/README\.md$/.test(p));
+              if (!hasReadme) {
+                core.setFailed('Scripts changed under ops/jobs but README.md not updated');
+                return;
+              }
+            }
+            core.summary.addHeading('Policy checks passed').write();
+
