@@ -1,0 +1,34 @@
+name: Rotate Issues List Monthly
+
+on:
+  schedule:
+    - cron: '5 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rotate issues
+        run: node scripts/rotate_issues.mjs
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(issues): monthly rotation of issues-list and archive"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+
