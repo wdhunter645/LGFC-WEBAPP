@@ -5,9 +5,14 @@ on:
     - cron: "0 * * * *" # hourly
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   run-search:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20
@@ -25,12 +30,12 @@ jobs:
         env:
           SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
         run: node scripts/check_migrations.mjs
-        
+      
       - name: Run diagnostic test
         env:
           SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
         run: node scripts/test_ingest.mjs
-        
+      
       - name: Run ingestion (50 max)
         env:
           RSS_FEEDS: ${{ secrets.RSS_FEEDS }}

@@ -1,0 +1,12 @@
+# Code ownership and review rules
+# Default owners
+* @BILL @DEV-BOT
+
+# Workflows (ops)
+.github/workflows/ @OPS-BOT @BILL
+
+# Scripts
+/scripts/ @DEV-BOT @BILL
+
+# App code
+/src/ @DEV-BOT @BILL

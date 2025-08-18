@@ -8,6 +8,7 @@
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
     "scrape:als": "node scripts/scrape_als_events.mjs",
     "voting:automate": "node scripts/voting_automation.mjs"
@@ -26,6 +27,7 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@typescript-eslint/parser": "^6.21.0",
     "astro-eslint-parser": "^0.16.3",
     "autoprefixer": "^10.4.14",
@@ -34,6 +36,7 @@
     "eslint-plugin-astro": "^0.34.0",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "jest": "^29.7.0",
     "postcss": "^8.4.21",
     "prettier": "^3.3.3",
     "tailwindcss": "^3.3.3",
