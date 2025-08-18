@@ -173,6 +173,9 @@ _Last updated: 2025-01-27 (America/New_York)_
 - **[`.github/workflows/search-cron.yml`](.github/workflows/search-cron.yml)** - Content ingestion
 - **[`.github/workflows/traffic-simulator.yml`](.github/workflows/traffic-simulator.yml)** - Activity monitoring
 
+### **Session Contexts**
+- **[`SESSION_0818_CONTEXT.md`](SESSION_0818_CONTEXT.md)** - Ops bot notifications review (2025-08-18)
+
 ---
 
 ## 🎯 **NAVIGATION GUIDE**
