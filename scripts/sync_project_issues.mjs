@@ -15,6 +15,8 @@ const issuesListPath = path.join(repoRoot, 'issues-list.md');
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY; // owner/repo
+const LEAD_ENGINEER_ASSIGNEE = process.env.LEAD_ENGINEER_ASSIGNEE || '';
+const OWNER_ASSIGNEE = process.env.OWNER_ASSIGNEE || '';
 
 if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
   console.log('Missing GITHUB_TOKEN or GITHUB_REPOSITORY; exiting.');
@@ -61,6 +63,20 @@ function parseOpenIssuesFromMarkdown(md) {
   return items;
 }
 
+function needsManualIntervention(item) {
+  const hay = `${item.title}\n${item.notes}`.toLowerCase();
+  const keywords = [
+    'manual',
+    'human',
+    'login',
+    'dashboard',
+    'billing',
+    'dns',
+    '[manual]'
+  ];
+  return keywords.some((k) => hay.includes(k));
+}
+
 async function listExistingProjectIssues() {
   const url = `https://api.github.com/repos/${GITHUB_REPOSITORY}/issues?state=open&labels=${encodeURIComponent('project-issue')}&per_page=100`;
   try {
@@ -73,14 +89,15 @@ async function listExistingProjectIssues() {
   }
 }
 
-async function ensureIssue(title, body) {
+async function ensureIssue(title, body, assignees, labels) {
   const url = `https://api.github.com/repos/${GITHUB_REPOSITORY}/issues`;
   return gh(url, {
     method: 'POST',
     body: JSON.stringify({
       title,
       body,
-      labels: ['project-issue'],
+      labels,
+      assignees,
     }),
   });
 }
@@ -106,8 +123,13 @@ async function main() {
       '',
       'Source: `/issues-list.md`',
     ].join('\n');
+    const manual = needsManualIntervention(item);
+    const labels = manual ? ['project-issue', 'manual-intervention'] : ['project-issue'];
+    const assignees = manual
+      ? (OWNER_ASSIGNEE ? [OWNER_ASSIGNEE] : [])
+      : (LEAD_ENGINEER_ASSIGNEE ? [LEAD_ENGINEER_ASSIGNEE] : []);
     try {
-      await ensureIssue(item.title, body);
+      await ensureIssue(item.title, body, assignees, labels);
       console.log(`Created GitHub issue: ${item.title}`);
     } catch (e) {
       console.log(`Failed to create issue for: ${item.title} -> ${e.message}`);
