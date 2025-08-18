@@ -1,0 +1,111 @@
+name: Ops-Bot: Daily Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Days to look back for workflow runs"
+        required: false
+        default: "1"
+        type: string
+  schedule:
+    - cron: '0 12 * * *'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Ops Daily Report
+        id: gen
+        uses: actions/github-script@v7
+        env:
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '1' }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const lookbackDays = parseInt(process.env.LOOKBACK_DAYS || '1', 10);
+            const sinceIso = new Date(Date.now() - lookbackDays*24*60*60*1000).toISOString();
+
+            // Fetch open issues
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100
+            });
+
+            // Fetch workflow runs in lookback window
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner, repo, per_page: 100
+            });
+
+            const recentRuns = runs.filter(r => new Date(r.created_at) >= new Date(sinceIso));
+            const failingRuns = recentRuns.filter(r => r.conclusion === 'failure' || r.conclusion === 'timed_out' || r.conclusion === 'cancelled');
+
+            const byWorkflow = {};
+            for (const r of recentRuns) {
+              const key = r.name || r.workflow_id;
+              if (!byWorkflow[key]) byWorkflow[key] = { total: 0, failed: 0 };
+              byWorkflow[key].total += 1;
+              if (['failure','timed_out','cancelled'].includes(r.conclusion)) byWorkflow[key].failed += 1;
+            }
+
+            const issueLines = [];
+            issueLines.push(`# Ops Daily Report (${new Date().toISOString().slice(0,10)})`);
+            issueLines.push('');
+            issueLines.push('## Open Work');
+            if (issues.length === 0) {
+              issueLines.push('- None');
+            } else {
+              for (const i of issues) {
+                const ownerNames = (i.assignees || []).map(a => `@${a.login}`).join(', ') || 'Unassigned';
+                const labels = (i.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean).join(', ');
+                issueLines.push(`- #${i.number} ${i.title} — ${ownerNames} — ${i.state} ${labels ? '('+labels+')' : ''}`);
+              }
+            }
+            issueLines.push('');
+            issueLines.push('## Actions Summary (last ' + lookbackDays + ' day[s])');
+            if (recentRuns.length === 0) {
+              issueLines.push('- No runs in the lookback window.');
+            } else {
+              for (const [name, stats] of Object.entries(byWorkflow)) {
+                issueLines.push(`- ${name}: ${stats.failed}/${stats.total} failed`);
+              }
+            }
+            issueLines.push('');
+            if (failingRuns.length) {
+              issueLines.push('## Failing Runs');
+              for (const r of failingRuns.slice(0, 20)) {
+                issueLines.push(`- ${r.name} (#${r.run_number}) — ${r.conclusion} — started ${r.run_started_at} — [logs](${r.html_url})`);
+              }
+            }
+
+            const body = issueLines.join('\n');
+            core.setOutput('body', body);
+
+      - name: Create/Update Ops Daily Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const today = new Date().toISOString().slice(0,10);
+            const title = `Ops Daily Report - ${today}`;
+
+            // Search for existing daily report issue
+            const { data: existing } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open`
+            });
+
+            const body = `${{ steps.gen.outputs.body }}`;
+
+            if (existing.total_count > 0) {
+              const issue = existing.items[0];
+              await github.rest.issues.update({ owner, repo, issue_number: issue.number, body });
+              core.summary.addHeading('Updated existing daily report').addLink(title, issue.html_url).write();
+            } else {
+              const { data: created } = await github.rest.issues.create({ owner, repo, title, body, labels: ['ops', 'report'] });
+              core.summary.addHeading('Created new daily report').addLink(title, created.html_url).write();
+            }
+
