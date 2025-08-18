@@ -69,6 +69,7 @@ jobs:
         env:
           PREPARED: ${{ steps.prep.outputs.body }}
         with:
+          github-token: ${{ secrets.OPS_BOT_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
             const title = 'Ops Alerts (auto)';
@@ -126,7 +127,7 @@ jobs:
       - name: Create PR with alert log entry
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.OPS_BOT_TOKEN }}
           commit-message: "ops-bot: log ${NAME} failure (run #${{ github.event.workflow_run.run_number }})"
           branch: "cursor/ops-bot/alerts-${{ github.run_id }}"
           title: "ops-bot: log ${NAME} failure (#${{ github.event.workflow_run.run_number }})"
