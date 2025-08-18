@@ -26,6 +26,7 @@ permissions:
   contents: write
   actions: read
   issues: write
+  pull-requests: write
 
 jobs:
   alert:
@@ -123,6 +124,7 @@ jobs:
 
       - name: Create PR with alert log entry
         uses: peter-evans/create-pull-request@v6
+        continue-on-error: true
         with:
           token: ${{ env.EFFECTIVE_TOKEN }}
           commit-message: "ops-bot: log ${{ github.event.workflow_run.name }} failure (run #${{ github.event.workflow_run.run_number }})"
