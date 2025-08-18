@@ -1,21 +1,10 @@
-# CODEOWNERS
-#
-# This file defines the default reviewers/owners for changes in this repository.
-# See: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Require code owner reviews for perm-fix via branch protection settings
+# Update these handles as needed
+* @wdhunter645 @gehrigfanclub
 
-# Default owner for everything not matched below
-* @wdhunter645
-
-# Application code
-src/** @wdhunter645
-
-# Infrastructure and scripts
-infra/** @wdhunter645
-scripts/** @wdhunter645
-
-# GitHub Actions workflows
-.github/workflows/** @wdhunter645
-
-# Database and Supabase config
-supabase/** @wdhunter645
+/.github/workflows/ @wdhunter645 @gehrigfanclub
+/ops/ @wdhunter645 @gehrigfanclub
+/src/ @wdhunter645 @gehrigfanclub
+/app/ @wdhunter645 @gehrigfanclub
+/packages/ @wdhunter645 @gehrigfanclub
 
