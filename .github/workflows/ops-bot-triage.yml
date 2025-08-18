@@ -51,10 +51,9 @@ jobs:
 
             const title = `OPS: ${name} failed (run #${runNumber} on ${branch})`;
 
-            // Avoid duplicates: search for open issue with same title
-            const search = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open`
-            });
+            // Avoid duplicates: list open issues and match by exact title (avoid search scope)
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 });
+            const existing = openIssues.find(i => i.title === title);
 
             const body = [
               `Workflow: ${name}`,
@@ -68,9 +67,8 @@ jobs:
             ].join('\n');
 
             try {
-              if (search.data.total_count > 0) {
-                const issue = search.data.items[0];
-                await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body });
+              if (existing) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
                 await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: ['ops', 'priority:high'] }).catch(() => {});
                 if (actor) { await github.rest.issues.addAssignees({ owner, repo, issue_number: issue.number, assignees: [actor] }).catch(() => {}); }
               } else {
