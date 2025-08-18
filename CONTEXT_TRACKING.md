@@ -155,6 +155,16 @@ Checklist:
 
 ---
 
+## 🗂️ **RETIRED EXTERNAL REPOSITORIES**
+
+- VERCEL repo — Deleted on 2025-08-18
+- draft-dynamics (Lovable) repo — Deleted on 2025-08-18
+- LGFC-WEBAPP-cb3b3 (Netlify) repo — Deleted on 2025-08-18
+
+Note: Keep this record temporarily; remove in a future cleanup once we confirm no lingering references.
+
+---
+
 ## 🌿 **GIT BRANCH CONTEXT (Development History)**
 
 ### **Cursor Chat Thread Branches**
