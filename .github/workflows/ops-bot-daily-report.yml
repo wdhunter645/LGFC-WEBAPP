@@ -9,7 +9,9 @@ on:
         default: "1"
         type: string
   schedule:
-    - cron: '0 12 * * *'
+    # Run at both 10:00 and 11:00 UTC to cover EDT/EST; the job will self-gate to 6am US/Eastern
+    - cron: '0 10 * * *'
+    - cron: '0 11 * * *'
 
 permissions:
   contents: read
@@ -20,6 +22,13 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
+      - name: Run only at 6am US/Eastern
+        run: |
+          HOUR=$(TZ=America/New_York date +%H)
+          if [ "$HOUR" != "06" ]; then
+            echo "Not 6am US/Eastern (current hour $HOUR), exiting."
+            exit 0
+          fi
       - name: Generate Ops Daily Report
         id: gen
         uses: actions/github-script@v7
