@@ -12,6 +12,7 @@ on:
       - Supabase Monthly Full Backup
       - Ops Test: Intentional Failure
       - Ops Test: Timeout
+      - Ops Self Test: Push Failure
     types:
       - completed
 
