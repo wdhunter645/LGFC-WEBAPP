@@ -1,0 +1,89 @@
+name: Dev-Bot: Implementation Loop
+
+on:
+  schedule:
+    # Every 10 minutes
+    - cron: '*/10 * * * *'
+    # 6am ET kickoff (EDT/EST safe via self-gate); run at both 10 & 11 UTC
+    - cron: '0 10 * * *'
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: dev-impl-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan_and_iterate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate to 6am ET for kickoff cron (skip on non-6am runs)
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            HOUR=$(TZ=America/New_York date +%H)
+            MIN=$(TZ=America/New_York date +%M)
+            if [ "$MIN" = "00" ] && [ "$HOUR" != "06" ]; then
+              echo "Non-6am ET hourly trigger; continuing because this is the 10-min loop."
+            fi
+          fi
+      - uses: actions/checkout@v4
+      - name: Select top issue(s)
+        id: pick
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            // pick up to 2 issues labeled dev/feature, sort by priority then created_at
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100, labels: 'dev,feature'
+            });
+            const prio = (labels) => {
+              const p = (labels||[]).map(l => typeof l==='string'?l:l.name).find(n => /^priority:/i.test(n));
+              return p ? parseInt(p.split(':')[1]) || 99 : 99;
+            }
+            const sorted = issues.sort((a,b)=> prio(a.labels)-prio(b.labels) || new Date(a.created_at)-new Date(b.created_at));
+            const chosen = sorted.slice(0,2);
+            core.setOutput('issues', JSON.stringify(chosen.map(i => ({number:i.number, title:i.title}))));
+      - name: Implement each issue (draft PR loop)
+        if: steps.pick.outputs.issues != '[]'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issues = JSON.parse(core.getInput('issues') || steps.pick.outputs.issues);
+            for (const i of issues) {
+              const slug = i.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+              const branch = `cursor/dev-bot/${i.number}-${slug}`;
+              // ensure Next: exists
+              await github.rest.issues.createComment({ owner, repo, issue_number: i.number, body: 'Next: implement and validate via draft PR automation loop.' });
+              // create branch if not exists via lightweight commit
+              await exec.exec('bash', ['-lc', `
+                set -e
+                git fetch origin
+                if ! git show-ref --verify --quiet refs/heads/${branch}; then
+                  git checkout -b ${branch}
+                  echo "dev-bot heartbeat $(date -u +%FT%TZ)" >> .dev-bot.heartbeat
+                  git add .dev-bot.heartbeat || true
+                  git config user.name "dev-bot"
+                  git config user.email "dev-bot@users.noreply.github.com"
+                  git commit -m "dev-bot: bootstrap branch for #${i.number}"
+                  git push -u origin ${branch}
+                else
+                  git checkout ${branch}
+                fi
+              `]);
+              // open or update draft PR
+              const prs = await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${branch}` });
+              if (!prs.data.length) {
+                await github.rest.pulls.create({ owner, repo, title: `dev-bot: ${i.title} (#${i.number})`, head: branch, base: 'main', body: 'Automated draft PR by dev-bot.\n\nLinked issue: #'+i.number, draft: true });
+              }
+            }
+      - name: CI/test iteration placeholder
+        run: |
+          echo "Implement your build/test commands here if needed."
+
