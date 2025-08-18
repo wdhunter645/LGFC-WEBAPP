@@ -12,6 +12,9 @@ on:
     # Run at both 10:00 and 11:00 UTC to cover EDT/EST; the job will self-gate to 6am US/Eastern
     - cron: '0 10 * * *'
     - cron: '0 11 * * *'
+  push:
+    branches:
+      - cursor/for-fuck-sake-e246
 
 permissions:
   contents: read
