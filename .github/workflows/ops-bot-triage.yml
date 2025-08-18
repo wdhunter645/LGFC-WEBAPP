@@ -102,9 +102,9 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.OPS_BOT_TOKEN }}
-          commit-message: "ops-bot: triage ${NAME} failure (run #${{ github.event.workflow_run.run_number }})"
+          commit-message: "ops-bot: triage ${{ github.event.workflow_run.name }} failure (run #${{ github.event.workflow_run.run_number }})"
           branch: "cursor/ops-bot/triage-${{ github.run_id }}"
-          title: "ops-bot: triage ${NAME} failure (#${{ github.event.workflow_run.run_number }})"
+          title: "ops-bot: triage ${{ github.event.workflow_run.name }} failure (#${{ github.event.workflow_run.run_number }})"
           body: "Automated triage log entry. See run: ${{ github.event.workflow_run.html_url }}"
           committer: "ops-bot <ops-bot@users.noreply.github.com>"
           author: "ops-bot <ops-bot@users.noreply.github.com>"

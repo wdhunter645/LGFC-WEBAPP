@@ -118,19 +118,19 @@ jobs:
         run: |
           mkdir -p infra
           echo "" >> infra/OPS_ALERTS_LOG.md
-          echo "## ${NAME} — ${CONCLUSION} (run #${RUN_NUMBER})" >> infra/OPS_ALERTS_LOG.md
-          echo "- Repo: ${REPO}" >> infra/OPS_ALERTS_LOG.md
-          echo "- Branch: ${BRANCH}" >> infra/OPS_ALERTS_LOG.md
-          echo "- Started: ${STARTED}" >> infra/OPS_ALERTS_LOG.md
-          echo "- Logs: ${HTML_URL}" >> infra/OPS_ALERTS_LOG.md
+          echo "## ${{ github.event.workflow_run.name }} — ${{ github.event.workflow_run.conclusion }} (run #${{ github.event.workflow_run.run_number }})" >> infra/OPS_ALERTS_LOG.md
+          echo "- Repo: ${{ github.repository }}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Branch: ${{ github.event.workflow_run.head_branch }}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Started: ${{ github.event.workflow_run.run_started_at }}" >> infra/OPS_ALERTS_LOG.md
+          echo "- Logs: ${{ github.event.workflow_run.html_url }}" >> infra/OPS_ALERTS_LOG.md
 
       - name: Create PR with alert log entry
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.OPS_BOT_TOKEN }}
-          commit-message: "ops-bot: log ${NAME} failure (run #${{ github.event.workflow_run.run_number }})"
+          commit-message: "ops-bot: log ${{ github.event.workflow_run.name }} failure (run #${{ github.event.workflow_run.run_number }})"
           branch: "cursor/ops-bot/alerts-${{ github.run_id }}"
-          title: "ops-bot: log ${NAME} failure (#${{ github.event.workflow_run.run_number }})"
+          title: "ops-bot: log ${{ github.event.workflow_run.name }} failure (#${{ github.event.workflow_run.run_number }})"
           body: "Automated alert log entry. See run: ${{ github.event.workflow_run.html_url }}"
           committer: "ops-bot <ops-bot@users.noreply.github.com>"
           author: "ops-bot <ops-bot@users.noreply.github.com>"
