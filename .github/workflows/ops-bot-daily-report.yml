@@ -8,10 +8,14 @@ on:
         required: false
         default: "1"
         type: string
+  repository_dispatch:
+    types: [ops_alert]
   schedule:
-    # Run at both 10:00 and 11:00 UTC to cover EDT/EST; the job will self-gate to 6am US/Eastern
-    - cron: '0 10 * * *'
-    - cron: '0 11 * * *'
+    - cron: '*/10 * * * *'
+  workflow_run:
+    workflows: ["Traffic Simulator", "Traffic Simulator (Monitored)", "search-cron", "CI", "Supabase Daily Schema Backup", "Supabase Weekly Full Backup", "Supabase Monthly Full Backup"]
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -22,13 +26,6 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-      - name: Run only at 6am US/Eastern
-        run: |
-          HOUR=$(TZ=America/New_York date +%H)
-          if [ "$HOUR" != "06" ]; then
-            echo "Not 6am US/Eastern (current hour $HOUR), exiting."
-            exit 0
-          fi
       - name: Generate Ops Daily Report
         id: gen
         uses: actions/github-script@v7

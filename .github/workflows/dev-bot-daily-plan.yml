@@ -2,10 +2,10 @@ name: Dev-Bot: Daily Plan
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [dev_alert]
   schedule:
-    # Run at both 10:00 and 11:00 UTC to cover EDT/EST; self-gate to 6am US/Eastern
-    - cron: '0 10 * * *'
-    - cron: '0 11 * * *'
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: read
@@ -15,13 +15,6 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     steps:
-      - name: Run only at 6am US/Eastern
-        run: |
-          HOUR=$(TZ=America/New_York date +%H)
-          if [ "$HOUR" != "06" ]; then
-            echo "Not 6am US/Eastern (current hour $HOUR), exiting."
-            exit 0
-          fi
       - uses: actions/checkout@v4
       - name: Build Dev Plan Issue
         id: gen
