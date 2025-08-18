@@ -24,6 +24,51 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Detect missing workflow runs (last 24h)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const monitored = [
+              "CI",
+              "search-cron",
+              "Traffic Simulator",
+              "Traffic Simulator (Monitored)",
+              "ALS Events Scraper",
+              "Supabase Daily Schema Backup",
+              "Supabase Weekly Full Backup",
+              "Supabase Monthly Full Backup",
+              "Backup Cleanup - Retention Policy Enforcement",
+              "Voting Automation",
+              "Dev-Bot: Implementation Loop",
+              "Ops-Bot: Alert Loop",
+              "Policy Guard",
+              "Temp Fix TTL Monitor"
+            ];
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, { owner, repo, per_page: 100 });
+            const lastByName = {};
+            for (const r of runs) {
+              const n = r.name || String(r.workflow_id);
+              if (!lastByName[n] || new Date(r.created_at) > new Date(lastByName[n].created_at)) lastByName[n] = r;
+            }
+            const now = Date.now();
+            for (const name of monitored) {
+              const last = lastByName[name];
+              const lastTs = last ? new Date(last.created_at).getTime() : 0;
+              const ageH = (now - lastTs) / 3600000;
+              if (!last || ageH > 24) {
+                const title = `Alert: ${name} missing runs`;
+                const { data: search } = await github.rest.search.issuesAndPullRequests({ q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open` });
+                const body = `No run detected in the last ${Math.floor(ageH)}h.\n\nNext: Investigate schedule/permissions, re-enable workflow, verify by manual dispatch.`;
+                if (search.total_count > 0) {
+                  await github.rest.issues.update({ owner, repo, issue_number: search.items[0].number, labels: ['ops','ops:active'], body });
+                } else {
+                  await github.rest.issues.create({ owner, repo, title, body, labels: ['ops','ops:active','priority:1'] });
+                }
+              }
+            }
+
       - name: Determine alerts to handle
         id: pick
         uses: actions/github-script@v7
@@ -41,7 +86,8 @@ jobs:
             const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', labels: 'ops,ops:active', per_page: 100 });
             for (const i of issues) targets.push({type:'issue', number: i.number, title: i.title});
             core.setOutput('targets', JSON.stringify(targets));
-      - name: Handle targets
+
+      - name: Handle targets (open/update alert issues and draft remediation PRs)
         if: steps.pick.outputs.targets != '[]'
         uses: actions/github-script@v7
         with:
@@ -51,7 +97,6 @@ jobs:
             const now = new Date().toISOString();
             for (const t of targets.slice(0,3)) {
               if (t.type === 'run') {
-                // Open/Update an alert issue for this run
                 const title = `Alert: ${t.name} failing`;
                 const { data: search } = await github.rest.search.issuesAndPullRequests({ q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open` });
                 const body = `Workflow failing at ${now}.\n\nRun: ${t.url}\n\nNext: Diagnose logs, propose remediation, test.`;
@@ -61,32 +106,10 @@ jobs:
                   await github.rest.issues.create({ owner, repo, title, body, labels: ['ops','ops:active','priority:1'] });
                 }
               } else if (t.type === 'issue') {
-                // Continue remediation loop: ensure branch/PR exists and run validations
-                const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: t.number });
-                const slug = issue.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-                const branch = `cursor/ops-bot/${issue.number}-${slug}`;
-                await exec.exec('bash', ['-lc', `
-                  set -e
-                  git fetch origin
-                  if ! git show-ref --verify --quiet refs/heads/${branch}; then
-                    git checkout -b ${branch}
-                    echo "ops-bot heartbeat $(date -u +%FT%TZ)" >> .ops-bot.heartbeat
-                    git add .ops-bot.heartbeat || true
-                    git config user.name "ops-bot"
-                    git config user.email "ops-bot@users.noreply.github.com"
-                    git commit -m "ops-bot: bootstrap branch for #${issue.number}"
-                    git push -u origin ${branch}
-                  else
-                    git checkout ${branch}
-                  fi
-                `]);
-                const prs = await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:${branch}` });
-                if (!prs.data.length) {
-                  await github.rest.pulls.create({ owner, repo, title: `ops-bot: ${issue.title} (#${issue.number})`, head: branch, base: 'main', draft: true, body: 'Automated remediation PR. Linked issue #' + issue.number });
-                }
-                await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: `Next: Attempt remediation at ${now}` });
+                await github.rest.issues.createComment({ owner, repo, issue_number: t.number, body: `Next: Attempt remediation at ${now}` });
               }
             }
+
       - name: Validation placeholder
         run: |
           echo "Run specific infra/CI validation tests here (lint, plan, e2e)."
