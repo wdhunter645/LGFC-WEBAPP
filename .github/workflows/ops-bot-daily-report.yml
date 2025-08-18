@@ -59,10 +59,30 @@ jobs:
             if (issues.length === 0) {
               issueLines.push('- None');
             } else {
+              // For each issue, fetch a recent comment that specifies a next action (prefixes: Next:, Next action:)
               for (const i of issues) {
                 const ownerNames = (i.assignees || []).map(a => `@${a.login}`).join(', ') || 'Unassigned';
-                const labels = (i.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean).join(', ');
-                issueLines.push(`- #${i.number} ${i.title} — ${ownerNames} — ${i.state} ${labels ? '('+labels+')' : ''}`);
+                const labelNames = (i.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean);
+                const statusLabel = labelNames.find(n => /^status:/i.test(n)) || 'status:open';
+
+                // Pull the most recent comments (up to 10) and find a line starting with Next:
+                let nextAction = '';
+                try {
+                  const comments = await github.paginate(github.rest.issues.listComments, {
+                    owner, repo, issue_number: i.number, per_page: 50
+                  });
+                  const sorted = comments.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+                  for (const c of sorted) {
+                    const lines = (c.body || '').split(/\r?\n/);
+                    const found = lines.find(line => /^\s*(Next action:|Next:)/i.test(line));
+                    if (found) { nextAction = found.replace(/^\s*(Next action:|Next:)\s*/i, '').trim(); break; }
+                  }
+                } catch (e) {
+                  // ignore comment fetch errors
+                }
+                const nextText = nextAction ? ` — Next: ${nextAction}` : '';
+                const labelsText = labelNames.length ? ` (${labelNames.join(', ')})` : '';
+                issueLines.push(`- #${i.number} ${i.title} — Owner: ${ownerNames} — ${statusLabel}${labelsText}${nextText}`);
               }
             }
             issueLines.push('');
