@@ -5,6 +5,10 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 > **Purpose**: This is the master index for all project context, decisions, and documentation. It serves as the entry point to navigate the complete project history and current state.
 
+## 🚩 **Quick Links**
+
+- **[Open Issues & Alerts](issues-list.md)** — Current website issues and operational alerts
+
 ---
 
 ## 🎯 **MASTER DOCUMENTS (Primary References)**
@@ -24,6 +28,10 @@ _Last updated: 2025-01-27 (America/New_York)_
   - **Purpose**: Original project plan updated with completion status for each line item
   - **Content**: All phases with detailed completion notes
   - **Status**: Current tracking
+
+- **[`issues-list.md`](issues-list.md)**
+  - **Purpose**: Current open website issues and operational alerts
+  - **Status**: Actively maintained
 
 ---
 
