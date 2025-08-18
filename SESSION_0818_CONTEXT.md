@@ -78,5 +78,12 @@ Next:
 ---
 
 ## 🧭 Notes
-- This session focuses on notification triggers and behavior; no code execution changes were made.
+- Implemented alerting:
+  - `.github/workflows/ops-bot-on-failure.yml` (consolidated alerts) and `.github/workflows/ops-bot-triage.yml` (per-failure issues)
+  - Expanded monitoring to CI, search-cron, traffic simulators, Supabase backups, ALS scraper, voting automation, dev-bot, dev daily plan, ops daily report, dev-ops create-issue, and test/self-test workflows
+  - Added missing-runs watchdog `.github/workflows/ops-bot-missing-runs.yml`
+  - Wired `OPS_BOT_TOKEN` with fallback to `GITHUB_TOKEN`; granted contents/issues/PRs write; removed Search API usage
+  - Durable fallback: PR appends to `infra/OPS_ALERTS_LOG.md`
+- Netlify: deploy only from `main`; skip non-main branch builds via `netlify.toml` ignore
+- Current status: bots trigger but write steps were failing; permissions updated and workflows hardened; re-trigger in progress to confirm Issue/PR creation
 
