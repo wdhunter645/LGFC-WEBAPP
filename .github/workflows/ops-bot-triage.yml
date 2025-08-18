@@ -2,26 +2,11 @@ name: Ops-Bot: Triage Failed Runs
 
 on:
   workflow_run:
-    workflows:
-      - CI
-      - search-cron
-      - Traffic Simulator
-      - Traffic Simulator (Monitored)
-      - Supabase Daily Schema Backup
-      - Supabase Weekly Full Backup
-      - Supabase Monthly Full Backup
-      - Ops Test: Intentional Failure
-      - Ops Test: Timeout
-      - Ops Self Test: Push Failure
-      - ALS Events Scraper
-      - Voting Automation
-      - dev-bot
-      - Dev-Bot: Daily Plan
-      - Ops-Bot: Daily Report
-      - Dev-Ops: Create Issue
-      - Ops Self Test: Push Failure
     types:
       - completed
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ops-triage]
 
 permissions:
   contents: write
@@ -32,7 +17,7 @@ permissions:
 jobs:
   triage:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion != 'success' }}
+    if: ${{ github.event.workflow_run.conclusion != 'success' && github.event.workflow_run.name != 'Ops-Bot: Alert on Workflow Failure' && github.event.workflow_run.name != 'Ops-Bot: Triage Failed Runs' && github.event.workflow_run.name != 'Ops-Bot: Detect Missing Runs' }}
     env:
       EFFECTIVE_TOKEN: ${{ secrets.OPS_BOT_TOKEN != '' && secrets.OPS_BOT_TOKEN || github.token }}
     steps:

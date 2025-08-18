@@ -4,6 +4,9 @@ on:
   workflow_run:
     types:
       - completed
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ops-alert]
 
 permissions:
   contents: write
