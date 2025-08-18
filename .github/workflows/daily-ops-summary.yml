@@ -1,0 +1,30 @@
+name: Daily Ops Summary (6am New York)
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # 06:00 EDT
+    - cron: '0 11 * * *' # 06:00 EST
+  workflow_dispatch:
+
+jobs:
+  post-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Post Daily Ops Summary issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/post_daily_ops_summary.mjs
+
