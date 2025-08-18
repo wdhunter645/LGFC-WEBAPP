@@ -2,7 +2,7 @@ name: Ops-Bot: Alert Loop
 
 on:
   workflow_run:
-    workflows: ["ci", "Dev-Bot: Implementation Loop", "Dev-Bot: Daily Plan", "Ops-Bot: Daily Report"]
+    workflows: ["CI", "search-cron", "Traffic Simulator", "Traffic Simulator (Monitored)", "ALS Events Scraper", "Supabase Daily Schema Backup", "Supabase Weekly Full Backup", "Supabase Monthly Full Backup", "Backup Cleanup - Retention Policy Enforcement", "Voting Automation", "Dev-Bot: Implementation Loop", "Ops-Bot: Alert Loop", "Policy Guard", "Temp Fix TTL Monitor"]
     types: [completed]
   schedule:
     - cron: '*/10 * * * *'
@@ -90,4 +90,3 @@ jobs:
       - name: Validation placeholder
         run: |
           echo "Run specific infra/CI validation tests here (lint, plan, e2e)."
-
