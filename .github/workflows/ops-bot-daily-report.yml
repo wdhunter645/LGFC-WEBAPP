@@ -127,7 +127,7 @@ jobs:
               q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open`
             });
 
-            const body = `${{ steps.gen.outputs.body }}`;
+            const body = process.env.BODY || '';
 
             if (existing.total_count > 0) {
               const issue = existing.items[0];
