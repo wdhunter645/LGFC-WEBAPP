@@ -21,6 +21,22 @@ jobs:
     env:
       EFFECTIVE_TOKEN: ${{ secrets.OPS_BOT_TOKEN != '' && secrets.OPS_BOT_TOKEN || github.token }}
     steps:
+      - name: Smoke test issue write
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          github-token: ${{ env.EFFECTIVE_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const title = 'Ops Bot Smoke Test';
+            const body = 'Smoke test from ops-bot-on-failure at ' + new Date().toISOString();
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 });
+            const existing = openIssues.find(i => i.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body, labels: ['ops'] });
+            }
       - name: Token detection
         run: |
           if [ -n "${EFFECTIVE_TOKEN}" ]; then echo "Using effective token"; fi
