@@ -7,14 +7,26 @@ export const handler: Handler = async (event) => {
 
   try {
     // Test Supabase connection
-    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_PUBLIC_API_KEY) {
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'error',
+          message: 'Missing Supabase configuration',
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
 
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY);
 
     // Test database connection
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('search_state')
       .select('*')
       .limit(1);
@@ -47,14 +59,14 @@ export const handler: Handler = async (event) => {
       })
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         status: 'error',
         message: 'Health check failed',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString()
       })
     };
