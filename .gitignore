@@ -2,7 +2,6 @@
 .env
 node_modules
 supabase_token.sh
-
 auth_debug.log
 
 # In .gitignore
@@ -12,4 +11,3 @@ dist/
 
 # Netlify functions build artifacts
 netlify/functions-dist/
-
