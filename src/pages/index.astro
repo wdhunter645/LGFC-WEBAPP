@@ -257,16 +257,42 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       try {
         const eventsWrap = document.getElementById('fanclub-events');
         if (!eventsWrap) return;
+        
+        // Add loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'flex items-center justify-center p-4 bg-slate-50 rounded-lg text-slate-600';
+        loadingDiv.innerHTML = '🔄 Loading upcoming events...';
+        eventsWrap.appendChild(loadingDiv);
+        
         // Dynamically import client only when needed to avoid SSR issues
         const { createClient } = await import('../lib/supabase-client.js');
         const supabase = createClient();
         const { data, error } = await supabase
           .from('events')
           .select('id, title, start_at, location, link_url, is_club_event')
+          .eq('is_club_event', true)
           .gte('start_at', new Date(Date.now() - 24*60*60*1000).toISOString())
           .order('start_at', { ascending: true })
           .limit(9);
-        if (error || !data || data.length === 0) return;
+        
+        // Remove loading indicator
+        eventsWrap.removeChild(loadingDiv);
+        
+        if (error) {
+          console.warn('Events query error:', error.message);
+          return; // Fall back to static content
+        }
+        
+        if (!data || data.length === 0) {
+          // Show message about no upcoming events but keep static content
+          const noEventsDiv = document.createElement('div');
+          noEventsDiv.className = 'text-center p-4 bg-blue-50 rounded-lg text-blue-800 text-sm mb-4';
+          noEventsDiv.innerHTML = '📅 No upcoming club events scheduled. Check back soon!';
+          eventsWrap.insertBefore(noEventsDiv, eventsWrap.firstChild);
+          return;
+        }
+        
+        // Replace static content with dynamic events
         eventsWrap.innerHTML = '';
         for (const ev of data) {
           const div = document.createElement('div');
@@ -281,7 +307,18 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           `;
           eventsWrap.appendChild(div);
         }
-      } catch (e) { /* ignore */ }
+        
+        // Add success indicator
+        console.log('✅ Events loaded successfully:', data.length, 'events');
+        
+      } catch (e) { 
+        console.warn('Events loading failed:', e.message); 
+        // Remove any loading indicators and fall back to static content
+        const loadingDiv = document.getElementById('fanclub-events')?.querySelector('[class*="Loading"]');
+        if (loadingDiv) {
+          loadingDiv.remove();
+        }
+      }
     }
 
     function updateFaqCount() {
@@ -306,19 +343,47 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     if (askForm) {
       askForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        askStatus.textContent = 'Sending…';
+        
+        const question = askQuestion.value.trim();
+        if (!question || question.length < 5) {
+          askStatus.textContent = 'Please enter a question (at least 5 characters).';
+          askStatus.className = 'text-sm text-red-600';
+          return;
+        }
+        
+        askStatus.textContent = 'Sending your question...';
+        askStatus.className = 'text-sm text-blue-600';
+        
         try {
           const res = await fetch('/.netlify/functions/submit-question', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: askQuestion.value, email: askEmail.value })
           });
-          if (!res.ok) throw new Error('Failed');
-          askStatus.textContent = 'Thanks! Your question has been submitted.';
-          askQuestion.value = '';
-          askEmail.value = '';
+          
+          if (!res.ok) {
+            throw new Error(`Server responded with ${res.status}`);
+          }
+          
+          const result = await res.json();
+          
+          if (result.ok) {
+            if (result.stored) {
+              askStatus.textContent = 'Thanks! Your question has been submitted and saved.';
+              askStatus.className = 'text-sm text-green-600';
+            } else {
+              askStatus.textContent = 'Thanks! Your question was received (database unavailable but logged).';
+              askStatus.className = 'text-sm text-yellow-600';
+            }
+            askQuestion.value = '';
+            askEmail.value = '';
+          } else {
+            throw new Error('Submission failed');
+          }
         } catch (err) {
-          askStatus.textContent = 'Sorry, something went wrong. Please try again.';
+          console.error('Question submission error:', err);
+          askStatus.textContent = 'Sorry, something went wrong. Please try again later.';
+          askStatus.className = 'text-sm text-red-600';
         }
       });
     }
@@ -327,14 +392,42 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     document.querySelectorAll('.vote-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const imageId = btn.getAttribute('data-image');
+        const originalText = btn.textContent;
+        
         try {
-          await fetch('/.netlify/functions/vote', {
+          btn.textContent = 'Voting...';
+          btn.disabled = true;
+          
+          const response = await fetch('/.netlify/functions/vote', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_id: imageId })
           });
-        } catch (e) { /* ignore */ }
-        window.location.href = '/leaderboard';
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.ok) {
+              btn.textContent = 'Voted!';
+              btn.className = btn.className.replace('btn-secondary', 'btn-primary');
+              setTimeout(() => {
+                window.location.href = '/leaderboard';
+              }, 1000);
+            } else {
+              throw new Error('Vote not recorded');
+            }
+          } else {
+            throw new Error(`Server error: ${response.status}`);
+          }
+        } catch (e) { 
+          console.warn('Voting failed:', e.message); 
+          btn.textContent = 'Vote Failed';
+          btn.className = btn.className.replace('btn-secondary', 'border-red-500 text-red-600');
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.className = btn.className.replace('border-red-500 text-red-600', 'btn-secondary');
+            btn.disabled = false;
+          }, 3000);
+        }
       });
     });
   </script>
