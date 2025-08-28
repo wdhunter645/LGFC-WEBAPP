@@ -8,8 +8,8 @@ export const handler = async (event: any) => {
       return { statusCode: 400, body: 'Invalid question' };
     }
 
-    const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
-    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY as string | undefined;
+    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 
     let stored = false;
     if (SUPABASE_URL && SUPABASE_PUBLIC_API_KEY) {

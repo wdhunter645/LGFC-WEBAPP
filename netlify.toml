@@ -9,14 +9,17 @@
 [context.production.environment]
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
+  # SUPABASE_SERVICE_ROLE_KEY should be set in Netlify dashboard as a secret
 
 [context.deploy-preview.environment]
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
+  # SUPABASE_SERVICE_ROLE_KEY should be set in Netlify dashboard as a secret
 
 [context.branch-deploy.environment]
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
+  # SUPABASE_SERVICE_ROLE_KEY should be set in Netlify dashboard as a secret
 
 [[redirects]]
   from = "/admin/*"

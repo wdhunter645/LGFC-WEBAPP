@@ -6,7 +6,7 @@ export const handler: Handler = async (event) => {
     const { item_id } = JSON.parse(event.body || '{}');
     if (!item_id) return { statusCode: 400, body: 'Missing item_id' };
 
-    const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
+    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return { statusCode: 200, body: JSON.stringify({ ok: true, stored: false }) };
 

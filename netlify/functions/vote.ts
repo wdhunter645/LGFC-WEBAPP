@@ -8,8 +8,8 @@ export const handler: Handler = async (event) => {
 		const { image_id } = JSON.parse(event.body || '{}');
 		if (!image_id) return { statusCode: 400, body: 'Missing image_id' };
 
-		const SUPABASE_URL = process.env.SUPABASE_URL as string | undefined;
-		const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY as string | undefined;
+		const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+		const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 		if (!SUPABASE_URL || !SUPABASE_PUBLIC_API_KEY) {
 			return { statusCode: 500, body: 'Server not configured' };
 		}
