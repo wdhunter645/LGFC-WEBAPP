@@ -86,7 +86,7 @@ if (Astro.request.method === 'POST') {
   <div class="info status">
     <strong>Configuration:</strong><br>
     URL: {SUPABASE_URL}<br>
-    API Key: {SUPABASE_PUBLIC_API_KEY.substring(0, 20)}...<br>
+    API Key: {SUPABASE_PUBLIC_API_KEY ? SUPABASE_PUBLIC_API_KEY.substring(0, 20) + '...' : 'Not configured'}<br>
     Environment: {import.meta.env.MODE || 'production'}
   </div>
 

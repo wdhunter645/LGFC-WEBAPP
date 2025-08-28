@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient, createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 
 export function createClient() {
   const supabaseUrl = (typeof window !== 'undefined' && window.__SUPABASE_URL) || 
@@ -33,7 +33,7 @@ export function createServerClient(cookies) {
                            process.env.VITE_SUPABASE_ANON_KEY ||
                            'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs'
   
-  return createServerClient(
+  return createSupabaseServerClient(
     supabaseUrl,
     supabasePublicKey,
     {

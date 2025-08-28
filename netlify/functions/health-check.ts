@@ -6,9 +6,9 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Test Supabase connection
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY;
+    // Test Supabase connection with fallback values for reliable operation
+    const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 
     if (!SUPABASE_URL || !SUPABASE_PUBLIC_API_KEY) {
       return {
