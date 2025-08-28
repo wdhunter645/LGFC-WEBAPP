@@ -1,0 +1,60 @@
+[
+  {
+    "title": "Monthly Fan Club Meeting",
+    "description": "Join fellow Lou Gehrig fans for our monthly discussion meeting. We'll be covering recent memorabilia finds and planning upcoming events.",
+    "start_at": "2025-02-15T14:00:00-05:00",
+    "end_at": "2025-02-15T16:00:00-05:00",
+    "location": "Bronx Community Center",
+    "is_club_event": true,
+    "source": "fan_club"
+  },
+  {
+    "title": "Gehrig Trivia Night",
+    "description": "Test your knowledge of the Iron Horse with our monthly trivia competition. Prizes for the top three teams!",
+    "start_at": "2025-02-22T19:00:00-05:00",
+    "end_at": "2025-02-22T21:30:00-05:00",
+    "location": "Mickey Mantle's Restaurant",
+    "link_url": "https://example.com/trivia-signup",
+    "is_club_event": true,
+    "source": "fan_club"
+  },
+  {
+    "title": "Yankees Spring Training Trip",
+    "description": "Join us for a group trip to Tampa to watch the Yankees in spring training. Experience where Lou Gehrig once prepared for the season.",
+    "start_at": "2025-03-10T08:00:00-05:00",
+    "end_at": "2025-03-14T20:00:00-05:00",
+    "location": "Tampa, FL",
+    "link_url": "https://example.com/spring-training-trip",
+    "is_club_event": true,
+    "source": "fan_club"
+  },
+  {
+    "title": "Lou Gehrig Appreciation Day",
+    "description": "Annual celebration of Lou Gehrig's legacy at Yankee Stadium. Special ceremonies and commemorative events.",
+    "start_at": "2025-06-02T13:00:00-04:00",
+    "end_at": "2025-06-02T17:00:00-04:00", 
+    "location": "Yankee Stadium",
+    "link_url": "https://www.mlb.com/yankees/tickets",
+    "is_club_event": true,
+    "source": "fan_club"
+  },
+  {
+    "title": "ALS Research Fundraiser Gala",
+    "description": "Elegant evening supporting ALS research in honor of Lou Gehrig. Includes dinner, silent auction, and keynote speaker.",
+    "start_at": "2025-04-19T18:00:00-04:00",
+    "end_at": "2025-04-19T22:00:00-04:00",
+    "location": "The Plaza Hotel, New York",
+    "link_url": "https://example.com/als-gala",
+    "is_club_event": true,
+    "source": "fan_club"
+  },
+  {
+    "title": "Memorabilia Show & Tell",
+    "description": "Bring your Lou Gehrig collectibles to share with the group. Expert appraisals available.",
+    "start_at": "2025-03-29T11:00:00-04:00",
+    "end_at": "2025-03-29T15:00:00-04:00",
+    "location": "New York Historical Society",
+    "is_club_event": true,
+    "source": "fan_club"
+  }
+]

@@ -10,3 +10,6 @@ auth_debug.log
 
 dist/
 
+# Netlify functions build artifacts
+netlify/functions-dist/
+
