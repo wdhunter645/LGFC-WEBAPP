@@ -8,11 +8,7 @@ head -n 4 .env.example | tail -n +1 | sed '1i\\' >> temp_lines
 sed -i '9r temp_lines' .env
 rm temp_lines
 
-# Add the traffic simulator variables
-echo "" >> .env
-echo "# For traffic simulator" >> .env
-echo "SUPABASE_URL=https://vkwhrbjkdznncjkzkiuo.supabase.co" >> .env
-echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsdmdpbWRubWd5d2t5dmhqdm5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAwMDAwMDAwMDIsImV4cCI6MjAzNTgyNDA4OX0.L1zaSyCeqylWTj4S140v2_78oxtGnHveV-GMZdc" >> .env
+# Traffic simulator variables removed as simulator infrastructure has been decommissioned
 
 echo "✅ .env file updated successfully"
 cat .env
