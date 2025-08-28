@@ -3,10 +3,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = import.meta.env.SUPABASE_URL ||
-                     import.meta.env.VITE_SUPABASE_URL;
+                     import.meta.env.VITE_SUPABASE_URL ||
+                     'https://vkwhrbjkdznncjkzkiuo.supabase.co';
 
 const SUPABASE_PUBLIC_API_KEY = import.meta.env.SUPABASE_PUBLIC_API_KEY ||
-                               import.meta.env.VITE_SUPABASE_ANON_KEY;
+                               import.meta.env.VITE_SUPABASE_ANON_KEY ||
+                               'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -86,7 +88,7 @@ if (Astro.request.method === 'POST') {
   <div class="info status">
     <strong>Configuration:</strong><br>
     URL: {SUPABASE_URL}<br>
-    API Key: {SUPABASE_PUBLIC_API_KEY.substring(0, 20)}...<br>
+    API Key: {SUPABASE_PUBLIC_API_KEY ? SUPABASE_PUBLIC_API_KEY.substring(0, 20) + '...' : 'Not available'}<br>
     Environment: {import.meta.env.MODE || 'production'}
   </div>
 
