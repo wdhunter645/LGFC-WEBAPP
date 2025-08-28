@@ -14,11 +14,11 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg;
+    @apply inline-flex items-center px-[30px] py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg;
   }
   
   .btn-secondary {
-    @apply inline-flex items-center px-6 py-3 border-2 border-slate-600 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all duration-200;
+    @apply inline-flex items-center px-[30px] py-3 border-2 border-slate-600 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all duration-200;
   }
   
   .card {
