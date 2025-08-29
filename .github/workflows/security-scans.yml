@@ -1,0 +1,298 @@
+name: Security Scans - Code & Infrastructure
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: "0 3 * * *"
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Create security scan directories
+        run: |
+          mkdir -p security-scans
+          mkdir -p security-scans/code-analysis
+          mkdir -p security-scans/dependency-analysis
+          mkdir -p security-scans/infrastructure-analysis
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint Security Analysis
+        run: |
+          echo "=== ESLint Security Analysis - $(date) ===" > security-scans/code-analysis/eslint-security.log
+          echo "Running ESLint with security-focused rules..." >> security-scans/code-analysis/eslint-security.log
+          echo "" >> security-scans/code-analysis/eslint-security.log
+          
+          # Run eslint and capture security-related issues
+          npx eslint . --format=unix >> security-scans/code-analysis/eslint-security.log 2>&1 || echo "ESLint found issues or encountered errors" >> security-scans/code-analysis/eslint-security.log
+
+      - name: Run Dependency Security Scan
+        run: |
+          echo "=== NPM Audit Security Scan - $(date) ===" > security-scans/dependency-analysis/npm-audit.log
+          
+          # Detailed npm audit
+          npm audit --audit-level=moderate >> security-scans/dependency-analysis/npm-audit.log 2>&1 || true
+          
+          # JSON format for parsing
+          npm audit --json > security-scans/dependency-analysis/npm-audit.json 2>/dev/null || echo "{}" > security-scans/dependency-analysis/npm-audit.json
+
+      - name: Scan for Hardcoded Secrets
+        run: |
+          echo "=== Hardcoded Secrets Scan - $(date) ===" > security-scans/code-analysis/secrets-scan.log
+          echo "Scanning for potential hardcoded secrets..." >> security-scans/code-analysis/secrets-scan.log
+          echo "" >> security-scans/code-analysis/secrets-scan.log
+          
+          # Common secret patterns
+          SECRET_PATTERNS=(
+            "password\s*[=:]\s*['\"][^'\"]{8,}"
+            "api[_-]?key\s*[=:]\s*['\"][^'\"]{10,}"
+            "secret[_-]?key\s*[=:]\s*['\"][^'\"]{10,}"
+            "access[_-]?token\s*[=:]\s*['\"][^'\"]{10,}"
+            "private[_-]?key\s*[=:]\s*['\"][^'\"]{20,}"
+            "auth[_-]?token\s*[=:]\s*['\"][^'\"]{10,}"
+            "bearer\s+[a-zA-Z0-9_\-\.]{20,}"
+            "[a-zA-Z0-9_\-\.]+\.(amazonaws\.com|supabase\.co).*['\"][^'\"]{20,}['\"]"
+          )
+          
+          FOUND_SECRETS=0
+          
+          for pattern in "${SECRET_PATTERNS[@]}"; do
+            echo "Checking pattern: $pattern" >> security-scans/code-analysis/secrets-scan.log
+            
+            # Search in source files (exclude node_modules and .git)
+            if grep -r -i -n -E "$pattern" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx" --include="*.astro" --include="*.json" . >> security-scans/code-analysis/secrets-scan.log 2>/dev/null; then
+              FOUND_SECRETS=$((FOUND_SECRETS + 1))
+            fi
+          done
+          
+          echo "" >> security-scans/code-analysis/secrets-scan.log
+          if [ $FOUND_SECRETS -gt 0 ]; then
+            echo "⚠️ Potential secrets found: $FOUND_SECRETS patterns matched" >> security-scans/code-analysis/secrets-scan.log
+            echo "SECRETS_FOUND=$FOUND_SECRETS" >> $GITHUB_ENV
+          else
+            echo "✅ No hardcoded secrets detected" >> security-scans/code-analysis/secrets-scan.log
+            echo "SECRETS_FOUND=0" >> $GITHUB_ENV
+          fi
+
+      - name: Scan for SQL Injection Vulnerabilities
+        run: |
+          echo "=== SQL Injection Vulnerability Scan - $(date) ===" > security-scans/code-analysis/sql-injection-scan.log
+          echo "Scanning for potential SQL injection vulnerabilities..." >> security-scans/code-analysis/sql-injection-scan.log
+          echo "" >> security-scans/code-analysis/sql-injection-scan.log
+          
+          # SQL injection patterns
+          SQL_PATTERNS=(
+            "query.*\+.*req\."
+            "SELECT.*\+.*req\."
+            "INSERT.*\+.*req\."
+            "UPDATE.*\+.*req\."
+            "DELETE.*\+.*req\."
+            "WHERE.*\+.*req\."
+            "\.query\(\s*['\"].+\+.+['\"]"
+            "sql.*=.*['\"].*\+.*req\."
+          )
+          
+          FOUND_SQL_ISSUES=0
+          
+          for pattern in "${SQL_PATTERNS[@]}"; do
+            echo "Checking SQL pattern: $pattern" >> security-scans/code-analysis/sql-injection-scan.log
+            
+            if grep -r -i -n -E "$pattern" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx" --include="*.astro" . >> security-scans/code-analysis/sql-injection-scan.log 2>/dev/null; then
+              FOUND_SQL_ISSUES=$((FOUND_SQL_ISSUES + 1))
+            fi
+          done
+          
+          echo "" >> security-scans/code-analysis/sql-injection-scan.log
+          if [ $FOUND_SQL_ISSUES -gt 0 ]; then
+            echo "⚠️ Potential SQL injection vulnerabilities found: $FOUND_SQL_ISSUES patterns matched" >> security-scans/code-analysis/sql-injection-scan.log
+            echo "SQL_ISSUES_FOUND=$FOUND_SQL_ISSUES" >> $GITHUB_ENV
+          else
+            echo "✅ No SQL injection vulnerabilities detected" >> security-scans/code-analysis/sql-injection-scan.log
+            echo "SQL_ISSUES_FOUND=0" >> $GITHUB_ENV
+          fi
+
+      - name: Scan Configuration Files for Security Issues
+        run: |
+          echo "=== Configuration Security Scan - $(date) ===" > security-scans/infrastructure-analysis/config-security.log
+          echo "Scanning configuration files for security issues..." >> security-scans/infrastructure-analysis/config-security.log
+          echo "" >> security-scans/infrastructure-analysis/config-security.log
+          
+          CONFIG_ISSUES=0
+          
+          # Check netlify.toml for security headers
+          if [ -f "netlify.toml" ]; then
+            echo "Checking netlify.toml security configuration..." >> security-scans/infrastructure-analysis/config-security.log
+            
+            if grep -q "X-Frame-Options" netlify.toml; then
+              echo "✅ X-Frame-Options header configured" >> security-scans/infrastructure-analysis/config-security.log
+            else
+              echo "⚠️ X-Frame-Options header missing" >> security-scans/infrastructure-analysis/config-security.log
+              CONFIG_ISSUES=$((CONFIG_ISSUES + 1))
+            fi
+            
+            if grep -q "Content-Security-Policy" netlify.toml; then
+              echo "✅ Content-Security-Policy header configured" >> security-scans/infrastructure-analysis/config-security.log
+            else
+              echo "⚠️ Content-Security-Policy header missing" >> security-scans/infrastructure-analysis/config-security.log
+              CONFIG_ISSUES=$((CONFIG_ISSUES + 1))
+            fi
+            
+            if grep -q "Strict-Transport-Security" netlify.toml; then
+              echo "✅ HSTS header configured" >> security-scans/infrastructure-analysis/config-security.log
+            else
+              echo "⚠️ Strict-Transport-Security header missing" >> security-scans/infrastructure-analysis/config-security.log
+              CONFIG_ISSUES=$((CONFIG_ISSUES + 1))
+            fi
+          fi
+          
+          # Check for exposed sensitive files
+          SENSITIVE_FILES=(
+            ".env"
+            ".env.local"
+            ".env.production"
+            "config.json"
+            "secrets.json"
+          )
+          
+          echo "" >> security-scans/infrastructure-analysis/config-security.log
+          echo "Checking for exposed sensitive files..." >> security-scans/infrastructure-analysis/config-security.log
+          
+          for file in "${SENSITIVE_FILES[@]}"; do
+            if [ -f "$file" ] && ! grep -q "$file" .gitignore; then
+              echo "⚠️ Sensitive file '$file' not in .gitignore" >> security-scans/infrastructure-analysis/config-security.log
+              CONFIG_ISSUES=$((CONFIG_ISSUES + 1))
+            else
+              echo "✅ Sensitive file '$file' properly handled" >> security-scans/infrastructure-analysis/config-security.log
+            fi
+          done
+          
+          echo "CONFIG_ISSUES=$CONFIG_ISSUES" >> $GITHUB_ENV
+
+      - name: Check Dependencies for Known Vulnerabilities
+        run: |
+          echo "=== Known Vulnerability Database Check - $(date) ===" > security-scans/dependency-analysis/vulnerability-db.log
+          
+          # Parse npm audit JSON for detailed vulnerability info
+          if [ -f "security-scans/dependency-analysis/npm-audit.json" ]; then
+            CRITICAL_VULNS=$(jq -r '.metadata.vulnerabilities.critical // 0' security-scans/dependency-analysis/npm-audit.json)
+            HIGH_VULNS=$(jq -r '.metadata.vulnerabilities.high // 0' security-scans/dependency-analysis/npm-audit.json)
+            MODERATE_VULNS=$(jq -r '.metadata.vulnerabilities.moderate // 0' security-scans/dependency-analysis/npm-audit.json)
+            LOW_VULNS=$(jq -r '.metadata.vulnerabilities.low // 0' security-scans/dependency-analysis/npm-audit.json)
+            TOTAL_VULNS=$(jq -r '.metadata.vulnerabilities.total // 0' security-scans/dependency-analysis/npm-audit.json)
+            
+            echo "Vulnerability summary from NPM audit:" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "- Critical: $CRITICAL_VULNS" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "- High: $HIGH_VULNS" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "- Moderate: $MODERATE_VULNS" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "- Low: $LOW_VULNS" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "- Total: $TOTAL_VULNS" >> security-scans/dependency-analysis/vulnerability-db.log
+            
+            echo "DEPENDENCY_CRITICAL_VULNS=$CRITICAL_VULNS" >> $GITHUB_ENV
+            echo "DEPENDENCY_HIGH_VULNS=$HIGH_VULNS" >> $GITHUB_ENV
+            echo "DEPENDENCY_TOTAL_VULNS=$TOTAL_VULNS" >> $GITHUB_ENV
+          else
+            echo "No vulnerability data available" >> security-scans/dependency-analysis/vulnerability-db.log
+            echo "DEPENDENCY_CRITICAL_VULNS=0" >> $GITHUB_ENV
+            echo "DEPENDENCY_HIGH_VULNS=0" >> $GITHUB_ENV
+            echo "DEPENDENCY_TOTAL_VULNS=0" >> $GITHUB_ENV
+          fi
+
+      - name: Generate Security Scan Summary
+        run: |
+          echo "=== Security Scan Summary - $(date) ===" > security-scans/security-summary.log
+          echo "Repository: ${{ github.repository }}" >> security-scans/security-summary.log
+          echo "Branch: ${{ github.ref_name }}" >> security-scans/security-summary.log
+          echo "Commit: ${{ github.sha }}" >> security-scans/security-summary.log
+          echo "" >> security-scans/security-summary.log
+          
+          echo "=== Scan Results ===" >> security-scans/security-summary.log
+          echo "Hardcoded secrets found: $SECRETS_FOUND" >> security-scans/security-summary.log
+          echo "SQL injection issues found: $SQL_ISSUES_FOUND" >> security-scans/security-summary.log
+          echo "Configuration issues found: $CONFIG_ISSUES" >> security-scans/security-summary.log
+          echo "Critical dependency vulnerabilities: $DEPENDENCY_CRITICAL_VULNS" >> security-scans/security-summary.log
+          echo "High dependency vulnerabilities: $DEPENDENCY_HIGH_VULNS" >> security-scans/security-summary.log
+          echo "Total dependency vulnerabilities: $DEPENDENCY_TOTAL_VULNS" >> security-scans/security-summary.log
+          echo "" >> security-scans/security-summary.log
+          
+          # Calculate overall security score
+          TOTAL_ISSUES=$((SECRETS_FOUND + SQL_ISSUES_FOUND + CONFIG_ISSUES + DEPENDENCY_CRITICAL_VULNS + DEPENDENCY_HIGH_VULNS))
+          
+          if [ $TOTAL_ISSUES -eq 0 ]; then
+            echo "🟢 SECURITY STATUS: EXCELLENT (No issues found)" >> security-scans/security-summary.log
+          elif [ $TOTAL_ISSUES -le 3 ]; then
+            echo "🟡 SECURITY STATUS: GOOD (Minor issues found)" >> security-scans/security-summary.log
+          elif [ $TOTAL_ISSUES -le 10 ]; then
+            echo "🟠 SECURITY STATUS: NEEDS ATTENTION (Multiple issues found)" >> security-scans/security-summary.log
+          else
+            echo "🔴 SECURITY STATUS: CRITICAL (Many issues found)" >> security-scans/security-summary.log
+          fi
+          
+          echo "Total security issues: $TOTAL_ISSUES" >> security-scans/security-summary.log
+          echo "Scan completed at: $(date)" >> security-scans/security-summary.log
+
+      - name: Display Security Summary
+        run: |
+          echo "Security scan summary:"
+          cat security-scans/security-summary.log
+
+      - name: Check for Critical Security Issues
+        run: |
+          # Fail the workflow for critical security issues
+          if [ "$DEPENDENCY_CRITICAL_VULNS" -gt 0 ]; then
+            echo "::error::Found $DEPENDENCY_CRITICAL_VULNS critical dependency vulnerabilities"
+            exit 1
+          fi
+          
+          if [ "$SECRETS_FOUND" -gt 0 ]; then
+            echo "::warning::Found $SECRETS_FOUND potential hardcoded secrets"
+          fi
+          
+          if [ "$SQL_ISSUES_FOUND" -gt 0 ]; then
+            echo "::warning::Found $SQL_ISSUES_FOUND potential SQL injection vulnerabilities"
+          fi
+          
+          if [ "$DEPENDENCY_HIGH_VULNS" -gt 5 ]; then
+            echo "::warning::Found $DEPENDENCY_HIGH_VULNS high severity dependency vulnerabilities"
+          fi
+          
+          if [ "$CONFIG_ISSUES" -gt 3 ]; then
+            echo "::warning::Found $CONFIG_ISSUES configuration security issues"
+          fi
+
+      - name: Upload Security Scan Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results-${{ github.sha }}
+          path: security-scans/
+          retention-days: 30
+
+      - name: Commit security scan reports
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add security-scans/
+          git commit -m "Security scan results - $(date +"%Y-%m-%d %H:%M")" || echo "No security scan changes to commit"
+          git push

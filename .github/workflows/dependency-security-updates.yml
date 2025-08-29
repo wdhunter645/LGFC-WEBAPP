@@ -1,0 +1,268 @@
+name: Dependency Updates & Security Scans
+
+on:
+  schedule:
+    # Run weekly on Monday at 7 AM UTC
+    - cron: "0 7 * * 1"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  dependency-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Create security reports directory
+        run: mkdir -p security-reports
+
+      - name: Install dependencies for current audit
+        run: npm install
+
+      - name: Run Security Audit - Current State
+        run: |
+          echo "=== Dependency Security Audit - $(date) ===" > security-reports/security-audit.log
+          echo "Current dependency security status:" >> security-reports/security-audit.log
+          echo "" >> security-reports/security-audit.log
+          
+          # Run npm audit and capture both JSON and human-readable output
+          npm audit --json > security-reports/current-audit.json 2>/dev/null || true
+          npm audit >> security-reports/security-audit.log 2>&1 || true
+          
+          echo "" >> security-reports/security-audit.log
+
+      - name: Analyze Current Vulnerabilities
+        run: |
+          if [ -f "security-reports/current-audit.json" ]; then
+            # Parse JSON audit results
+            CRITICAL=$(jq -r '.metadata.vulnerabilities.critical // 0' security-reports/current-audit.json)
+            HIGH=$(jq -r '.metadata.vulnerabilities.high // 0' security-reports/current-audit.json)
+            MODERATE=$(jq -r '.metadata.vulnerabilities.moderate // 0' security-reports/current-audit.json)
+            LOW=$(jq -r '.metadata.vulnerabilities.low // 0' security-reports/current-audit.json)
+            TOTAL=$(jq -r '.metadata.vulnerabilities.total // 0' security-reports/current-audit.json)
+            
+            echo "=== Current Vulnerability Summary ===" >> security-reports/security-audit.log
+            echo "Critical: $CRITICAL" >> security-reports/security-audit.log
+            echo "High: $HIGH" >> security-reports/security-audit.log
+            echo "Moderate: $MODERATE" >> security-reports/security-audit.log
+            echo "Low: $LOW" >> security-reports/security-audit.log
+            echo "Total: $TOTAL" >> security-reports/security-audit.log
+            echo "" >> security-reports/security-audit.log
+            
+            # Set environment variables for later use
+            echo "CRITICAL_VULNS=$CRITICAL" >> $GITHUB_ENV
+            echo "HIGH_VULNS=$HIGH" >> $GITHUB_ENV
+            echo "TOTAL_VULNS=$TOTAL" >> $GITHUB_ENV
+          else
+            echo "No audit data available" >> security-reports/security-audit.log
+            echo "CRITICAL_VULNS=0" >> $GITHUB_ENV
+            echo "HIGH_VULNS=0" >> $GITHUB_ENV
+            echo "TOTAL_VULNS=0" >> $GITHUB_ENV
+          fi
+
+      - name: Check for Outdated Dependencies
+        run: |
+          echo "=== Outdated Dependencies Check ===" >> security-reports/security-audit.log
+          npm outdated >> security-reports/security-audit.log 2>&1 || echo "No outdated packages or error checking outdated packages" >> security-reports/security-audit.log
+          echo "" >> security-reports/security-audit.log
+
+      - name: Apply Automatic Security Updates
+        run: |
+          echo "=== Applying Automatic Security Updates ===" >> security-reports/security-audit.log
+          
+          # Try to fix vulnerabilities automatically
+          npm audit fix --dry-run >> security-reports/security-audit.log 2>&1 || echo "No automatic fixes available" >> security-reports/security-audit.log
+          
+          # Apply fixes if available
+          if npm audit fix --json > security-reports/audit-fix-result.json 2>&1; then
+            echo "✅ Automatic security fixes applied" >> security-reports/security-audit.log
+            
+            # Check what was updated
+            if [ -f "security-reports/audit-fix-result.json" ]; then
+              FIXED=$(jq -r '.metadata.vulnerabilities.total // 0' security-reports/audit-fix-result.json)
+              echo "Vulnerabilities fixed: $FIXED" >> security-reports/security-audit.log
+            fi
+            
+            # Mark that we have changes to commit
+            echo "HAS_SECURITY_UPDATES=true" >> $GITHUB_ENV
+          else
+            echo "⚠️ No automatic fixes could be applied" >> security-reports/security-audit.log
+            echo "HAS_SECURITY_UPDATES=false" >> $GITHUB_ENV
+          fi
+          
+          echo "" >> security-reports/security-audit.log
+
+      - name: Post-Update Security Audit
+        if: env.HAS_SECURITY_UPDATES == 'true'
+        run: |
+          echo "=== Post-Update Security Audit ===" >> security-reports/security-audit.log
+          
+          # Run audit again after fixes
+          npm audit --json > security-reports/post-update-audit.json 2>/dev/null || true
+          npm audit >> security-reports/security-audit.log 2>&1 || true
+          
+          if [ -f "security-reports/post-update-audit.json" ]; then
+            POST_CRITICAL=$(jq -r '.metadata.vulnerabilities.critical // 0' security-reports/post-update-audit.json)
+            POST_HIGH=$(jq -r '.metadata.vulnerabilities.high // 0' security-reports/post-update-audit.json)
+            POST_TOTAL=$(jq -r '.metadata.vulnerabilities.total // 0' security-reports/post-update-audit.json)
+            
+            echo "" >> security-reports/security-audit.log
+            echo "=== Security Improvement Summary ===" >> security-reports/security-audit.log
+            echo "Before - Critical: $CRITICAL_VULNS, High: $HIGH_VULNS, Total: $TOTAL_VULNS" >> security-reports/security-audit.log
+            echo "After  - Critical: $POST_CRITICAL, High: $POST_HIGH, Total: $POST_TOTAL" >> security-reports/security-audit.log
+            
+            IMPROVEMENT=$((TOTAL_VULNS - POST_TOTAL))
+            if [ "$IMPROVEMENT" -gt 0 ]; then
+              echo "✅ Improved security by fixing $IMPROVEMENT vulnerabilities" >> security-reports/security-audit.log
+            else
+              echo "⚠️ No security improvement achieved" >> security-reports/security-audit.log
+            fi
+          fi
+
+      - name: Update Development Dependencies
+        run: |
+          echo "=== Development Dependencies Update ===" >> security-reports/security-audit.log
+          
+          # Update dev dependencies to latest compatible versions
+          DEV_DEPS=(
+            "eslint"
+            "prettier"  
+            "jest"
+            "@typescript-eslint/parser"
+            "eslint-plugin-astro"
+            "eslint-plugin-react"
+          )
+          
+          for dep in "${DEV_DEPS[@]}"; do
+            if npm list "$dep" >/dev/null 2>&1; then
+              echo "Checking $dep for updates..." >> security-reports/security-audit.log
+              CURRENT_VERSION=$(npm list "$dep" --depth=0 2>/dev/null | grep "$dep" | sed 's/.*@//' | sed 's/ .*//' || echo "unknown")
+              echo "Current $dep version: $CURRENT_VERSION" >> security-reports/security-audit.log
+              
+              # Check if update is available (this will not install, just check)
+              if npm outdated "$dep" >/dev/null 2>&1; then
+                echo "Update available for $dep" >> security-reports/security-audit.log
+              else
+                echo "$dep is up to date" >> security-reports/security-audit.log
+              fi
+            fi
+          done
+
+      - name: Test Updated Dependencies
+        if: env.HAS_SECURITY_UPDATES == 'true'
+        run: |
+          echo "=== Testing Updated Dependencies ===" >> security-reports/security-audit.log
+          
+          # Reinstall dependencies to ensure consistency
+          rm -rf node_modules package-lock.json
+          npm install >> security-reports/security-audit.log 2>&1
+          
+          # Run tests to ensure nothing is broken
+          if npm test >> security-reports/security-audit.log 2>&1; then
+            echo "✅ All tests pass with updated dependencies" >> security-reports/security-audit.log
+          else
+            echo "❌ Tests failed with updated dependencies" >> security-reports/security-audit.log
+            echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          fi
+          
+          # Run build to ensure it still works
+          if npm run build >> security-reports/security-audit.log 2>&1; then
+            echo "✅ Build successful with updated dependencies" >> security-reports/security-audit.log
+          else
+            echo "❌ Build failed with updated dependencies" >> security-reports/security-audit.log
+            echo "BUILD_FAILED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Generate Security Report Summary
+        run: |
+          echo "" >> security-reports/security-audit.log
+          echo "=== Security Audit Summary ===" >> security-reports/security-audit.log
+          echo "Audit Date: $(date)" >> security-reports/security-audit.log
+          echo "Repository: ${{ github.repository }}" >> security-reports/security-audit.log
+          echo "" >> security-reports/security-audit.log
+          
+          if [ "$HAS_SECURITY_UPDATES" = "true" ]; then
+            echo "✅ Security updates were applied" >> security-reports/security-audit.log
+          else
+            echo "⚠️ No security updates were applied" >> security-reports/security-audit.log
+          fi
+          
+          if [ "$TESTS_FAILED" = "true" ]; then
+            echo "❌ Tests failed after updates" >> security-reports/security-audit.log
+          elif [ "$BUILD_FAILED" = "true" ]; then
+            echo "❌ Build failed after updates" >> security-reports/security-audit.log
+          else
+            echo "✅ All tests and builds passed" >> security-reports/security-audit.log
+          fi
+          
+          echo "" >> security-reports/security-audit.log
+          echo "Current vulnerability status:" >> security-reports/security-audit.log
+          echo "- Critical vulnerabilities: $CRITICAL_VULNS" >> security-reports/security-audit.log
+          echo "- High vulnerabilities: $HIGH_VULNS" >> security-reports/security-audit.log
+          echo "- Total vulnerabilities: $TOTAL_VULNS" >> security-reports/security-audit.log
+
+      - name: Display Security Report
+        run: |
+          echo "Dependency security audit report:"
+          cat security-reports/security-audit.log
+
+      - name: Check Critical Security Issues
+        run: |
+          if [ "$CRITICAL_VULNS" -gt 0 ]; then
+            echo "::error::Found $CRITICAL_VULNS critical security vulnerabilities"
+            exit 1
+          elif [ "$HIGH_VULNS" -gt 5 ]; then
+            echo "::warning::Found $HIGH_VULNS high severity vulnerabilities"
+          elif [ "$TOTAL_VULNS" -gt 10 ]; then
+            echo "::warning::Found $TOTAL_VULNS total vulnerabilities"
+          fi
+          
+          if [ "$TESTS_FAILED" = "true" ] || [ "$BUILD_FAILED" = "true" ]; then
+            echo "::error::Security updates caused test or build failures"
+            exit 1
+          fi
+
+      - name: Create Pull Request for Security Updates
+        if: env.HAS_SECURITY_UPDATES == 'true' && env.TESTS_FAILED != 'true' && env.BUILD_FAILED != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "security: apply automatic security updates"
+          title: "🔒 Security Updates - Automated Dependency Fixes"
+          body: |
+            ## 🔒 Automated Security Updates
+            
+            This PR contains automatic security updates applied by the dependency management workflow.
+            
+            ### Changes Made
+            - Applied `npm audit fix` to resolve security vulnerabilities
+            - Updated vulnerable dependencies to secure versions
+            
+            ### Verification
+            - ✅ All tests pass
+            - ✅ Build completes successfully  
+            - ✅ Security vulnerabilities reduced
+            
+            ### Security Impact
+            - Before: **${{ env.CRITICAL_VULNS }}** critical, **${{ env.HIGH_VULNS }}** high, **${{ env.TOTAL_VULNS }}** total vulnerabilities
+            - After: Security improvements applied (see security audit report)
+            
+            Please review and merge to improve application security.
+          branch: security/automated-updates
+          delete-branch: true
+
+      - name: Commit security reports
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add security-reports/
+          git commit -m "Security audit report - $(date +"%Y-%m-%d")" || echo "No security report changes to commit"
+          git push

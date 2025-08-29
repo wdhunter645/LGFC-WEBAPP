@@ -1,0 +1,256 @@
+name: Netlify Deploy Preview with Health Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: |
+          npm run lint
+        continue-on-error: false
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy to Netlify Preview
+        id: netlify-deploy
+        run: |
+          # Deploy to Netlify and capture the preview URL
+          DEPLOY_OUTPUT=$(netlify deploy --dir=dist --json)
+          echo "$DEPLOY_OUTPUT"
+          
+          PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy_url // .url')
+          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $PREVIEW_URL"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Wait for deployment to be ready
+        run: |
+          echo "Waiting for deployment to be fully ready..."
+          sleep 30
+
+      - name: Basic Health Check - Homepage
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          echo "Testing homepage accessibility: $PREVIEW_URL"
+          
+          # Check if homepage loads
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL" || echo "000")
+          echo "Homepage HTTP status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Homepage is accessible"
+          else
+            echo "❌ Homepage is not accessible (status: $HTTP_STATUS)"
+            exit 1
+          fi
+
+      - name: Health Check - Critical Pages
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          
+          # List of critical pages to test
+          PAGES=(
+            "/about"
+            "/events"
+            "/community"
+            "/archive"
+            "/search"
+            "/admin"
+          )
+          
+          echo "Testing critical pages..."
+          FAILED_PAGES=()
+          
+          for page in "${PAGES[@]}"; do
+            echo "Testing: $PREVIEW_URL$page"
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL$page" || echo "000")
+            
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ $page - OK ($HTTP_STATUS)"
+            else
+              echo "❌ $page - Failed ($HTTP_STATUS)"
+              FAILED_PAGES+=("$page")
+            fi
+          done
+          
+          if [ ${#FAILED_PAGES[@]} -gt 0 ]; then
+            echo "Failed pages: ${FAILED_PAGES[*]}"
+            echo "::warning::Some critical pages are not accessible"
+            # Don't fail the entire workflow for page issues, just warn
+          else
+            echo "✅ All critical pages are accessible"
+          fi
+
+      - name: Health Check - API Endpoints
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          
+          # Test Netlify Functions (if available)
+          FUNCTIONS=(
+            "/.netlify/functions/submit-question"
+            "/.netlify/functions/vote"
+          )
+          
+          echo "Testing API endpoints..."
+          
+          for func in "${FUNCTIONS[@]}"; do
+            echo "Testing: $PREVIEW_URL$func"
+            
+            # Test with OPTIONS request (CORS preflight)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$PREVIEW_URL$func" || echo "000")
+            
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ] || [ "$HTTP_STATUS" = "405" ]; then
+              echo "✅ $func - Endpoint exists ($HTTP_STATUS)"
+            else
+              echo "⚠️ $func - May not be available ($HTTP_STATUS)"
+            fi
+          done
+
+      - name: Performance Check - Load Time
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          
+          echo "Testing page load performance..."
+          
+          # Measure homepage load time
+          LOAD_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$PREVIEW_URL")
+          LOAD_TIME_MS=$(echo "$LOAD_TIME * 1000" | bc -l | cut -d. -f1)
+          
+          echo "Homepage load time: ${LOAD_TIME_MS}ms"
+          
+          if [ "$LOAD_TIME_MS" -lt 3000 ]; then
+            echo "✅ Load time is acceptable (${LOAD_TIME_MS}ms < 3000ms)"
+          elif [ "$LOAD_TIME_MS" -lt 5000 ]; then
+            echo "⚠️ Load time is slow but acceptable (${LOAD_TIME_MS}ms)"
+            echo "::warning::Page load time is ${LOAD_TIME_MS}ms - consider optimization"
+          else
+            echo "❌ Load time is too slow (${LOAD_TIME_MS}ms > 5000ms)"
+            echo "::warning::Page load time is critically slow: ${LOAD_TIME_MS}ms"
+          fi
+
+      - name: Content Validation
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          
+          echo "Validating page content..."
+          
+          # Download homepage content
+          HOMEPAGE_CONTENT=$(curl -s "$PREVIEW_URL")
+          
+          # Check for essential elements
+          if echo "$HOMEPAGE_CONTENT" | grep -q "Lou Gehrig"; then
+            echo "✅ Lou Gehrig branding found"
+          else
+            echo "⚠️ Lou Gehrig branding not found on homepage"
+          fi
+          
+          if echo "$HOMEPAGE_CONTENT" | grep -q "navigation\|nav"; then
+            echo "✅ Navigation structure found"
+          else
+            echo "⚠️ Navigation structure not detected"
+          fi
+          
+          # Check for JavaScript errors in HTML
+          if echo "$HOMEPAGE_CONTENT" | grep -q "error\|Error\|ERROR" | grep -v "stylesheet"; then
+            echo "⚠️ Potential JavaScript errors detected in HTML"
+            echo "::warning::Check console for JavaScript errors"
+          else
+            echo "✅ No obvious JavaScript errors in HTML"
+          fi
+
+      - name: Security Headers Check
+        run: |
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          
+          echo "Checking security headers..."
+          
+          # Get response headers
+          HEADERS=$(curl -s -I "$PREVIEW_URL")
+          
+          # Check for essential security headers
+          if echo "$HEADERS" | grep -qi "X-Frame-Options"; then
+            echo "✅ X-Frame-Options header present"
+          else
+            echo "⚠️ X-Frame-Options header missing"
+          fi
+          
+          if echo "$HEADERS" | grep -qi "Content-Security-Policy"; then
+            echo "✅ Content-Security-Policy header present"
+          else
+            echo "⚠️ Content-Security-Policy header missing"
+          fi
+          
+          if echo "$HEADERS" | grep -qi "Strict-Transport-Security"; then
+            echo "✅ HTTPS security header present"
+          else
+            echo "⚠️ HTTPS security header missing"
+          fi
+
+      - name: Generate Health Check Summary
+        run: |
+          echo "## 🚀 Netlify Deploy Preview Health Check Summary" > health-check-summary.md
+          echo "" >> health-check-summary.md
+          echo "**Preview URL:** ${{ steps.netlify-deploy.outputs.PREVIEW_URL }}" >> health-check-summary.md
+          echo "**Deploy Time:** $(date)" >> health-check-summary.md
+          echo "" >> health-check-summary.md
+          echo "### Test Results" >> health-check-summary.md
+          echo "- ✅ Build completed successfully" >> health-check-summary.md
+          echo "- ✅ Tests passed" >> health-check-summary.md
+          echo "- ✅ Linting passed" >> health-check-summary.md
+          echo "- ✅ Homepage accessibility verified" >> health-check-summary.md
+          echo "" >> health-check-summary.md
+          echo "See workflow logs for detailed health check results." >> health-check-summary.md
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('health-check-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Save health check report
+        run: |
+          mkdir -p deploy-reports
+          cp health-check-summary.md "deploy-reports/health-check-$(date +%Y%m%d-%H%M%S).md"
+
+      - name: Commit health check report
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add deploy-reports/
+          git commit -m "Health check report for PR preview - $(date +"%Y-%m-%d")" || echo "No health check changes to commit"
+          git push
