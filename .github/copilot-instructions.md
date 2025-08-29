@@ -1,3 +1,0 @@
-# Copilot Instructions
-
-Here are the instructions for using Copilot...
