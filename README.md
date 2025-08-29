@@ -27,6 +27,16 @@ This repository contains the source code and schema for the **Lou Gehrig Fan Clu
 
 ---
 
+## Running Tests
+
+To run the test suite, use the following command:
+
+```bash
+npm test
+```
+
+---
+
 ## 🔗 Supabase Integration
 
 - **Anon Key:** Managed securely in environment variables
