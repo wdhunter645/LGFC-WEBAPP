@@ -20,11 +20,10 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 ### **🎯 CRITICAL ACHIEVEMENTS:**
 1. **JWT Migration Complete** - Modern, secure authentication system
-2. **Traffic Simulator Active** - 24/7 Supabase activity with monitoring
-3. **Voting System Functional** - Complete with automation and tie handling
-4. **Admin Dashboard Complete** - Comprehensive content management
-5. **Database Schema Robust** - All core tables with proper relationships
-6. **CI/CD Pipeline Active** - Automated deployment and monitoring
+2. **Voting System Functional** - Complete with automation and tie handling
+3. **Admin Dashboard Complete** - Comprehensive content management
+4. **Database Schema Robust** - All core tables with proper relationships
+5. **CI/CD Pipeline Active** - Automated deployment and monitoring
 
 ### **🚀 NEXT PRIORITIES:**
 1. **Social Media OAuth Integration** - Complete platform-specific implementations
@@ -42,7 +41,6 @@ _Last updated: 2025-01-27 (America/New_York)_
 - **Authentication**: JWT-based session management with Supabase Auth
 - **No secrets in Git**: Use `.env` locally and Netlify environment variables in production
 - **CI**: Runs lint and build on push/PR to `main`
-- **Monitoring**: PM2 + GitHub Actions + Traffic simulator for 24/7 activity
 
 ### **Repository Layout (as built)**
 ```
@@ -93,9 +91,7 @@ _Last updated: 2025-01-27 (America/New_York)_
 ├─ .github/
 │  └─ workflows/
 │     ├─ ci.yml                 # Lint + build
-│     ├─ search-cron.yml        # Content ingestion automation
-│     ├─ traffic-simulator.yml  # 24/7 activity monitoring
-│     └─ traffic-simulator-monitored.yml
+│     └─ search-cron.yml        # Content ingestion automation
 ├─ .eslintrc.cjs
 ├─ .eslintignore
 ├─ .prettierrc
@@ -108,13 +104,6 @@ _Last updated: 2025-01-27 (America/New_York)_
 │  │  ├─ 20250813_voting_automation.sql
 │  │  └─ [additional migrations]
 │  └─ functions/
-├─ lgfc_enhanced_jwt_traffic_simulator.cjs  # 24/7 activity
-├─ ecosystem.config.js          # PM2 configuration
-├─ lgfc-traffic-simulator.service  # Systemd service
-├─ watchdog_traffic_simulator.sh   # Monitoring script
-├─ install_monitoring.sh        # Monitoring setup
-├─ check_status.sh              # Status checking
-├─ start_traffic_simulator.sh   # PM2 startup
 └─ README.md
 ```
 
@@ -271,34 +260,6 @@ jobs:
           RSS_FEEDS: ${{ secrets.RSS_FEEDS }}
           NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
         run: node scripts/ingest.mjs "Lou Gehrig" 50
-```
-
-#### **Traffic Simulator (24/7 activity)**
-`.github/workflows/traffic-simulator.yml`
-```yaml
-name: Traffic Simulator
-on:
-  schedule:
-    - cron: "*/5 * * * *"  # Run every 5 minutes
-  workflow_dispatch:  # Allow manual trigger
-jobs:
-  simulate-traffic:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run Enhanced JWT Traffic Simulator
-        run: |
-          echo "🚀 Starting enhanced JWT traffic simulator..."
-          echo "This will keep Supabase project active with enhanced JWT mode"
-          echo "Running for 4 minutes with 15 users (URL pinging + API calls)"
-          timeout 240s node lgfc_enhanced_jwt_traffic_simulator.cjs --interval=30000 --users=15
 ```
 
 ### **Linting & Formatting (as built)**
@@ -550,7 +511,7 @@ jobs:
 
 ### 4.1 Functional Testing:
 - **Perform comprehensive testing of all website features for both visitors and members.**
-  - ✅ **COMPLETED**: Core functionality testing (search-cron, traffic simulator)
+  - ✅ **COMPLETED**: Core functionality testing (search-cron)
   - ✅ **COMPLETED**: JWT authentication testing
   - ✅ **COMPLETED**: Voting system testing
   - ⏳ **PENDING**: Comprehensive user experience testing
@@ -575,7 +536,6 @@ jobs:
 
 ### 4.2 Performance & Security Testing:
 - **Test website performance under various load conditions.**
-  - ✅ **COMPLETED**: Traffic simulator for 24/7 activity
   - ✅ **COMPLETED**: Basic performance monitoring
   - ⏳ **PENDING**: Comprehensive load testing
   - ⏳ **PENDING**: Performance optimization
@@ -612,8 +572,6 @@ jobs:
   - ✅ **COMPLETED**: Monitoring and alerting systems
 
 - **Monitor server and database performance.**
-  - ✅ **COMPLETED**: PM2 monitoring for application performance
-  - ✅ **COMPLETED**: Traffic simulator for database activity
   - ✅ **COMPLETED**: Supabase performance monitoring
   - ✅ **COMPLETED**: Automated backup and maintenance
 
@@ -641,18 +599,8 @@ jobs:
 - **Security**: Headers enforced via Netlify; adjust CSP as new external resources are added
 
 ### **Monitoring & Maintenance**
-- **PM2**: Process manager for traffic simulator with auto-restart
-- **Systemd Service**: Linux service for traffic simulator (optional)
-- **Watchdog Script**: Simple bash monitoring with restart capability
-- **GitHub Actions**: Automated CI/CD, search-cron, and traffic simulation
+- **GitHub Actions**: Automated CI/CD and search-cron
 - **Backup Scripts**: Daily schema backups, weekly/monthly full backups
-
-### **Traffic Simulator (24/7 Activity)**
-- **Purpose**: Keeps Supabase project active to prevent idle suspension
-- **Implementation**: `lgfc_enhanced_jwt_traffic_simulator.cjs`
-- **Features**: Varied user agents, API endpoints, request methods
-- **Monitoring**: PM2 + Systemd + Watchdog + GitHub Actions
-- **Activity**: URL pinging + API calls + "thinking" delays
 
 ### **Content Ingestion**
 - **Automation**: Hourly search-cron for new Lou Gehrig content
@@ -673,7 +621,6 @@ jobs:
 ### **January 2025**
 - **2025-01-27** — Created comprehensive v5 documentation merging technical build with project status
 - **2025-01-27** — JWT migration completed and verified
-- **2025-01-27** — Traffic simulator monitoring implemented with PM2, Systemd, and watchdog
 - **2025-01-27** — Environment variables cleaned up (removed Supabase variables from .env files)
 
 ### **August 2025**
@@ -705,9 +652,6 @@ jobs:
 
 ### **DevOps & Monitoring**
 - **CI/CD**: GitHub Actions
-- **Process Management**: PM2
-- **System Services**: Systemd (Linux)
-- **Monitoring**: Custom watchdog scripts
 - **Backup**: Automated scripts with retention policies
 
 ### **Security**

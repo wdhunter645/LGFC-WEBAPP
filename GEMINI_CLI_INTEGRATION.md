@@ -96,7 +96,7 @@ jobs:
 
 ### **Current Project Needs:**
 - **Content Management**: Handled by Decap CMS and admin dashboard
-- **Automation**: Handled by search-cron and traffic simulator
+- **Automation**: Handled by search-cron
 - **Administrative Tasks**: Handled by existing admin tools
 - **AI Integration**: Not required for current functionality
 
