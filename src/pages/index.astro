@@ -17,6 +17,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="py-16 px-6 bg-white">
       <div class="max-w-5xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-12">Vote for Your Favorite Lou Gehrig Photo</h2>
+        <div id="voting-status" class="text-center mb-6 hidden">
+          <div class="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <span id="voting-message" class="text-blue-800"></span>
+          </div>
+        </div>
         <div class="grid md:grid-cols-2 gap-8">
           <div class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
             <div class="p-6">
@@ -62,31 +67,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="py-16 px-6 bg-white">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-12">Fan Club News</h2>
-        <div class="space-y-6">
-          <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-semibold text-lg">Annual Lou Gehrig Day Celebration Planning Underway</h3>
-              <span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-full">47 likes</span>
-            </div>
-            <p class="text-slate-600 mb-2">Join us as we plan this year's tribute event at Yankee Stadium...</p>
-            <p class="text-sm text-slate-500">3 days ago</p>
-          </div>
-          <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-semibold text-lg">New Gehrig Memorabilia Added to Club Collection</h3>
-              <span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-full">32 likes</span>
-            </div>
-            <p class="text-slate-600 mb-2">Rare photographs and documents from the Gehrig family archives...</p>
-            <p class="text-sm text-slate-500">1 week ago</p>
-          </div>
-          <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-semibold text-lg">ALS Research Fundraiser Exceeds Goal</h3>
-              <span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded-full">89 likes</span>
-            </div>
-            <p class="text-slate-600 mb-2">Thanks to our amazing community, we've raised over $50,000...</p>
-            <p class="text-sm text-slate-500">2 weeks ago</p>
-          </div>
+        <div id="news-loading" class="text-center py-8">
+          <div class="text-slate-600">Loading latest news...</div>
+        </div>
+        <div id="news-container" class="space-y-6 hidden"></div>
+        <div id="news-error" class="text-center py-8 hidden">
+          <div class="text-slate-500">Unable to load news. Please try again later.</div>
         </div>
       </div>
     </div>
@@ -129,30 +115,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <!-- ALS Events Calendar -->
         <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
           <h3 class="text-xl font-semibold mb-6 flex items-center gap-2"><span>🗓️</span> ALS Community Events Calendar</h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">ALS Walk for Life - Central Park</h4>
-                <p class="text-sm text-slate-600">New York, NY</p>
-              </div>
-              <span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">March 15, 2025</span>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">Research Fundraising Gala</h4>
-                <p class="text-sm text-slate-600">Manhattan</p>
-              </div>
-              <span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">April 22, 2025</span>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">Lou Gehrig Appreciation Day</h4>
-                <p class="text-sm text-slate-600">Yankee Stadium</p>
-              </div>
-              <span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">June 2, 2025</span>
-            </div>
+          <div id="als-events-loading" class="text-center py-4">
+            <div class="text-slate-600">Loading ALS community events...</div>
           </div>
-        </div>
+          <div id="als-events-container" class="space-y-4 hidden"></div>
+          <div id="als-events-error" class="text-center py-4 hidden">
       </div>
     </div>
 
@@ -162,28 +129,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
           <h3 class="text-xl font-semibold mb-4">FAQ and Q&A</h3>
           <input id="faq-search" class="w-full border rounded px-3 py-2 mb-3 text-slate-900 placeholder-gray-500" placeholder="Search questions…" />
-          <div id="faq-list" class="divide-y divide-slate-200">
-            <details class="py-3 group">
-              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
-                <span>When was Lou Gehrig born?</span>
-                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
-              </summary>
-              <p class="text-sm text-slate-600 mt-2">June 19, 1903 in New York City</p>
-            </details>
-            <details class="py-3 group">
-              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
-                <span>How many consecutive games did he play?</span>
-                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
-              </summary>
-              <p class="text-sm text-slate-600 mt-2">2,130 consecutive games, earning him the nickname "Iron Horse"</p>
-            </details>
-            <details class="py-3 group">
-              <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
-                <span>What is ALS?</span>
-                <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
-              </summary>
-              <p class="text-sm text-slate-600 mt-2">Amyotrophic Lateral Sclerosis, also known as Lou Gehrig's disease</p>
-            </details>
+          <div id="faq-loading" class="text-center py-4">
+            <div class="text-slate-600">Loading FAQs...</div>
+          </div>
+          <div id="faq-list" class="divide-y divide-slate-200 hidden"></div>
+          <div id="faq-empty" class="text-center py-4 hidden">
+            <div class="text-slate-500">No FAQs available yet.</div>
           </div>
           <div class="mt-4 flex items-center justify-between">
             <a href="/faq" class="text-blue-700 hover:underline text-sm">View all FAQs →</a>
@@ -215,28 +166,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="max-w-6xl mx-auto">
         <h2 class="text-3xl font-bold text-center mb-12">Fan Club Event Calendar</h2>
         <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
-          <div class="space-y-4" id="fanclub-events">
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">Monthly Fan Club Meeting</h4>
-                <p class="text-sm text-slate-600">Bronx Community Center</p>
-              </div>
-              <a href="/events" class="text-sm text-blue-700 hover:underline">Details</a>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">Gehrig Trivia Night</h4>
-                <p class="text-sm text-slate-600">Mickey Mantle's Restaurant</p>
-              </div>
-              <a href="/events" class="text-sm text-blue-700 hover:underline">Details</a>
-            </div>
-            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <h4 class="font-medium">Yankees Spring Training Trip</h4>
-                <p class="text-sm text-slate-600">Tampa, FL</p>
-              </div>
-              <a href="/events" class="text-sm text-blue-700 hover:underline">Details</a>
-            </div>
+          <div id="fanclub-events-loading" class="text-center py-4">
+            <div class="text-slate-600">Loading upcoming club events...</div>
+          </div>
+          <div id="fanclub-events" class="space-y-4 hidden"></div>
+          <div id="fanclub-events-empty" class="text-center py-4 hidden">
+            <div class="text-slate-500">No upcoming club events scheduled.</div>
+            <a href="/events" class="text-blue-700 hover:underline text-sm mt-2 inline-block">View all events →</a>
           </div>
         </div>
       </div>
@@ -245,6 +181,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </section>
 
   <script type="module">
+    import { createClient } from '../lib/supabase-client.js';
+    const supabase = createClient();
+
     const askForm = document.getElementById('ask-form');
     const askQuestion = document.getElementById('ask-question');
     const askEmail = document.getElementById('ask-email');
@@ -252,8 +191,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const faqSearch = document.getElementById('faq-search');
     const faqList = document.getElementById('faq-list');
     const faqCount = document.getElementById('faq-count');
+    const votingStatus = document.getElementById('voting-status');
+    const votingMessage = document.getElementById('voting-message');
 
-    async function tryLoadEvents() {
+    // Load Fan Club News from content_items
+    async function loadFanClubNews() {
       try {
         const eventsWrap = document.getElementById('fanclub-events');
         if (!eventsWrap) return;
@@ -273,51 +215,340 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           .eq('is_club_event', true)
           .gte('start_at', new Date(Date.now() - 24*60*60*1000).toISOString())
           .order('start_at', { ascending: true })
-          .limit(9);
-        
-        // Remove loading indicator
-        eventsWrap.removeChild(loadingDiv);
-        
+        const newsLoading = document.getElementById('news-loading');
+        const newsContainer = document.getElementById('news-container');
+        const newsError = document.getElementById('news-error');
+
+        const { data, error } = await supabase
+          .from('content_items')
+          .select('id, title, content_text, source_url, date_found, created_at')
+          .eq('content_type', 'news')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        newsLoading.classList.add('hidden');
+
         if (error) {
-          console.warn('Events query error:', error.message);
-          return; // Fall back to static content
-        }
-        
-        if (!data || data.length === 0) {
-          // Show message about no upcoming events but keep static content
-          const noEventsDiv = document.createElement('div');
-          noEventsDiv.className = 'text-center p-4 bg-blue-50 rounded-lg text-blue-800 text-sm mb-4';
-          noEventsDiv.innerHTML = '📅 No upcoming club events scheduled. Check back soon!';
-          eventsWrap.insertBefore(noEventsDiv, eventsWrap.firstChild);
+          console.warn('News loading error:', error.message);
+          newsError.classList.remove('hidden');
           return;
         }
+
+        if (!data || data.length === 0) {
+          // Show fallback static content
+          newsContainer.innerHTML = `
+            <div class="border border-slate-200 rounded-xl bg-white p-6 shadow-sm">
+              <div class="flex justify-between items-start mb-3">
+                <h3 class="font-semibold text-lg">Welcome to the Lou Gehrig Fan Club</h3>
+                <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Featured</span>
+              </div>
+              <p class="text-slate-600 mb-2">Join our community dedicated to honoring Lou Gehrig's legacy and supporting ALS research...</p>
+              <p class="text-sm text-slate-500">Club announcement</p>
+            </div>
+          `;
+          newsContainer.classList.remove('hidden');
+          return;
+        }
+
+        // Display dynamic news content
+        newsContainer.innerHTML = '';
+        for (const article of data) {
+          const div = document.createElement('div');
+          div.className = 'border border-slate-200 rounded-xl bg-white p-6 shadow-sm';
+          
+          const timeAgo = getTimeAgo(new Date(article.created_at));
+          const excerpt = article.content_text ? 
+            article.content_text.substring(0, 150) + (article.content_text.length > 150 ? '...' : '') :
+            'Click to read more...';
+
+          div.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="font-semibold text-lg">${article.title}</h3>
+              <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">News</span>
+            </div>
+            <p class="text-slate-600 mb-2">${excerpt}</p>
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-slate-500">${timeAgo}</p>
+              ${article.source_url ? `<a href="${article.source_url}" target="_blank" rel="noopener" class="text-sm text-blue-700 hover:underline">Read more →</a>` : ''}
+            </div>
+          `;
+          newsContainer.appendChild(div);
+        }
         
-        // Replace static content with dynamic events
-        eventsWrap.innerHTML = '';
-        for (const ev of data) {
+        newsContainer.classList.remove('hidden');
+        console.log('✅ News loaded successfully:', data.length, 'articles');
+
+      } catch (e) {
+        console.warn('News loading failed:', e.message);
+        document.getElementById('news-loading').classList.add('hidden');
+        document.getElementById('news-error').classList.remove('hidden');
+      }
+    }
+
+    // Load Fan Club Events from events table
+    async function loadFanClubEvents() {
+      try {
+        const eventsLoading = document.getElementById('fanclub-events-loading');
+        const eventsContainer = document.getElementById('fanclub-events');
+        const eventsEmpty = document.getElementById('fanclub-events-empty');
+
+        const { data, error } = await supabase
+          .from('events')
+          .select('id, title, start_at, location, link_url, description')
+          .eq('is_club_event', true)
+          .gte('start_at', new Date(Date.now() - 24*60*60*1000).toISOString())
+          .order('start_at', { ascending: true })
+          .limit(6);
+
+        eventsLoading.classList.add('hidden');
+
+        if (error) {
+          console.warn('Events loading error:', error.message);
+          eventsEmpty.classList.remove('hidden');
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          eventsEmpty.classList.remove('hidden');
+          return;
+        }
+
+        // Display dynamic events
+        eventsContainer.innerHTML = '';
+        for (const event of data) {
           const div = document.createElement('div');
           div.className = 'flex items-center justify-between p-4 bg-slate-50 rounded-lg';
-          const when = new Date(ev.start_at).toLocaleDateString();
+          
+          const eventDate = new Date(event.start_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+
           div.innerHTML = `
             <div>
-              <h4 class="font-medium">${ev.title}</h4>
-              ${ev.location ? `<p class="text-sm text-slate-600">${ev.location}</p>` : ''}
+              <h4 class="font-medium">${event.title}</h4>
+              ${event.location ? `<p class="text-sm text-slate-600">${event.location}</p>` : ''}
             </div>
-            ${ev.link_url ? `<a href="${ev.link_url}" target="_blank" rel="noopener" class="text-sm text-blue-700 hover:underline">Details</a>` : `<span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">${when}</span>`}
+            <div class="text-right">
+              ${event.link_url ? 
+                `<a href="${event.link_url}" target="_blank" rel="noopener" class="text-sm text-blue-700 hover:underline">Details</a>` : 
+                `<span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">${eventDate}</span>`
+              }
+            </div>
           `;
-          eventsWrap.appendChild(div);
+          eventsContainer.appendChild(div);
         }
-        
-        // Add success indicator
-        console.log('✅ Events loaded successfully:', data.length, 'events');
-        
-      } catch (e) { 
-        console.warn('Events loading failed:', e.message); 
-        // Remove any loading indicators and fall back to static content
-        const loadingDiv = document.getElementById('fanclub-events')?.querySelector('[class*="Loading"]');
-        if (loadingDiv) {
-          loadingDiv.remove();
+
+        eventsContainer.classList.remove('hidden');
+        console.log('✅ Fan club events loaded successfully:', data.length, 'events');
+
+      } catch (e) {
+        console.warn('Fan club events loading failed:', e.message);
+        document.getElementById('fanclub-events-loading').classList.add('hidden');
+        document.getElementById('fanclub-events-empty').classList.remove('hidden');
+      }
+    }
+
+    // Load ALS Community Events
+    async function loadALSEvents() {
+      try {
+        const alsLoading = document.getElementById('als-events-loading');
+        const alsContainer = document.getElementById('als-events-container');
+        const alsError = document.getElementById('als-events-error');
+
+        const { data, error } = await supabase
+          .from('events')
+          .select('id, title, start_at, location, link_url, source')
+          .eq('is_club_event', false)
+          .gte('start_at', new Date().toISOString())
+          .order('start_at', { ascending: true })
+          .limit(5);
+
+        alsLoading.classList.add('hidden');
+
+        if (error) {
+          console.warn('ALS events loading error:', error.message);
+          alsError.classList.remove('hidden');
+          return;
         }
+
+        if (!data || data.length === 0) {
+          // Show fallback static content
+          alsContainer.innerHTML = `
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div>
+                <h4 class="font-medium">ALS Walk for Life - Central Park</h4>
+                <p class="text-sm text-slate-600">New York, NY</p>
+              </div>
+              <span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">Check ALS.org</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div>
+                <h4 class="font-medium">Research Fundraising Events</h4>
+                <p class="text-sm text-slate-600">Various Locations</p>
+              </div>
+              <span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">Ongoing</span>
+            </div>
+          `;
+          alsContainer.classList.remove('hidden');
+          return;
+        }
+
+        // Display dynamic ALS events
+        alsContainer.innerHTML = '';
+        for (const event of data) {
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between p-4 bg-slate-50 rounded-lg';
+          
+          const eventDate = new Date(event.start_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+
+          div.innerHTML = `
+            <div>
+              <h4 class="font-medium">${event.title}</h4>
+              ${event.location ? `<p class="text-sm text-slate-600">${event.location}</p>` : ''}
+              ${event.source ? `<p class="text-xs text-slate-500">via ${event.source}</p>` : ''}
+            </div>
+            <div class="text-right">
+              ${event.link_url ? 
+                `<a href="${event.link_url}" target="_blank" rel="noopener" class="text-sm text-blue-700 hover:underline">Details</a>` : 
+                `<span class="text-xs font-semibold bg-slate-200 text-slate-800 px-2 py-1 rounded">${eventDate}</span>`
+              }
+            </div>
+          `;
+          alsContainer.appendChild(div);
+        }
+
+        alsContainer.classList.remove('hidden');
+        console.log('✅ ALS events loaded successfully:', data.length, 'events');
+
+      } catch (e) {
+        console.warn('ALS events loading failed:', e.message);
+        document.getElementById('als-events-loading').classList.add('hidden');
+        document.getElementById('als-events-error').classList.remove('hidden');
+      }
+    }
+
+    // Load FAQs from faq_items table
+    async function loadFAQs() {
+      try {
+        const faqLoading = document.getElementById('faq-loading');
+        const faqEmpty = document.getElementById('faq-empty');
+
+        const { data, error } = await supabase
+          .from('faq_items')
+          .select('id, question, answer, status')
+          .eq('status', 'published')
+          .order('updated_at', { ascending: false })
+          .limit(5);
+
+        faqLoading.classList.add('hidden');
+
+        if (error) {
+          console.warn('FAQ loading error:', error.message);
+          // Show fallback static content
+          showFallbackFAQs();
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          // Show fallback static content
+          showFallbackFAQs();
+          return;
+        }
+
+        // Display dynamic FAQs
+        faqList.innerHTML = '';
+        for (const faq of data) {
+          const details = document.createElement('details');
+          details.className = 'py-3 group';
+          details.innerHTML = `
+            <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+              <span>${faq.question}</span>
+              <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+            </summary>
+            ${faq.answer ? 
+              `<p class="text-sm text-slate-600 mt-2">${faq.answer}</p>` : 
+              '<p class="text-sm text-slate-500 mt-2">Answer coming soon.</p>'
+            }
+          `;
+          
+          // Track FAQ clicks
+          details.addEventListener('click', async () => {
+            try {
+              await fetch('/.netlify/functions/faq-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_id: faq.id })
+              });
+            } catch (e) {
+              console.warn('FAQ click tracking failed:', e.message);
+            }
+          });
+          
+          faqList.appendChild(details);
+        }
+
+        faqList.classList.remove('hidden');
+        updateFaqCount();
+        console.log('✅ FAQs loaded successfully:', data.length, 'items');
+
+      } catch (e) {
+        console.warn('FAQ loading failed:', e.message);
+        document.getElementById('faq-loading').classList.add('hidden');
+        showFallbackFAQs();
+      }
+    }
+
+    // Show fallback static FAQs when database is unavailable
+    function showFallbackFAQs() {
+      faqList.innerHTML = `
+        <details class="py-3 group">
+          <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+            <span>When was Lou Gehrig born?</span>
+            <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+          </summary>
+          <p class="text-sm text-slate-600 mt-2">June 19, 1903 in New York City</p>
+        </details>
+        <details class="py-3 group">
+          <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+            <span>How many consecutive games did he play?</span>
+            <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+          </summary>
+          <p class="text-sm text-slate-600 mt-2">2,130 consecutive games, earning him the nickname "Iron Horse"</p>
+        </details>
+        <details class="py-3 group">
+          <summary class="font-medium cursor-pointer flex items-center justify-between list-none">
+            <span>What is ALS?</span>
+            <span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+          </summary>
+          <p class="text-sm text-slate-600 mt-2">Amyotrophic Lateral Sclerosis, also known as Lou Gehrig's disease</p>
+        </details>
+      `;
+      faqList.classList.remove('hidden');
+      updateFaqCount();
+    }
+
+    // Utility function to calculate time ago
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+      if (diffDays > 0) {
+        return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+      } else if (diffHours > 0) {
+        return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+      } else if (diffMinutes > 0) {
+        return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+      } else {
+        return 'Just now';
       }
     }
 
@@ -337,8 +568,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       updateFaqCount();
     });
 
-    updateFaqCount();
-    tryLoadEvents();
+    // Initialize all dynamic content loading
+    loadFanClubNews();
+    loadFanClubEvents();
+    loadALSEvents();
+    loadFAQs();
 
     if (askForm) {
       askForm.addEventListener('submit', async (e) => {
@@ -377,6 +611,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             }
             askQuestion.value = '';
             askEmail.value = '';
+            
+            // Reload FAQs to show the new question if it was published immediately
+            setTimeout(() => {
+              loadFAQs();
+            }, 1000);
           } else {
             throw new Error('Submission failed');
           }
@@ -393,10 +632,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       btn.addEventListener('click', async () => {
         const imageId = btn.getAttribute('data-image');
         const originalText = btn.textContent;
+        const originalClass = btn.className;
         
         try {
           btn.textContent = 'Voting...';
           btn.disabled = true;
+          
+          // Show voting status
+          votingStatus.classList.remove('hidden');
+          votingMessage.textContent = 'Recording your vote...';
           
           const response = await fetch('/.netlify/functions/vote', {
             method: 'POST',
@@ -409,9 +653,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             if (result.ok) {
               btn.textContent = 'Voted!';
               btn.className = btn.className.replace('btn-secondary', 'btn-primary');
+              votingMessage.textContent = 'Vote recorded successfully!';
+              
+              // Disable all voting buttons after successful vote
+              document.querySelectorAll('.vote-btn').forEach(otherBtn => {
+                if (otherBtn !== btn) {
+                  otherBtn.disabled = true;
+                  otherBtn.textContent = 'Vote Cast';
+                  otherBtn.className = otherBtn.className.replace('btn-secondary', 'border-gray-300 text-gray-500');
+                }
+              });
+              
               setTimeout(() => {
                 window.location.href = '/leaderboard';
-              }, 1000);
+              }, 2000);
             } else {
               throw new Error('Vote not recorded');
             }
@@ -421,11 +676,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         } catch (e) { 
           console.warn('Voting failed:', e.message); 
           btn.textContent = 'Vote Failed';
-          btn.className = btn.className.replace('btn-secondary', 'border-red-500 text-red-600');
+          btn.className = originalClass.replace('btn-secondary', 'border-red-500 text-red-600');
+          votingMessage.textContent = 'Vote failed. Please try again.';
+          votingStatus.querySelector('div').className = 'inline-flex items-center px-4 py-2 bg-red-50 border border-red-200 rounded-lg';
+          votingMessage.className = 'text-red-800';
+          
           setTimeout(() => {
             btn.textContent = originalText;
-            btn.className = btn.className.replace('border-red-500 text-red-600', 'btn-secondary');
+            btn.className = originalClass;
             btn.disabled = false;
+            votingStatus.classList.add('hidden');
           }, 3000);
         }
       });
