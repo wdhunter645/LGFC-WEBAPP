@@ -49,6 +49,14 @@ collections:
           - { label: "Description", name: "description", widget: "text" }
           - { label: "Body", name: "body", widget: "markdown" }
 
+      - name: "test"
+        label: "Test Wiki Page"
+        file: "src/content/pages/test.md"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Description", name: "description", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+
   - name: "milestones"
     label: "Milestones"
     folder: "src/content/milestones"

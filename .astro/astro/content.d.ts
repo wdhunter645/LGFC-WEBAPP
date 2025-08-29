@@ -193,6 +193,13 @@ declare module 'astro:content' {
   collection: "pages";
   data: InferEntrySchema<"pages">
 } & { render(): Render[".md"] };
+"test.md": {
+	id: "test.md";
+  slug: "test";
+  body: string;
+  collection: "pages";
+  data: InferEntrySchema<"pages">
+} & { render(): Render[".md"] };
 };
 "photos": {
 "lou-gehrig-yankee-stadium-1938.md": {
