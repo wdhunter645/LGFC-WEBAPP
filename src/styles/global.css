@@ -16,16 +16,21 @@
   .btn-primary {
     @apply inline-flex items-center px-[30px] py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-lg;
   }
-  
   .btn-secondary {
     @apply inline-flex items-center px-[30px] py-3 border-2 border-slate-600 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all duration-200;
   }
-  
   .card {
     @apply bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-red-500 transition-all duration-200;
   }
-  
   .tribute-card {
     @apply group relative bg-slate-900 rounded-xl overflow-hidden shadow-2xl hover:shadow-red-500/20 transition-all duration-300 transform hover:-translate-y-2;
+  }
+  .charity-btn {
+    @apply flex items-center justify-center px-[30px] py-3 rounded-lg font-semibold;
+    max-width: calc(9ch + 60px); /* 9 chars + 30px padding each side */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
