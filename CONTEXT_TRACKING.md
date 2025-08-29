@@ -83,21 +83,6 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 ---
 
-## 🚀 **TRAFFIC SIMULATOR CONTEXT (24/7 Activity)**
-
-### **Implementation & Monitoring**
-- **[`TRAFFIC_SIMULATOR_FIXED.md`](TRAFFIC_SIMULATOR_FIXED.md)**
-  - **Purpose**: Fix for traffic simulator not running continuously
-  - **Content**: Problem diagnosis, solution implementation
-  - **Status**: Historical - issue resolved
-
-- **[`TRAFFIC_SIMULATOR_MONITORING.md`](TRAFFIC_SIMULATOR_MONITORING.md)**
-  - **Purpose**: Implementation of monitoring solutions for traffic simulator
-  - **Content**: PM2, Systemd, watchdog scripts, GitHub Actions
-  - **Status**: Current - monitoring active
-
----
-
 ## 🔐 **DATABASE SECURITY CONTEXT (RLS Implementation)**
 
 ### **Row Level Security**
@@ -129,7 +114,7 @@ _Last updated: 2025-01-27 (America/New_York)_
 ### **Cursor Chat Thread Branches**
 - **`cursor/morning-greeting-and-status-check-ef98`** (Current)
   - **Purpose**: Current development session
-  - **Content**: JWT migration completion, traffic simulator monitoring, project documentation
+  - **Content**: JWT migration completion, project documentation
   - **Status**: Active
 
 - **`cursor/analyze-website-codebase-for-recommendations-ce55`**
@@ -139,7 +124,7 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 - **`cursor/check-if-process-is-still-running-4e70`**
   - **Purpose**: Process monitoring session
-  - **Content**: Traffic simulator status checking
+  - **Content**: System monitoring
   - **Status**: Historical
 
 - **`cursor/get-back-into-coding-7c2d`**
@@ -162,16 +147,11 @@ _Last updated: 2025-01-27 (America/New_York)_
 - **[`supabase.ts`](supabase.ts)** - Supabase client configuration
 
 ### **Operational Scripts**
-- **[`lgfc_enhanced_jwt_traffic_simulator.cjs`](lgfc_enhanced_jwt_traffic_simulator.cjs)** - 24/7 activity simulator
-- **[`ecosystem.config.js`](ecosystem.config.js)** - PM2 configuration
-- **[`watchdog_traffic_simulator.sh`](watchdog_traffic_simulator.sh)** - Monitoring script
-- **[`install_monitoring.sh`](install_monitoring.sh)** - Monitoring setup
-- **[`check_status.sh`](check_status.sh)** - Status checking
+- **[`ecosystem.config.js`](ecosystem.config.js)** - PM2 configuration (legacy, unused)
 
 ### **GitHub Actions**
 - **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** - CI/CD pipeline
 - **[`.github/workflows/search-cron.yml`](.github/workflows/search-cron.yml)** - Content ingestion
-- **[`.github/workflows/traffic-simulator.yml`](.github/workflows/traffic-simulator.yml)** - Activity monitoring
 
 ---
 
@@ -184,8 +164,7 @@ _Last updated: 2025-01-27 (America/New_York)_
 
 ### **For Technical Decisions:**
 1. Check JWT migration documents for authentication context
-2. Review traffic simulator documents for monitoring setup
-3. Consult environment documents for configuration decisions
+2. Consult environment documents for configuration decisions
 
 ### **For Current Development:**
 1. Check current branch: `cursor/morning-greeting-and-status-check-ef98`

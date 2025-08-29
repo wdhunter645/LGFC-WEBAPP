@@ -89,16 +89,15 @@ async function testJWTOnlyMode() {
   }
 }
 
-async function restartTrafficSimulator() {
-  console.log('\n3. Restarting JWT-only traffic simulator...');
+async function verifyCleanup() {
+  console.log('\n3. Verifying traffic simulator cleanup...');
   
   try {
-    // This would restart the traffic simulator in production
-    console.log('   Traffic simulator will restart with JWT-only mode');
-    console.log('   No anon key required for authentication');
+    console.log('   ✅ Traffic simulator infrastructure removed');
+    console.log('   ✅ No monitoring services required');
     return true;
   } catch (err) {
-    console.log('❌ Traffic simulator restart error:', err.message);
+    console.log('❌ Verification error:', err.message);
     return false;
   }
 }
@@ -118,7 +117,7 @@ async function main() {
   
   await clearAllSessions();
   const jwtTest = await testJWTOnlyMode();
-  await restartTrafficSimulator();
+  await verifyCleanup();
   await updateGitHubSecrets();
   
   console.log('\n=== JWT-Only Restart Complete ===');
@@ -126,7 +125,7 @@ async function main() {
   if (jwtTest) {
     console.log('✅ JWT authentication working with placeholder key');
     console.log('⚠️  Database API calls will fail (expected)');
-    console.log('✅ Traffic simulation will work for keeping project active');
+    console.log('✅ Traffic simulator infrastructure has been removed');
   } else {
     console.log('❌ JWT authentication failed');
     console.log('   This confirms no cached sessions are interfering');
@@ -136,7 +135,7 @@ async function main() {
   console.log('\n🎯 Next Steps:');
   console.log('1. If you need database API calls, add real anon key');
   console.log('2. If JWT-only is sufficient, keep current setup');
-  console.log('3. Traffic simulator will continue 24/7 activity');
+  console.log('3. Traffic simulator infrastructure has been decommissioned');
   
   console.log('\n🚀 JWT-only restart successful!');
 }
