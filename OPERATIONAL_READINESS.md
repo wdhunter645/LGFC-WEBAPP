@@ -224,6 +224,27 @@ For issues with operational readiness workflows:
 3. Use manual workflow triggers for immediate assessment
 4. Consult this documentation for troubleshooting
 
+## 🤖 Copilot Agent Assignments
+
+The following Copilot agents are assigned for ongoing maintenance and updates:
+
+### Security Agent (`@copilot[security-agent]`)
+**Responsible for:**
+- Monitoring `.github/workflows/security-scans.yml` workflow
+- Reviewing security scan results in `security-scans/` directory  
+- Creating security-focused issues for vulnerabilities
+- Updating security scanning rules and thresholds
+- Maintaining security workflow documentation
+
+### Ops Bot (`@copilot[ops-bot]`)
+**Responsible for:** 
+- Monitoring all operational workflows for failures
+- Creating issues for workflow failures with `ops` label
+- Proposing infrastructure fixes via draft PRs
+- Daily operational health reporting
+
+**Escalation:** Critical security vulnerabilities trigger immediate `priority:critical` issues assigned to security-agent.
+
 ---
 
 *This operational readiness implementation provides comprehensive monitoring, security, and automation capabilities while maintaining minimal operational overhead and following established patterns in the repository.*
