@@ -243,14 +243,46 @@ The operational readiness framework can be extended with:
 - Load testing automation
 - Multi-environment monitoring
 
+## 🤖 Copilot Agent Assignment
+
+### Ongoing Configuration & Updates
+The **Security Scans workflow** is assigned to GitHub Copilot for ongoing maintenance and configuration updates:
+
+#### Copilot Responsibilities:
+- ✅ **Monitor security scan effectiveness** and recommend pattern updates
+- ✅ **Update vulnerability detection rules** as new threats emerge
+- ✅ **Optimize scan performance** and reduce false positives
+- ✅ **Enhance reporting capabilities** based on security findings
+- ✅ **Integrate new security tools** as they become available
+- ✅ **Maintain security baseline configurations** across environments
+
+#### Automated Updates:
+- **Security Pattern Updates**: Copilot can suggest new detection patterns
+- **Dependency Monitoring**: Automated tracking of security advisories
+- **Configuration Drift**: Detection and correction of security misconfigurations
+- **Workflow Optimization**: Performance improvements and enhanced scanning
+
+#### Manual Triggers for Copilot:
+```bash
+# Request Copilot security assessment
+@copilot review security configuration
+
+# Request workflow optimization
+@copilot optimize security-scans workflow
+
+# Request new security patterns
+@copilot add security detection patterns for [threat-type]
+```
+
 ## 📞 Support
 
 For issues with operational readiness workflows:
 1. Check workflow logs in GitHub Actions
 2. Review generated reports in respective directories
 3. Use manual workflow triggers for immediate assessment
-4. Consult this documentation for troubleshooting
+4. **Tag @copilot for security workflow issues**
+5. Consult this documentation for troubleshooting
 
 ---
 
-*This operational readiness implementation provides comprehensive monitoring, security, and automation capabilities while maintaining minimal operational overhead and following established patterns in the repository.*
+*This operational readiness implementation provides comprehensive monitoring, security, and automation capabilities while maintaining minimal operational overhead and following established patterns in the repository. GitHub Copilot provides ongoing intelligence for security configuration management.*
