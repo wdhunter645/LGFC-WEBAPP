@@ -32,6 +32,20 @@ module.exports = {
       parser: '@typescript-eslint/parser',
       extends: ['prettier'],
       rules: {}
+    },
+    {
+      files: ['**/*.test.{js,jsx,ts,tsx}', '**/__tests__/**/*.{js,jsx,ts,tsx}'],
+      env: { jest: true },
+      globals: {
+        test: 'readonly',
+        expect: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly'
+      }
     }
   ],
 };
