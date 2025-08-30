@@ -19,6 +19,7 @@ Guardrails
 
 Paths
 - Include: `infra/`, `.github/`, `k8s/`, `terraform/`, `ops/`
+- Include: Security workflows monitoring (`.github/workflows/security-scans.yml`)
 - Exclude: `src/`, `app/`
 
 Branch/PR template
