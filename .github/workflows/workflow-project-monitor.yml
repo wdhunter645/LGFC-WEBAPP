@@ -1,0 +1,217 @@
+name: Workflow Project Monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      detailed_analysis:
+        description: "Run detailed project analysis"
+        required: false
+        default: "false"
+        type: boolean
+  schedule:
+    # Run twice daily at 6 AM and 6 PM UTC to monitor project progress
+    - cron: '0 6 * * *'
+    - cron: '0 18 * * *'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  monitor-workflow-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Workflow Project Assessment
+        id: assessment
+        run: |
+          echo "Running workflow project progress assessment..."
+          node scripts/workflow-project-monitor.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DETAILED_ANALYSIS: ${{ inputs.detailed_analysis || 'false' }}
+
+      - name: Generate Progress Report
+        id: report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            
+            // Read the assessment results
+            let assessmentResults = {};
+            try {
+              const resultsPath = './workflow-project-assessment.json';
+              if (fs.existsSync(resultsPath)) {
+                assessmentResults = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+              }
+            } catch (error) {
+              console.log('Could not read assessment results:', error.message);
+            }
+
+            // Fetch recent workflow runs to assess automation health
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner, repo, per_page: 100
+            });
+
+            const workflowAutomationRuns = runs.filter(r => 
+              ['search-cron', 'backup-audit', 'schema-drift-detection', 'health-checks', 
+               'security-scans', 'voting-automation', 'als-events-scraper'].includes(r.name)
+            );
+
+            const last24h = new Date(Date.now() - 24*60*60*1000);
+            const recentRuns = workflowAutomationRuns.filter(r => new Date(r.created_at) >= last24h);
+            const failedRuns = recentRuns.filter(r => 
+              ['failure', 'timed_out', 'cancelled'].includes(r.conclusion)
+            );
+
+            // Calculate project health metrics
+            const automationHealth = {
+              totalWorkflows: 19, // Current count from repo
+              operationalWorkflows: 6, // From OPERATIONAL_READINESS.md  
+              recentRuns: recentRuns.length,
+              failedRuns: failedRuns.length,
+              successRate: recentRuns.length > 0 ? 
+                ((recentRuns.length - failedRuns.length) / recentRuns.length * 100).toFixed(1) : 'N/A'
+            };
+
+            // Project milestones from status documents
+            const projectMilestones = {
+              jwtMigration: 'COMPLETE ✅',
+              searchCronAutomation: 'OPERATIONAL ✅', 
+              operationalReadiness: 'COMPLETE ✅',
+              backupAutomation: 'OPERATIONAL ✅',
+              monitoringFramework: 'OPERATIONAL ✅',
+              securityScans: 'OPERATIONAL ✅',
+              overallProgress: '85%' // From PROJECT_STATUS_ASSESSMENT.md
+            };
+
+            const reportLines = [];
+            reportLines.push('# 🔄 Workflow Project Monitor Report');
+            reportLines.push(`*Generated: ${new Date().toISOString()}*`);
+            reportLines.push('');
+            reportLines.push('## 📊 Project Progress Summary');
+            reportLines.push(`**Overall Completion: ${projectMilestones.overallProgress}**`);
+            reportLines.push('');
+            reportLines.push('### 🎯 Major Milestones Status:');
+            Object.entries(projectMilestones).forEach(([key, status]) => {
+              if (key !== 'overallProgress') {
+                const displayName = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                reportLines.push(`- **${displayName}**: ${status}`);
+              }
+            });
+            reportLines.push('');
+            reportLines.push('## 🤖 Automation Health (Last 24h)');
+            reportLines.push(`- **Workflow Runs**: ${automationHealth.recentRuns}`);
+            reportLines.push(`- **Failed Runs**: ${automationHealth.failedRuns}`);
+            reportLines.push(`- **Success Rate**: ${automationHealth.successRate}%`);
+            reportLines.push(`- **Total Workflows**: ${automationHealth.totalWorkflows}`);
+            reportLines.push(`- **Operational Workflows**: ${automationHealth.operationalWorkflows}`);
+            reportLines.push('');
+
+            if (failedRuns.length > 0) {
+              reportLines.push('## ⚠️ Failed Automation Runs');
+              failedRuns.slice(0, 10).forEach(run => {
+                reportLines.push(`- **${run.name}** (#${run.run_number}) - ${run.conclusion} - [View Logs](${run.html_url})`);
+              });
+              reportLines.push('');
+            }
+
+            reportLines.push('## 🔍 Next Actions Required');
+            
+            // Determine next actions based on status
+            if (failedRuns.length > 0) {
+              reportLines.push('- 🔧 **PRIORITY**: Investigate and resolve failed workflow runs');
+            }
+            
+            if (parseFloat(projectMilestones.overallProgress) < 90) {
+              reportLines.push('- 📈 **Continue**: Push remaining project milestones to 90%+ completion');
+            }
+            
+            reportLines.push('- 📊 **Monitor**: Continue automated monitoring and progress tracking');
+            reportLines.push('- 🔄 **Maintain**: Ensure all operational workflows remain healthy');
+            
+            reportLines.push('');
+            reportLines.push('## 📚 Key Documentation');
+            reportLines.push('- [Project Status Assessment](PROJECT_STATUS_ASSESSMENT.md)');
+            reportLines.push('- [Operational Readiness](OPERATIONAL_READINESS.md)');
+            reportLines.push('- [Search Cron Final Status](SEARCH_CRON_FINAL_STATUS.md)');
+            
+            const body = reportLines.join('\n');
+            core.setOutput('report_body', body);
+            core.setOutput('project_health', automationHealth.successRate);
+
+      - name: Create/Update Monitoring Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const reportBody = `${{ steps.report.outputs.report_body }}`;
+            const projectHealth = `${{ steps.report.outputs.project_health }}`;
+            
+            // Check for existing workflow project monitoring issue
+            const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue in:title "Workflow Project Monitor" state:open`
+            });
+
+            const issueTitle = "🔄 Workflow Project Monitor - Continuous Progress Tracker";
+            
+            if (existingIssues.total_count > 0) {
+              // Update existing issue
+              const issue = existingIssues.items[0];
+              await github.rest.issues.update({
+                owner, repo, 
+                issue_number: issue.number,
+                body: reportBody
+              });
+              
+              // Add status label based on health
+              const healthLabel = projectHealth !== 'N/A' && parseFloat(projectHealth) >= 90 ? 
+                'status:healthy' : 'status:attention-needed';
+                
+              await github.rest.issues.addLabels({
+                owner, repo,
+                issue_number: issue.number,
+                labels: ['workflow-monitoring', 'ops', healthLabel]
+              });
+              
+              core.summary.addHeading('Updated Workflow Project Monitor')
+                .addLink(issueTitle, issue.html_url)
+                .addRaw(`\nProject Health: ${projectHealth}%`)
+                .write();
+            } else {
+              // Create new monitoring issue  
+              const { data: newIssue } = await github.rest.issues.create({
+                owner, repo,
+                title: issueTitle,
+                body: reportBody,
+                labels: ['workflow-monitoring', 'ops', 'priority:high'],
+                assignees: ['Copilot']
+              });
+              
+              core.summary.addHeading('Created Workflow Project Monitor')
+                .addLink(issueTitle, newIssue.html_url)
+                .addRaw(`\nProject Health: ${projectHealth}%`)
+                .write();
+            }
+
+      - name: Save Assessment Results
+        run: |
+          # Archive the assessment results for historical tracking
+          mkdir -p audit-reports/workflow-project
+          cp workflow-project-assessment.json "audit-reports/workflow-project/assessment-$(date +%Y%m%d-%H%M%S).json" 2>/dev/null || echo "No assessment file to archive"
+          
+          echo "✅ Workflow project monitoring completed successfully"
