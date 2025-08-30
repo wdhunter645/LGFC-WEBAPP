@@ -1,0 +1,260 @@
+name: Branch Audit and Cleanup
+
+on:
+  schedule:
+    # Run every Monday at 6 AM UTC for weekly branch maintenance
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'audit'
+        type: choice
+        options:
+          - audit
+          - cleanup-dry-run
+          - cleanup-execute
+      force_cleanup:
+        description: 'Force cleanup of all branches marked for deletion'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  branch-audit:
+    name: Branch Audit and Cleanup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          npm ci --only=production
+      
+      - name: Run Git Health Check
+        run: |
+          chmod +x scripts/git_health_check.sh
+          ./scripts/git_health_check.sh check
+      
+      - name: Perform Branch Audit
+        id: audit
+        run: |
+          chmod +x scripts/git_branch_audit.mjs
+          node scripts/git_branch_audit.mjs audit
+          
+          # Get audit results
+          AUDIT_FILE=$(ls -t audit-reports/branch_audit_*.txt | head -1)
+          echo "audit_file=$AUDIT_FILE" >> $GITHUB_OUTPUT
+          
+          # Extract summary information
+          DELETE_COUNT=$(grep "Branches to DELETE:" "$AUDIT_FILE" | sed 's/.*DELETE: //')
+          REVIEW_COUNT=$(grep "Branches needing REVIEW:" "$AUDIT_FILE" | sed 's/.*REVIEW: //')
+          TOTAL_COUNT=$(grep "Total branches analyzed:" "$AUDIT_FILE" | sed 's/.*analyzed: //')
+          
+          echo "delete_count=$DELETE_COUNT" >> $GITHUB_OUTPUT
+          echo "review_count=$REVIEW_COUNT" >> $GITHUB_OUTPUT
+          echo "total_count=$TOTAL_COUNT" >> $GITHUB_OUTPUT
+      
+      - name: Generate Cleanup Script
+        if: github.event.inputs.action != 'audit' || github.event_name == 'schedule'
+        run: |
+          node scripts/git_branch_audit.mjs cleanup -f ${{ steps.audit.outputs.audit_file }}
+      
+      - name: Dry Run Cleanup
+        if: github.event.inputs.action == 'cleanup-dry-run' || (github.event_name == 'schedule' && steps.audit.outputs.delete_count > 0)
+        run: |
+          echo "=== DRY RUN: Would delete the following branches ==="
+          CLEANUP_SCRIPT=$(ls -t audit-reports/cleanup_branches_*.sh | head -1)
+          echo "Cleanup script: $CLEANUP_SCRIPT"
+          
+          # Show what would be deleted
+          grep "log_info.*Deleting.*branch:" "$CLEANUP_SCRIPT" || echo "No branches to delete"
+          echo "=== END DRY RUN ==="
+      
+      - name: Execute Cleanup
+        if: (github.event.inputs.action == 'cleanup-execute' && github.event.inputs.force_cleanup == 'true') || (github.event_name == 'schedule' && steps.audit.outputs.delete_count > 20)
+        run: |
+          echo "=== EXECUTING BRANCH CLEANUP ==="
+          CLEANUP_SCRIPT=$(ls -t audit-reports/cleanup_branches_*.sh | head -1)
+          chmod +x "$CLEANUP_SCRIPT"
+          
+          # Configure git for automated commits
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Execute cleanup
+          bash "$CLEANUP_SCRIPT"
+          
+          echo "=== CLEANUP COMPLETED ==="
+      
+      - name: Create Summary Comment
+        if: always()
+        run: |
+          AUDIT_FILE="${{ steps.audit.outputs.audit_file }}"
+          DELETE_COUNT="${{ steps.audit.outputs.delete_count }}"
+          REVIEW_COUNT="${{ steps.audit.outputs.review_count }}"
+          TOTAL_COUNT="${{ steps.audit.outputs.total_count }}"
+          
+          cat > branch_audit_summary.md << EOF
+          # Branch Audit Summary
+          
+          **Date:** $(date -u)
+          **Total Branches:** $TOTAL_COUNT
+          **Recommended for Deletion:** $DELETE_COUNT
+          **Need Manual Review:** $REVIEW_COUNT
+          
+          ## Action Taken
+          EOF
+          
+          if [[ "${{ github.event.inputs.action }}" == "cleanup-execute" && "${{ github.event.inputs.force_cleanup }}" == "true" ]]; then
+            echo "✅ **Branches deleted:** $DELETE_COUNT" >> branch_audit_summary.md
+          elif [[ "${{ github.event_name }}" == "schedule" && "$DELETE_COUNT" -gt 20 ]]; then
+            echo "✅ **Automated cleanup executed:** $DELETE_COUNT branches deleted" >> branch_audit_summary.md
+          elif [[ "$DELETE_COUNT" -gt 0 ]]; then
+            echo "ℹ️ **Dry run completed** - $DELETE_COUNT branches identified for deletion" >> branch_audit_summary.md
+            echo "" >> branch_audit_summary.md
+            echo "To execute cleanup, run:" >> branch_audit_summary.md
+            echo "\`\`\`bash" >> branch_audit_summary.md
+            echo "$(ls -t audit-reports/cleanup_branches_*.sh | head -1)" >> branch_audit_summary.md
+            echo "\`\`\`" >> branch_audit_summary.md
+          else
+            echo "✨ **Repository is clean** - no branches need cleanup" >> branch_audit_summary.md
+          fi
+          
+          cat >> branch_audit_summary.md << EOF
+          
+          ## Detailed Report
+          
+          Full audit report available in: \`$AUDIT_FILE\`
+          
+          ## Branches Needing Manual Review
+          EOF
+          
+          if [[ "$REVIEW_COUNT" -gt 0 ]]; then
+            echo "" >> branch_audit_summary.md
+            grep -A 1 "CATEGORY:REVIEW" "$AUDIT_FILE" | grep "BRANCH:" | sed 's/BRANCH:/- /' >> branch_audit_summary.md
+          else
+            echo "None" >> branch_audit_summary.md
+          fi
+          
+          echo "" >> branch_audit_summary.md
+          echo "---" >> branch_audit_summary.md
+          echo "*Automated by Branch Audit Workflow*" >> branch_audit_summary.md
+      
+      - name: Upload Audit Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: branch-audit-reports-${{ github.run_number }}
+          path: |
+            audit-reports/
+            branch_audit_summary.md
+          retention-days: 30
+      
+      - name: Create Issue for High Branch Count
+        if: steps.audit.outputs.delete_count > 15
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deleteCount = ${{ steps.audit.outputs.delete_count }};
+            const totalCount = ${{ steps.audit.outputs.total_count }};
+            
+            const body = `## 🚨 High Branch Count Alert
+            
+            The automated branch audit has detected **${deleteCount} branches** that can be safely deleted out of **${totalCount} total branches**.
+            
+            ### Recommended Action
+            
+            ${deleteCount > 30 ? 
+              '⚠️ **Immediate attention recommended** - Very high number of stale branches detected.' :
+              'ℹ️ **Cleanup recommended** - Multiple stale branches detected.'
+            }
+            
+            ### Next Steps
+            
+            1. Review the audit report (see workflow artifacts)
+            2. Execute cleanup using: \`gh workflow run "Branch Audit and Cleanup" --field action=cleanup-execute --field force_cleanup=true\`
+            3. Or manually run the generated cleanup script
+            
+            ### Auto-generated Summary
+            
+            ${require('fs').readFileSync('branch_audit_summary.md', 'utf8')}
+            
+            ---
+            *This issue was automatically created by the Branch Audit workflow*`;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Branch Cleanup Required: ${deleteCount} branches detected for deletion`,
+              body: body,
+              labels: ['maintenance', 'automated', 'branches']
+            });
+      
+      - name: Update Branch Audit Issue
+        if: always() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Look for existing branch audit tracking issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'branch-audit-tracking',
+              state: 'open'
+            });
+            
+            const summary = require('fs').readFileSync('branch_audit_summary.md', 'utf8');
+            const timestamp = new Date().toISOString();
+            
+            if (issues.data.length > 0) {
+              // Update existing issue
+              const issue = issues.data[0];
+              const currentBody = issue.body || '';
+              
+              const newBody = `${currentBody}
+            
+            ## Update ${timestamp}
+            
+            ${summary}
+            `;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `## Automated Branch Audit Update - ${timestamp}\n\n${summary}`
+              });
+            } else {
+              // Create tracking issue if it doesn't exist
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Branch Audit Tracking - Issue #72',
+                body: `# Branch Audit and Cleanup Tracking
+            
+            This issue tracks automated branch audits and cleanup activities for repository maintenance.
+            
+            ## Latest Update - ${timestamp}
+            
+            ${summary}
+            
+            ---
+            *This tracking issue is automatically maintained by the Branch Audit workflow*`,
+                labels: ['branch-audit-tracking', 'maintenance']
+              });
+            }

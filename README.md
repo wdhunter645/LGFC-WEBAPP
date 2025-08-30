@@ -19,11 +19,50 @@ This repository contains the source code and schema for the **Lou Gehrig Fan Clu
 ├── supabase/
 │   └── schema/
 │       └── 2025-07-10-export.sql    # Latest schema export (manual backup)
-├── public/                          # Static assets (TBD)
+├── scripts/                          # Management and utility scripts
+│   ├── git_health_check.sh          # Repository health monitoring
+│   ├── git_branch_sync.sh           # Branch synchronization
+│   ├── git_branch_audit.sh          # Branch audit (shell version)
+│   └── git_branch_audit.mjs         # Branch audit (Node.js version)
+├── .github/workflows/                # GitHub Actions workflows
+│   ├── git-health-check.yml         # Automated health checks
+│   └── branch-audit-cleanup.yml     # Branch audit and cleanup
+├── audit-reports/                    # Branch audit reports
+├── public/                          # Static assets
 ├── src/                             # Source code (pages, components, lib)
+├── BRANCH_AUDIT_DOCUMENTATION.md    # Branch management guide
+├── BRANCH_AUDIT_SUMMARY.md          # Latest audit results
+├── GIT_TROUBLESHOOTING.md           # Git troubleshooting guide
 ├── README.md
 └── ...
 ```
+
+---
+
+## 🔧 Branch Management System
+
+This repository includes a comprehensive branch audit and cleanup system to maintain repository health:
+
+### Quick Commands
+
+```bash
+# Perform branch audit
+node scripts/git_branch_audit.mjs audit
+
+# Generate cleanup script
+node scripts/git_branch_audit.mjs cleanup
+
+# Check repository health
+./scripts/git_health_check.sh check
+```
+
+### Automated Maintenance
+- **Weekly Audits**: Automated branch analysis every Monday at 6 AM UTC
+- **Smart Cleanup**: Automatically categorizes branches as DELETE, REVIEW, MERGE, or KEEP
+- **Safety Features**: Backup procedures and confirmation requirements
+- **GitHub Integration**: Automated reporting and issue creation
+
+See [BRANCH_AUDIT_DOCUMENTATION.md](./BRANCH_AUDIT_DOCUMENTATION.md) for complete usage guide.
 
 ---
 
@@ -59,7 +98,8 @@ npm test
 
 - Manual Supabase schema export after significant changes
 - GitHub-first development model
-- Add GitHub Actions to automate backups (future)
+- Automated branch management and cleanup
+- Repository health monitoring
 - Add UI testing / preview support (future)
 
 ---
@@ -71,6 +111,7 @@ Development is actively in progress. The focus for **July 2025** includes:
 - Frontend testing through GitHub
 - Schema stability and RLS security
 - Connecting user-generated content to display layers
+- Repository maintenance automation
 - Preparing for public preview and community feedback
 
 ---
