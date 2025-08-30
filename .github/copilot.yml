@@ -6,7 +6,20 @@ context:
 
 instructions:
   - Always reference the latest merged PRs and open issues.
-  - Do not lose context about the user’s current workflow, branch, or active PR.
+  - Do not lose context about the user's current workflow, branch, or active PR.
   - If context is missing, ask the user for clarification.
   - When a duplicate or error is reported, prompt for details and offer to search, diagnose, or resolve.
   - Maintain user session state when troubleshooting configuration or workflow issues.
+
+responsibilities:
+  security_workflows:
+    assigned_workflows:
+      - security-scans.yml
+      - dependency-security-updates.yml
+    ongoing_tasks:
+      - Monitor security scan effectiveness
+      - Update vulnerability detection patterns
+      - Optimize scan performance
+      - Enhance security reporting
+      - Integrate new security tools
+      - Maintain security baselines
