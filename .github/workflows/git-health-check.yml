@@ -1,0 +1,175 @@
+name: Git Repository Health Check
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    branches: [ main ]
+    paths:
+      - '.git/**'
+      - 'scripts/git_*.sh'
+
+jobs:
+  git-health-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comprehensive checks
+          
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/git_health_check.sh
+          chmod +x scripts/git_branch_sync.sh
+          
+      - name: Run Git Health Check
+        id: health-check
+        run: |
+          echo "Running Git health check..."
+          ./scripts/git_health_check.sh check > git_health_output.txt 2>&1
+          health_exit_code=$?
+          
+          # Always show the output
+          cat git_health_output.txt
+          
+          # Set output for summary
+          if [ $health_exit_code -eq 0 ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "issues=0" >> $GITHUB_OUTPUT
+          else
+            echo "status=warning" >> $GITHUB_OUTPUT
+            echo "issues=$health_exit_code" >> $GITHUB_OUTPUT
+          fi
+          
+          # Don't fail the workflow for health warnings
+          exit 0
+          
+      - name: Check Branch Synchronization
+        id: sync-check
+        run: |
+          echo "Checking branch synchronization..."
+          ./scripts/git_branch_sync.sh check main > git_sync_output.txt 2>&1
+          sync_exit_code=$?
+          
+          cat git_sync_output.txt
+          
+          if [ $sync_exit_code -eq 0 ] || [ $sync_exit_code -eq 4 ] || [ $sync_exit_code -eq 5 ]; then
+            echo "sync_status=ok" >> $GITHUB_OUTPUT
+          elif [ $sync_exit_code -eq 3 ]; then
+            echo "sync_status=diverged" >> $GITHUB_OUTPUT
+          else
+            echo "sync_status=error" >> $GITHUB_OUTPUT
+          fi
+          
+          exit 0
+          
+      - name: Generate Diagnostic Report
+        if: steps.health-check.outputs.issues != '0' || steps.sync-check.outputs.sync_status == 'diverged'
+        run: |
+          echo "Generating diagnostic report..."
+          ./scripts/git_health_check.sh report
+          
+          # Upload report as artifact
+          echo "Diagnostic report generated"
+          
+      - name: Upload Diagnostic Report
+        if: steps.health-check.outputs.issues != '0' || steps.sync-check.outputs.sync_status == 'diverged'
+        uses: actions/upload-artifact@v3
+        with:
+          name: git-diagnostic-report
+          path: git_health_report_*.txt
+          retention-days: 30
+          
+      - name: Create Issue for Critical Problems
+        if: steps.sync-check.outputs.sync_status == 'diverged'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Git Branch Divergence Detected`;
+            const body = `
+            ## Git Branch Divergence Alert
+            
+            The automated Git health check has detected branch divergence issues in the repository.
+            
+            ### Issue Details
+            - **Repository**: ${{ github.repository }}
+            - **Branch**: main
+            - **Detection Time**: ${{ github.event.head_commit.timestamp || github.run_started_at }}
+            - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            ### Recommended Actions
+            
+            1. **Immediate**: Review the diagnostic report in the workflow artifacts
+            2. **Resolution**: Use the Git troubleshooting tools:
+               \`\`\`bash
+               # Check detailed status
+               ./scripts/git_health_check.sh check-full
+               
+               # Resolve divergence (choose appropriate strategy)
+               ./scripts/git_branch_sync.sh resolve main merge
+               \`\`\`
+            
+            3. **Documentation**: See [Git Troubleshooting Guide](./GIT_TROUBLESHOOTING.md)
+            
+            ### Auto-generated Information
+            - Health Check Status: ${{ steps.health-check.outputs.status }}
+            - Issues Found: ${{ steps.health-check.outputs.issues }}
+            - Sync Status: ${{ steps.sync-check.outputs.sync_status }}
+            
+            This issue was automatically created by the Git Health Check workflow.
+            `;
+            
+            // Check if issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['git-health', 'automated'],
+              state: 'open'
+            });
+            
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['git-health', 'automated', 'priority-high']
+              });
+            }
+            
+      - name: Create Summary
+        run: |
+          echo "## Git Repository Health Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Health Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.health-check.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Issues Found**: ${{ steps.health-check.outputs.issues }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch Sync**: ${{ steps.sync-check.outputs.sync_status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.health-check.outputs.issues }}" != "0" ]; then
+            echo "### ⚠️ Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The repository health check found some issues. Please review the workflow output and diagnostic report." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.sync-check.outputs.sync_status }}" = "diverged" ]; then
+            echo "### 🚨 Branch Divergence" >> $GITHUB_STEP_SUMMARY
+            echo "The main branch has diverged from its remote. This requires immediate attention." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "### 📚 Resources" >> $GITHUB_STEP_SUMMARY
+          echo "- [Git Troubleshooting Guide](./GIT_TROUBLESHOOTING.md)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Git Health Check Script](./scripts/git_health_check.sh)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Git Branch Sync Script](./scripts/git_branch_sync.sh)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Cleanup
+        if: always()
+        run: |
+          # Clean up temporary files
+          rm -f git_health_output.txt git_sync_output.txt
