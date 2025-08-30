@@ -75,6 +75,12 @@ The operational readiness project has implemented **6 new workflows** that compl
 - ✅ Security headers compliance validation
 - ✅ Overall health scoring system
 
+#### Configuration:
+**Required GitHub Secrets** (optional - fallback values provided):
+- `NETLIFY_SITE_URL` - Production site URL for monitoring
+- `SUPABASE_URL` - Supabase project URL for database connectivity tests
+- `SUPABASE_PUBLIC_API_KEY` - Supabase public API key for database access
+
 #### Reports:
 - `health-reports/health-check.log` - Production health status
 
@@ -185,6 +191,22 @@ The operational readiness project has implemented **6 new workflows** that compl
 
 ## 🔧 Manual Operations
 
+### Configuring GitHub Secrets
+For enhanced security and customization, set these optional secrets in your GitHub repository:
+
+```bash
+# Required for health checks workflow
+gh secret set NETLIFY_SITE_URL --body "https://yourdomain.netlify.app"
+gh secret set SUPABASE_URL --body "https://your-project.supabase.co"
+gh secret set SUPABASE_PUBLIC_API_KEY --body "your_supabase_public_api_key"
+
+# Required for deployment workflows  
+gh secret set NETLIFY_AUTH_TOKEN --body "your_netlify_auth_token"
+gh secret set NETLIFY_SITE_ID --body "your_netlify_site_id"
+```
+
+**Note**: All secrets have fallback values configured, so workflows will function without manual secret configuration.
+
 ### Updating Schema Baseline
 When legitimate schema changes are made:
 ```bash
@@ -215,6 +237,49 @@ The operational readiness framework can be extended with:
 - Custom security rules
 - Load testing automation
 - Multi-environment monitoring
+
+## 🔐 Secrets Configuration
+
+### Required GitHub Repository Secrets
+
+The following secrets should be configured in your GitHub repository for optimal functionality:
+
+#### Core Application Secrets
+| Secret Name | Purpose | Required | Default Fallback |
+|-------------|---------|----------|------------------|
+| `NETLIFY_SITE_URL` | Production site URL for health monitoring | Optional | `https://lougehrigfanclub.netlify.app` |
+| `SUPABASE_URL` | Supabase project URL | Optional | Configured fallback URL |
+| `SUPABASE_PUBLIC_API_KEY` | Supabase public API key | Optional | Configured fallback key |
+
+#### Deployment Secrets
+| Secret Name | Purpose | Required | Default Fallback |
+|-------------|---------|----------|------------------|
+| `NETLIFY_AUTH_TOKEN` | Netlify API authentication | Yes | None |
+| `NETLIFY_SITE_ID` | Netlify site identifier | Yes | None |
+
+#### Additional Service Secrets
+| Secret Name | Purpose | Required | Default Fallback |
+|-------------|---------|----------|------------------|
+| `SUPABASE_SERVICE_ROLE_KEY` | Database write operations | Production | Placeholder value |
+| `SENDGRID_API_KEY` | Email notifications | Production | Placeholder value |
+
+### Setting Secrets
+
+Use the GitHub CLI to set secrets:
+```bash
+# Core application secrets
+gh secret set NETLIFY_SITE_URL --body "https://yourdomain.netlify.app"
+gh secret set SUPABASE_URL --body "https://your-project.supabase.co"
+gh secret set SUPABASE_PUBLIC_API_KEY --body "your_public_api_key"
+
+# Deployment secrets (required for Netlify workflows)
+gh secret set NETLIFY_AUTH_TOKEN --body "your_netlify_auth_token"
+gh secret set NETLIFY_SITE_ID --body "your_netlify_site_id"
+
+# Production service secrets
+gh secret set SUPABASE_SERVICE_ROLE_KEY --body "your_service_role_key"
+gh secret set SENDGRID_API_KEY --body "your_sendgrid_api_key"
+```
 
 ## 📞 Support
 
