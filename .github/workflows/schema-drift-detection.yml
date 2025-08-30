@@ -6,6 +6,10 @@ on:
     - cron: "0 */4 * * *"
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write    # For committing schema monitoring data
+  issues: write      # For creating drift alert issues
+
 jobs:
   detect-schema-drift:
     runs-on: ubuntu-latest
@@ -24,7 +28,7 @@ jobs:
           
       - name: Link to Supabase project
         run: |
-          supabase link --project-ref vkwhrbjkdznncjkzkiuo
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           
       - name: Create schema baseline directory
         run: |
@@ -126,6 +130,58 @@ jobs:
             echo "::error::$missing_tables required tables are missing from schema"
             exit 1
           fi
+          
+      - name: Create issue for schema drift  
+        if: contains(github.event_name, 'schedule') && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const driftReport = fs.readFileSync('schema-monitoring/drift-report.log', 'utf8');
+            
+            // Check if there's schema drift or missing tables
+            const hasDrift = driftReport.includes('SCHEMA DRIFT DETECTED');
+            const hasMissingTables = driftReport.includes('❌') && driftReport.includes('missing');
+            
+            if (hasDrift || hasMissingTables) {
+              const dateStr = new Date().toISOString().split('T')[0];
+              const timeStr = new Date().toISOString();
+              const workflowUrl = context.payload.repository.html_url + '/actions/runs/' + context.runId;
+              
+              let issuesText = '';
+              if (hasDrift) issuesText += '⚠️ Schema changes detected\n';
+              if (hasMissingTables) issuesText += '❌ Missing required tables\n';
+              
+              const bodyParts = [
+                '## Schema Drift Detection Alert',
+                '',
+                'Time: ' + timeStr,
+                'Workflow: [Schema Drift Detection](' + workflowUrl + ')',
+                '',
+                '### Detected Issues:',
+                issuesText,
+                '',
+                '### Full Report:',
+                '```',
+                driftReport,
+                '```',
+                '',
+                '### Actions Required:',
+                '1. Review the schema changes in the drift report above',
+                '2. If changes are legitimate, run the workflow manually to update baseline: `gh workflow run schema-drift-detection.yml`',
+                '3. If changes are unexpected, investigate potential unauthorized modifications',
+                '',
+                'Assigned to ops-bot for triage'
+              ];
+              
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Schema Drift Alert - ' + dateStr,
+                body: bodyParts.join('\n'),
+                labels: ['ops', 'schema-drift', 'priority:high']
+              });
+            }
           
       - name: Update baseline on approval
         if: github.event_name == 'workflow_dispatch'
