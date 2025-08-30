@@ -21,29 +21,90 @@ jobs:
           
       - name: Install Supabase CLI
         run: |
-          curl -fsSL https://supabase.com/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          # Install Supabase CLI using GitHub releases
+          VERSION=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Installing Supabase CLI version: $VERSION"
+          curl -Lo supabase.tar.gz "https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz"
+          tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          rm supabase.tar.gz
+          supabase --version
           
       - name: Login to Supabase
         run: |
-          echo ${{ secrets.SUPABASE_ACCESS_TOKEN }} | supabase login
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "ERROR: SUPABASE_ACCESS_TOKEN secret is not configured"
+            echo "Please set this secret in the GitHub repository settings"
+            exit 1
+          fi
+          
+          echo "Logging into Supabase..."
+          echo "${{ secrets.SUPABASE_ACCESS_TOKEN }}" | supabase login
+          
+          # Verify login was successful
+          if ! supabase projects list >/dev/null 2>&1; then
+            echo "ERROR: Failed to authenticate with Supabase"
+            echo "Please check that SUPABASE_ACCESS_TOKEN is correct"
+            exit 1
+          fi
+          
+          echo "Successfully logged into Supabase"
           
       - name: Link to Supabase project
         run: |
+          echo "Linking to Supabase project: vkwhrbjkdznncjkzkiuo"
           supabase link --project-ref vkwhrbjkdznncjkzkiuo
+          
+          # Verify project link was successful
+          if ! supabase status >/dev/null 2>&1; then
+            echo "ERROR: Failed to link to Supabase project"
+            echo "Please check that the project reference is correct"
+            exit 1
+          fi
+          
+          echo "Successfully linked to Supabase project"
           
       - name: Generate full backup
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          supabase db dump --file "backups/monthly/full_backup_${TIMESTAMP}.sql"
+          BACKUP_FILE="backups/monthly/full_backup_${TIMESTAMP}.sql"
+          
+          echo "Creating full backup: $BACKUP_FILE"
+          supabase db dump --file "$BACKUP_FILE"
+          
+          # Validate backup was created and has content
+          if [ ! -f "$BACKUP_FILE" ]; then
+            echo "ERROR: Backup file was not created"
+            exit 1
+          fi
+          
+          BACKUP_SIZE=$(wc -c < "$BACKUP_FILE")
+          echo "Backup file size: ${BACKUP_SIZE} bytes"
+          
+          if [ "$BACKUP_SIZE" -lt 1000 ]; then
+            echo "ERROR: Backup file is too small (${BACKUP_SIZE} bytes)"
+            head -20 "$BACKUP_FILE"
+            exit 1
+          fi
+          
+          echo "Full backup completed successfully"
           
       - name: Commit and push backup
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # Add backup files
           git add backups/monthly/
-          git commit -m "Monthly full backup - $(date +"%Y-%m-%d")" || echo "No changes to commit"
-          git push
+          
+          # Check if there are any changes to commit
+          if git diff --cached --quiet; then
+            echo "No backup changes to commit"
+          else
+            git commit -m "Monthly full backup - $(date +"%Y-%m-%d %H:%M:%S UTC")"
+            git push
+            echo "Monthly full backup committed and pushed successfully"
+          fi
           
       - name: Log completion
         run: echo "Monthly full backup completed at $(date)"
