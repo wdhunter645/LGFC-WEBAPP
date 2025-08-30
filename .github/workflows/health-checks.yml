@@ -9,6 +9,10 @@ on:
 jobs:
   health-check:
     runs-on: ubuntu-latest
+    env:
+      PROD_URL: ${{ secrets.NETLIFY_SITE_URL || 'https://lougehrigfanclub.netlify.app' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co' }}
+      SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,7 +25,6 @@ jobs:
           echo "=== Application Health Check - $(date) ===" > health-reports/health-check.log
           echo "Checking production site availability..." >> health-reports/health-check.log
           
-          PROD_URL="https://lougehrigfanclub.netlify.app"
           echo "Production URL: $PROD_URL" >> health-reports/health-check.log
           
           # Check homepage
@@ -48,7 +51,6 @@ jobs:
 
       - name: Check Critical Application Pages
         run: |
-          PROD_URL="https://lougehrigfanclub.netlify.app"
           
           echo "" >> health-reports/health-check.log
           echo "=== Critical Pages Check ===" >> health-reports/health-check.log
@@ -85,11 +87,11 @@ jobs:
           echo "=== Database Connectivity Check ===" >> health-reports/health-check.log
           
           # Use Node.js to test Supabase connection
-          cat > test-db.js << 'EOF'
+          cat > test-db.js << EOF
           const { createClient } = require('@supabase/supabase-js');
           
-          const SUPABASE_URL = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-          const SUPABASE_PUBLIC_API_KEY = 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+          const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+          const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
           
           const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY);
           
@@ -146,8 +148,6 @@ jobs:
           echo "" >> health-reports/health-check.log
           echo "=== Netlify Functions Check ===" >> health-reports/health-check.log
           
-          PROD_URL="https://lougehrigfanclub.netlify.app"
-          
           # Test functions with OPTIONS (CORS preflight)
           FUNCTIONS=(
             "/.netlify/functions/submit-question"
@@ -199,8 +199,6 @@ jobs:
         run: |
           echo "" >> health-reports/health-check.log
           echo "=== Security Headers Check ===" >> health-reports/health-check.log
-          
-          PROD_URL="https://lougehrigfanclub.netlify.app"
           
           # Get security headers
           HEADERS=$(curl -s -I "$PROD_URL")
