@@ -1,0 +1,18 @@
+# Security Workflows and Configuration
+/.github/workflows/security-scans.yml @copilot[security-agent]
+/security-scans/ @copilot[security-agent]
+
+# Operational Workflows
+/.github/workflows/ @copilot[ops-bot]
+
+# Application Development  
+/src/ @copilot[dev-bot]
+/app/ @copilot[dev-bot]
+
+# Infrastructure
+/infra/ @copilot[ops-bot]
+/k8s/ @copilot[ops-bot]
+/terraform/ @copilot[ops-bot]
+
+# Security Documentation
+OPERATIONAL_READINESS.md @copilot[security-agent] @copilot[ops-bot]
