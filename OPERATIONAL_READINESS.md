@@ -36,10 +36,17 @@ The operational readiness project has implemented **7 new workflows** that compl
 - ✅ Checks Row Level Security (RLS) policies
 - ✅ Provides detailed diff reports for changes
 - ✅ Manual baseline update capability
+- ✅ Automated issue creation for critical drift alerts
+- ✅ Integration with ops-bot for workflow monitoring
 
 #### Reports:
 - `schema-monitoring/drift-report.log` - Schema change reports
 - `schema-monitoring/baseline_schema.sql` - Reference schema
+
+#### Automated Alerts:
+- Creates GitHub issues for detected schema drift
+- Labels: `ops`, `schema-drift`, `priority:high`
+- Includes full drift report and remediation instructions
 
 ---
 
@@ -211,6 +218,20 @@ The operational readiness project has implemented **7 new workflows** that compl
 ```
 
 ## 🔧 Manual Operations
+
+### Required Repository Secrets
+
+The following secrets must be configured in GitHub repository settings for workflows to function properly:
+
+#### Supabase Configuration
+- **`SUPABASE_ACCESS_TOKEN`**: Personal access token for Supabase CLI authentication
+- **`SUPABASE_PROJECT_REF`**: Project reference ID for linking to the correct Supabase project
+  - Current project ref: `vkwhrbjkdznncjkzkiuo`
+
+#### Setup Instructions
+1. Go to Repository Settings → Secrets and variables → Actions
+2. Add the required secrets with appropriate values
+3. Verify workflow functionality by triggering manual runs
 
 ### Updating Schema Baseline
 When legitimate schema changes are made:
