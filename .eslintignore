@@ -3,3 +3,4 @@ node_modules
 vendor_reports
 vercel_draft
 supabase/functions
+src/pages/index.astro
