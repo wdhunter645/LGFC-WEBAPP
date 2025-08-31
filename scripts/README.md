@@ -49,6 +49,15 @@ Git branch synchronization and divergence resolution tool.
 - `rebase` - Rebase local changes onto remote
 - `reset` - Reset local branch to match remote (destructive)
 
+### 3. `setup_remote_and_gh_cli.sh`
+Automates configuring a Git remote and installing the GitHub CLI.
+
+**Usage:**
+```bash
+./scripts/setup_remote_and_gh_cli.sh <remote-url> [remote-name]
+```
+
+
 ## Quick Start
 
 ### Daily Health Check
