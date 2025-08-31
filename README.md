@@ -31,6 +31,7 @@ This repository contains the source code and schema for the **Lou Gehrig Fan Clu
 ├── public/                          # Static assets
 ├── src/                             # Source code (pages, components, lib)
 ├── BRANCH_AUDIT_DOCUMENTATION.md    # Branch management guide
+├── BRANCH_AUDIT_SUMMARY.md          # Latest audit results
 ├── GIT_TROUBLESHOOTING.md           # Git troubleshooting guide
 ├── README.md
 └── ...
@@ -45,6 +46,7 @@ This repository includes a comprehensive branch audit and cleanup system to main
 ### Quick Commands
 
 ```bash
+<<<<<<< HEAD
 # Perform branch audit (firewall-safe)
 node scripts/git_branch_audit.mjs audit
 
@@ -122,7 +124,10 @@ npm test
 - GitHub-first development model
 - Automated branch management and cleanup
 - Repository health monitoring
+<<<<<<< HEAD
 - **Workflow Ordering**: API-dependent steps before firewall activation
+=======
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Add UI testing / preview support (future)
 
 ---
@@ -134,8 +139,12 @@ Development is actively in progress. The focus for **August 2025** includes:
 - Frontend testing through GitHub
 - Schema stability and RLS security
 - Connecting user-generated content to display layers
+<<<<<<< HEAD
 - Repository maintenance automation (✅ **COMPLETED**)
 - Branch audit and cleanup system (✅ **FIREWALL-SAFE**)
+=======
+- Repository maintenance automation
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Preparing for public preview and community feedback
 
 ---
@@ -155,3 +164,5 @@ Development is actively in progress. The focus for **August 2025** includes:
 📥 **To install this README:**  
 Create a new file called `README.md` in your GitHub repo (`LGFC-WEBAPP`), paste in this content, and commit it to `main`.
 # Netlify deployment test
+# Test update to README
+Test final integration

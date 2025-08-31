@@ -11,5 +11,3 @@ dist/
 
 # Netlify functions build artifacts
 netlify/functions-dist/
-# Workflow project monitor temporary files
-workflow-project-assessment.json

@@ -16,9 +16,59 @@ This guide provides comprehensive procedures for resolving Git branch divergence
 
 # Resolve branch divergence
 ./scripts/git_branch_sync.sh resolve main merge
+
+# Smart commit with automatic divergence resolution (NEW)
+./scripts/git_smart_commit.sh -a -m "Your message"
+
+# Use Git aliases for smart commits (NEW)
+git scommit -a -m "Your message"   # Smart commit all changes
+git health                         # Quick health check
+git sync status                   # Check branch synchronization
 ```
 
 ## Problem Resolution
+
+### 0. Git Commit -a Divergence Issues (NEW SOLUTION)
+
+**Problem:** Using `git commit -a` fails or causes issues when branches have diverged.
+
+**Symptoms:**
+- Commit succeeds but push fails due to divergence
+- Confusion about whether local or remote changes should take precedence
+- Manual resolution required every time branches diverge
+
+**Smart Solution (Recommended):**
+```bash
+# Use smart commit instead of git commit -a
+git scommit -a -m "Your commit message"
+
+# This will:
+# 1. Detect branch divergence before committing
+# 2. Offer resolution strategies (merge/rebase)
+# 3. Complete the commit safely
+# 4. Optionally push to remote
+```
+
+**Manual Resolution (if needed):**
+```bash
+# Check for divergence first
+./scripts/git_branch_sync.sh check main
+
+# If divergence detected, resolve before committing
+./scripts/git_branch_sync.sh resolve main merge  # or rebase
+
+# Then commit normally
+git commit -a -m "Your message"
+```
+
+**Setup Smart Commit System:**
+```bash
+# Run setup once to configure smart commit
+./scripts/setup_git_divergence_resolution.sh
+
+# Test the setup
+git scommit -a -m "Test message"
+```
 
 ### 1. Branch Divergence Issues
 
@@ -144,7 +194,7 @@ jobs:
 
 ## Git Workflow Best Practices
 
-### 1. Daily Workflow
+### 1. Daily Workflow (Updated for Smart Commit)
 
 ```bash
 # Morning routine
@@ -157,17 +207,37 @@ git checkout -b feature/my-feature
 
 # ... do your work ...
 
-# Before committing
+# Before committing (RECOMMENDED: Use Smart Commit)
+git scommit -a -m "Your commit message"  # Automatically handles divergence
+
+# Alternative: Traditional workflow
 git add .
 git status
 git commit -m "Your commit message"
 
-# Before pushing
+# Before pushing (handled automatically by smart commit)
 git checkout main
 git pull origin main
 git checkout feature/my-feature
 git rebase main  # or merge main
 git push origin feature/my-feature
+```
+
+### 1b. Smart Commit Advantages
+
+**Why use Smart Commit (`git scommit`) instead of `git commit -a`?**
+- **Automatic divergence detection**: Checks for branch divergence before committing
+- **Guided resolution**: Offers merge/rebase options when divergence is detected  
+- **Repository health checks**: Ensures repository is in good state before committing
+- **Push assistance**: Optionally pushes changes after successful commit
+- **Safety first**: Creates backups before risky operations
+
+**Available Smart Commit Commands:**
+```bash
+git scommit -a -m "message"    # Smart commit all changes (replaces git commit -a)
+git sca -m "message"           # Shorthand for smart commit all
+git health                     # Quick repository health check
+git sync status               # Check branch synchronization status
 ```
 
 ### 2. Conflict Resolution
