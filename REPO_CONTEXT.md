@@ -26,6 +26,13 @@
 └── WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md
 ```
 
+## Key Contributors
+- **wdhunter645** (AtypicalHunter) – Owner, Lead Developer
+- **cursoragent** (Cursor Agent) – Automation & Analysis
+- **Copilot** – DevOps, Security, Workflow Automation
+- **dependabot[bot]** – Dependency Management
+- **Codex** – PR Reviews, Code Intelligence
+
 ## Key Operational Workflows
 1. **Security**: `security-scans.yml`, `dependency-security-updates.yml`
 2. **Backup**: `backup-audit.yml`, `supabase-backup-*.yml`
