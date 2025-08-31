@@ -30,3 +30,12 @@ As the assigned Copilot agent for security configuration and updates, I am respo
 - `@copilot optimize security-scans workflow` - Performance improvements
 - `@copilot add security detection patterns for [threat-type]` - Pattern updates
 - `@copilot analyze security-scans reports` - Report analysis and recommendations
+
+### Branch Audit and Firewall Management
+- Monitor branch audit system functionality and firewall compatibility
+- Troubleshoot GitHub API connectivity issues in workflows
+- Maintain workflow ordering to ensure API access before firewall activation
+- Recommend allowlisting GitHub API endpoints if persistent firewall issues occur:
+  - `api.github.com` for GitHub API access
+  - `github.com` for GitHub CLI operations
+- Review and optimize branch management automation workflows
