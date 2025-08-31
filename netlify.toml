@@ -4,9 +4,11 @@
 
 [build.environment]
   NODE_VERSION = "20.19.4"
+  ASTRO_TELEMETRY_DISABLED = "1"
 
 # Environment variables for Supabase integration
 [context.production.environment]
+  ASTRO_TELEMETRY_DISABLED = "1"
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
   SUPABASE_SERVICE_ROLE_KEY = "sb_service_role_key_placeholder_for_faq_clicks"
@@ -22,6 +24,7 @@
   SENDGRID_FROM = "noreply@lougehrigfanclub.com"
 
 [context.deploy-preview.environment]
+  ASTRO_TELEMETRY_DISABLED = "1"
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
   SUPABASE_SERVICE_ROLE_KEY = "sb_service_role_key_placeholder_for_faq_clicks"
@@ -37,6 +40,7 @@
   SENDGRID_FROM = "noreply@lougehrigfanclub.com"
 
 [context.branch-deploy.environment]
+  ASTRO_TELEMETRY_DISABLED = "1"
   SUPABASE_URL = "https://vkwhrbjkdznncjkzkiuo.supabase.co"
   SUPABASE_PUBLIC_API_KEY = "sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs"
   SUPABASE_SERVICE_ROLE_KEY = "sb_service_role_key_placeholder_for_faq_clicks"
