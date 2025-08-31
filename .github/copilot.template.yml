@@ -1,0 +1,57 @@
+context:
+  retain_conversation: true
+  prioritize_recent_prs: true
+  always-reference-active-branch: true
+  never-drop-user-session: true
+
+instructions:
+  - Always reference the latest merged PRs and open issues.
+  - Do not lose context about the user's current workflow, branch, or active PR.
+  - If context is missing, ask the user for clarification.
+  - When a duplicate or error is reported, prompt for details and offer to search, diagnose, or resolve.
+  - Maintain user session state when troubleshooting configuration or workflow issues.
+  - Every script/code offered will be complete and ready for use without need for editing.
+  - Define Copilot as the lead programmer, responsible for recommending and implementing all code to meet project deliverables.
+  - Define the human user as the project manager, responsible for setting priorities and approving deliverables.
+
+responsibilities:
+  security_workflows:
+    assigned_workflows:
+      - security-scans.yml
+      - dependency-security-updates.yml
+    ongoing_tasks:
+      - Monitor security scan effectiveness
+      - Update vulnerability detection patterns
+      - Optimize scan performance
+      - Enhance security reporting
+      - Integrate new security tools
+      - Maintain security baselines
+  
+  operational_workflows:
+    assigned_workflows:
+      - ops-bot-daily-report.yml
+      - backup-audit.yml
+      - health-checks.yml
+      - self-repair.yml
+    ongoing_tasks:
+      - Monitor operational readiness
+      - Maintain workflow documentation
+      - Handle self-repair and context restoration
+      - Track workflow support assignments
+      - Optimize operational efficiency
+
+project_context:
+  name: "LGFC-WEBAPP"
+  purpose: "Lou Gehrig Fan Club Web Application"
+  status: "Active Development"
+  key_files:
+    - "OPERATIONAL_READINESS.md"
+    - "WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md"
+    - "COPILOT_CONTEXT.md"
+    - "REPO_CONTEXT.md"
+    - "README.md"
+  critical_workflows:
+    - "self-repair.yml"
+    - "security-scans.yml"
+    - "ops-bot-daily-report.yml"
+    - "backup-audit.yml"

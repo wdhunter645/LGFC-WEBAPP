@@ -12,6 +12,7 @@ Daily start (06:00 America/New_York)
    - Create/label Issues (`ops`, `priority:*`) and assign owners
    - Propose fixes via DRAFT PRs in `infra/`, `.github/`, `k8s/`, `terraform/`
 3) Keep `Next:` up to date on ops Issues; ensure safe rollbacks for infra changes
+4) Monitor schema drift alerts (`schema-drift` label) with high priority
 
 Guardrails
 - Least privilege, idempotency, dry-runs before apply, and rollback steps
@@ -19,6 +20,7 @@ Guardrails
 
 Paths
 - Include: `infra/`, `.github/`, `k8s/`, `terraform/`, `ops/`
+- Include: Security workflows monitoring (`.github/workflows/security-scans.yml`)
 - Exclude: `src/`, `app/`
 
 Branch/PR template

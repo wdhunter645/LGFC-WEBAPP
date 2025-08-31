@@ -1,0 +1,54 @@
+{
+  "$ref": "#/definitions/memorabilia",
+  "definitions": {
+    "memorabilia": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "year": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Baseball Card",
+            "Autograph",
+            "Photograph",
+            "Document",
+            "Trophy",
+            "Uniform",
+            "Other"
+          ]
+        },
+        "image": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "category",
+        "image"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🛡️ Operational Readiness Documentation
+    url: https://github.com/wdhunter645/LGFC-WEBAPP/blob/main/OPERATIONAL_READINESS.md
+    about: Comprehensive overview of all workflow automation and monitoring
+  - name: 🔧 Manual Workflow Triggers
+    url: https://github.com/wdhunter645/LGFC-WEBAPP/actions
+    about: GitHub Actions dashboard for manual workflow execution
+  - name: 📊 Workflow Health Reports
+    url: https://github.com/wdhunter645/LGFC-WEBAPP/tree/main/health-reports
+    about: Generated health and monitoring reports from automated workflows

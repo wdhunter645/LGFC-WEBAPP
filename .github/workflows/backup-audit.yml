@@ -1,0 +1,169 @@
+name: Backup Audit - Integrity & Completeness Check
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC (after backup completion)
+    - cron: "0 6 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  audit-backups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Install Supabase CLI
+        run: |
+          # Install Supabase CLI using GitHub releases
+          VERSION=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Installing Supabase CLI version: $VERSION"
+          curl -Lo supabase.tar.gz "https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz"
+          tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          rm supabase.tar.gz
+          supabase --version
+          
+      - name: Create audit report directory
+        run: |
+          mkdir -p audit-reports
+          
+      - name: Audit Daily Backups
+        run: |
+          echo "=== Daily Backup Audit - $(date) ===" >> audit-reports/backup-audit.log
+          echo "Checking daily backups in backups/daily/" >> audit-reports/backup-audit.log
+          
+          if [ -d "backups/daily" ]; then
+            daily_count=$(find backups/daily -name "*.sql" -type f | wc -l)
+            echo "Daily backup files found: $daily_count" >> audit-reports/backup-audit.log
+            
+            if [ $daily_count -gt 0 ]; then
+              latest_daily=$(ls -t backups/daily/*.sql 2>/dev/null | head -1)
+              if [ -n "$latest_daily" ]; then
+                daily_size=$(du -h "$latest_daily" | cut -f1)
+                daily_age=$(find "$latest_daily" -mtime -2 | wc -l)
+                echo "Latest daily backup: $(basename "$latest_daily")" >> audit-reports/backup-audit.log
+                echo "Latest daily backup size: $daily_size" >> audit-reports/backup-audit.log
+                
+                if [ $daily_age -eq 1 ]; then
+                  echo "✅ Daily backup is recent (within 48 hours)" >> audit-reports/backup-audit.log
+                else
+                  echo "⚠️ Daily backup may be stale (older than 48 hours)" >> audit-reports/backup-audit.log
+                fi
+                
+                # Basic SQL syntax check
+                if head -10 "$latest_daily" | grep -q "PostgreSQL database dump\|CREATE\|INSERT"; then
+                  echo "✅ Daily backup appears to contain valid SQL" >> audit-reports/backup-audit.log
+                else
+                  echo "❌ Daily backup may be corrupted - no SQL content detected" >> audit-reports/backup-audit.log
+                fi
+              fi
+            else
+              echo "❌ No daily backups found!" >> audit-reports/backup-audit.log
+            fi
+          else
+            echo "❌ Daily backup directory not found!" >> audit-reports/backup-audit.log
+          fi
+          
+      - name: Audit Weekly Backups
+        run: |
+          echo "" >> audit-reports/backup-audit.log
+          echo "Checking weekly backups in backups/weekly/" >> audit-reports/backup-audit.log
+          
+          if [ -d "backups/weekly" ]; then
+            weekly_count=$(find backups/weekly -name "*.sql" -type f | wc -l)
+            echo "Weekly backup files found: $weekly_count" >> audit-reports/backup-audit.log
+            
+            if [ $weekly_count -gt 0 ]; then
+              latest_weekly=$(ls -t backups/weekly/*.sql 2>/dev/null | head -1)
+              if [ -n "$latest_weekly" ]; then
+                weekly_size=$(du -h "$latest_weekly" | cut -f1)
+                weekly_age=$(find "$latest_weekly" -mtime -8 | wc -l)
+                echo "Latest weekly backup: $(basename "$latest_weekly")" >> audit-reports/backup-audit.log
+                echo "Latest weekly backup size: $weekly_size" >> audit-reports/backup-audit.log
+                
+                if [ $weekly_age -eq 1 ]; then
+                  echo "✅ Weekly backup is recent (within 8 days)" >> audit-reports/backup-audit.log
+                else
+                  echo "⚠️ Weekly backup may be stale (older than 8 days)" >> audit-reports/backup-audit.log
+                fi
+              fi
+            else
+              echo "⚠️ No weekly backups found" >> audit-reports/backup-audit.log
+            fi
+          else
+            echo "❌ Weekly backup directory not found!" >> audit-reports/backup-audit.log
+          fi
+          
+      - name: Audit Monthly Backups
+        run: |
+          echo "" >> audit-reports/backup-audit.log
+          echo "Checking monthly backups in backups/monthly/" >> audit-reports/backup-audit.log
+          
+          if [ -d "backups/monthly" ]; then
+            monthly_count=$(find backups/monthly -name "*.sql" -type f | wc -l)
+            echo "Monthly backup files found: $monthly_count" >> audit-reports/backup-audit.log
+            
+            if [ $monthly_count -gt 0 ]; then
+              latest_monthly=$(ls -t backups/monthly/*.sql 2>/dev/null | head -1)
+              if [ -n "$latest_monthly" ]; then
+                monthly_size=$(du -h "$latest_monthly" | cut -f1)
+                monthly_age=$(find "$latest_monthly" -mtime -35 | wc -l)
+                echo "Latest monthly backup: $(basename "$latest_monthly")" >> audit-reports/backup-audit.log
+                echo "Latest monthly backup size: $monthly_size" >> audit-reports/backup-audit.log
+                
+                if [ $monthly_age -eq 1 ]; then
+                  echo "✅ Monthly backup is recent (within 35 days)" >> audit-reports/backup-audit.log
+                else
+                  echo "⚠️ Monthly backup may be stale (older than 35 days)" >> audit-reports/backup-audit.log
+                fi
+              fi
+            else
+              echo "⚠️ No monthly backups found" >> audit-reports/backup-audit.log
+            fi
+          else
+            echo "❌ Monthly backup directory not found!" >> audit-reports/backup-audit.log
+          fi
+          
+      - name: Calculate Total Backup Storage
+        run: |
+          echo "" >> audit-reports/backup-audit.log
+          echo "=== Storage Summary ===" >> audit-reports/backup-audit.log
+          
+          total_size=$(du -sh backups 2>/dev/null | cut -f1 || echo "0")
+          echo "Total backup storage used: $total_size" >> audit-reports/backup-audit.log
+          
+      - name: Generate Audit Summary
+        run: |
+          echo "" >> audit-reports/backup-audit.log
+          echo "=== Audit Summary ===" >> audit-reports/backup-audit.log
+          
+          success_count=$(grep -c "✅" audit-reports/backup-audit.log || echo "0")
+          warning_count=$(grep -c "⚠️" audit-reports/backup-audit.log || echo "0")
+          error_count=$(grep -c "❌" audit-reports/backup-audit.log || echo "0")
+          
+          echo "✅ Successful checks: $success_count" >> audit-reports/backup-audit.log
+          echo "⚠️ Warnings: $warning_count" >> audit-reports/backup-audit.log  
+          echo "❌ Errors: $error_count" >> audit-reports/backup-audit.log
+          echo "Audit completed at: $(date)" >> audit-reports/backup-audit.log
+          
+      - name: Display Audit Report
+        run: |
+          echo "Backup audit report:"
+          cat audit-reports/backup-audit.log
+          
+      - name: Check for Critical Issues
+        run: |
+          error_count=$(grep -c "❌" audit-reports/backup-audit.log || echo "0")
+          if [ $error_count -gt 0 ]; then
+            echo "::warning::Backup audit found $error_count critical issues"
+            exit 1
+          fi
+          
+      - name: Commit audit report
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add audit-reports/
+          git commit -m "Backup audit report - $(date +"%Y-%m-%d")" || echo "No audit changes to commit"
+          git push

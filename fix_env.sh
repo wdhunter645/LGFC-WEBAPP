@@ -8,7 +8,5 @@ head -n 4 .env.example | tail -n +1 | sed '1i\\' >> temp_lines
 sed -i '9r temp_lines' .env
 rm temp_lines
 
-# Traffic simulator variables removed as simulator infrastructure has been decommissioned
-
 echo "✅ .env file updated successfully"
 cat .env

@@ -174,4 +174,4 @@ SUPABASE_URL=https://your-project.supabase.co
 
 **Status: Pure JWT migration complete and verified!** 🎯
 
-The system is now running in pure JWT mode with no anon key dependencies and no cached sessions interfering. The traffic simulator is successfully keeping the Supabase project active 24/7.
+The system is now running in pure JWT mode with no anon key dependencies and no cached sessions interfering. Note: Traffic simulator infrastructure has since been decommissioned as part of infrastructure cleanup.
