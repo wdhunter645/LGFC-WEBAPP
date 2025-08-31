@@ -1,18 +1,25 @@
+---
 name: Application Health Checks
 
 on:
   schedule:
     # Run every 2 hours during business hours (8 AM - 8 PM UTC)
     - cron: "0 8,10,12,14,16,18,20 * * *"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   health-check:
     runs-on: ubuntu-latest
     env:
-      PROD_URL: ${{ secrets.NETLIFY_SITE_URL || 'https://lougehrigfanclub.netlify.app' }}
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co' }}
-      SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs' }}
+      PROD_URL: >-
+        ${{ secrets.NETLIFY_SITE_URL ||
+        'https://lougehrigfanclub.netlify.app' }}
+      SUPABASE_URL: >-
+        ${{ secrets.SUPABASE_URL ||
+        'https://vkwhrbjkdznncjkzkiuo.supabase.co' }}
+      SUPABASE_PUBLIC_API_KEY: >-
+        ${{ secrets.SUPABASE_PUBLIC_API_KEY ||
+        'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,42 +29,53 @@ jobs:
 
       - name: Check Production Site Availability
         run: |
-          echo "=== Application Health Check - $(date) ===" > health-reports/health-check.log
-          echo "Checking production site availability..." >> health-reports/health-check.log
-          
+          echo "=== Application Health Check - $(date) ===" \
+            > health-reports/health-check.log
+          echo "Checking production site availability..." \
+            >> health-reports/health-check.log
+
           echo "Production URL: $PROD_URL" >> health-reports/health-check.log
-          
+
           # Check homepage
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL" || echo "000")
-          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$PROD_URL" || echo "999")
-          RESPONSE_TIME_MS=$(echo "$RESPONSE_TIME * 1000" | bc -l | cut -d. -f1)
-          
-          echo "Homepage Status: $HTTP_STATUS" >> health-reports/health-check.log
-          echo "Response Time: ${RESPONSE_TIME_MS}ms" >> health-reports/health-check.log
-          
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$PROD_URL" || echo "000")
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" \
+            "$PROD_URL" || echo "999")
+          RESPONSE_TIME_MS=$(echo "$RESPONSE_TIME * 1000" | bc -l | \
+            cut -d. -f1)
+
+          echo "Homepage Status: $HTTP_STATUS" \
+            >> health-reports/health-check.log
+          echo "Response Time: ${RESPONSE_TIME_MS}ms" \
+            >> health-reports/health-check.log
+
           if [ "$HTTP_STATUS" = "200" ]; then
-            echo "✅ Homepage is accessible" >> health-reports/health-check.log
+            echo "✅ Homepage is accessible" \
+              >> health-reports/health-check.log
           else
-            echo "❌ Homepage is not accessible (HTTP $HTTP_STATUS)" >> health-reports/health-check.log
+            echo "❌ Homepage is not accessible (HTTP $HTTP_STATUS)" \
+              >> health-reports/health-check.log
           fi
-          
+
           if [ "$RESPONSE_TIME_MS" -lt 2000 ]; then
-            echo "✅ Response time is good (${RESPONSE_TIME_MS}ms)" >> health-reports/health-check.log
+            echo "✅ Response time is good (${RESPONSE_TIME_MS}ms)" \
+              >> health-reports/health-check.log
           elif [ "$RESPONSE_TIME_MS" -lt 5000 ]; then
-            echo "⚠️ Response time is slow (${RESPONSE_TIME_MS}ms)" >> health-reports/health-check.log
+            echo "⚠️ Response time is slow (${RESPONSE_TIME_MS}ms)" \
+              >> health-reports/health-check.log
           else
-            echo "❌ Response time is too slow (${RESPONSE_TIME_MS}ms)" >> health-reports/health-check.log
+            echo "❌ Response time is too slow (${RESPONSE_TIME_MS}ms)" \
+              >> health-reports/health-check.log
           fi
 
       - name: Check Critical Application Pages
         run: |
-          
           echo "" >> health-reports/health-check.log
           echo "=== Critical Pages Check ===" >> health-reports/health-check.log
-          
+
           CRITICAL_PAGES=(
             "/about"
-            "/events" 
+            "/events"
             "/community"
             "/archive"
             "/search"
@@ -65,36 +83,41 @@ jobs:
             "/history"
             "/milestones"
           )
-          
+
           FAILED_PAGES=0
-          
+
           for page in "${CRITICAL_PAGES[@]}"; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL$page" || echo "000")
-            
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$PROD_URL$page" || echo "000")
+
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "✅ $page - OK" >> health-reports/health-check.log
             else
-              echo "❌ $page - Failed (HTTP $HTTP_STATUS)" >> health-reports/health-check.log
+              echo "❌ $page - Failed (HTTP $HTTP_STATUS)" \
+                >> health-reports/health-check.log
               FAILED_PAGES=$((FAILED_PAGES + 1))
             fi
           done
-          
+
           echo "Failed pages: $FAILED_PAGES" >> health-reports/health-check.log
 
       - name: Check Supabase Database Connectivity
         run: |
           echo "" >> health-reports/health-check.log
-          echo "=== Database Connectivity Check ===" >> health-reports/health-check.log
-          
+          echo "=== Database Connectivity Check ===" \
+            >> health-reports/health-check.log
+
           # Use Node.js to test Supabase connection
           cat > test-db.js << EOF
           const { createClient } = require('@supabase/supabase-js');
-          
-          const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-          const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
-          
+
+          const SUPABASE_URL = process.env.SUPABASE_URL ||
+            'https://vkwhrbjkdznncjkzkiuo.supabase.co';
+          const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY ||
+            'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+
           const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY);
-          
+
           async function testConnection() {
             try {
               // Test basic connectivity with search_state table
@@ -102,7 +125,7 @@ jobs:
                 .from('search_state')
                 .select('*')
                 .limit(1);
-              
+
               if (error) {
                 console.log('❌ Database connection failed:', error.message);
                 process.exit(1);
@@ -110,57 +133,66 @@ jobs:
                 console.log('✅ Database connection successful');
                 console.log('✅ search_state table accessible');
               }
-              
+
               // Test other critical tables
-              const tables = ['events', 'faq_items', 'visitors', 'content_items'];
-              
+              const tables = ['events', 'faq_items', 'visitors',
+                'content_items'];
+
               for (const table of tables) {
                 try {
                   const { data, error } = await supabase
                     .from(table)
                     .select('*')
                     .limit(1);
-                  
+
                   if (error) {
-                    console.log(`⚠️ Table ${table}: ${error.message}`);
+                    console.log(\`⚠️ Table \${table}: \${error.message}\`);
                   } else {
-                    console.log(`✅ Table ${table}: accessible`);
+                    console.log(\`✅ Table \${table}: accessible\`);
                   }
                 } catch (err) {
-                  console.log(`❌ Table ${table}: ${err.message}`);
+                  console.log(\`❌ Table \${table}: \${err.message}\`);
                 }
               }
-              
+
             } catch (err) {
               console.log('❌ Database test failed:', err.message);
               process.exit(1);
             }
           }
-          
+
           testConnection();
           EOF
-          
-          echo "Testing database connectivity..." >> health-reports/health-check.log
-          node test-db.js >> health-reports/health-check.log 2>&1 || echo "Database test encountered errors" >> health-reports/health-check.log
+
+          echo "Testing database connectivity..." \
+            >> health-reports/health-check.log
+          node test-db.js >> health-reports/health-check.log 2>&1 || \
+            echo "Database test encountered errors" \
+            >> health-reports/health-check.log
 
       - name: Check Netlify Functions
         run: |
           echo "" >> health-reports/health-check.log
-          echo "=== Netlify Functions Check ===" >> health-reports/health-check.log
-          
+          echo "=== Netlify Functions Check ===" \
+            >> health-reports/health-check.log
+
           # Test functions with OPTIONS (CORS preflight)
           FUNCTIONS=(
             "/.netlify/functions/submit-question"
             "/.netlify/functions/vote"
           )
-          
+
           for func in "${FUNCTIONS[@]}"; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$PROD_URL$func" || echo "000")
-            
-            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ] || [ "$HTTP_STATUS" = "405" ]; then
-              echo "✅ Function $func - Available" >> health-reports/health-check.log
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              -X OPTIONS "$PROD_URL$func" || echo "000")
+
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ] || \
+               [ "$HTTP_STATUS" = "405" ]; then
+              echo "✅ Function $func - Available" \
+                >> health-reports/health-check.log
             else
-              echo "❌ Function $func - Not available (HTTP $HTTP_STATUS)" >> health-reports/health-check.log
+              echo "❌ Function $func - Not available (HTTP $HTTP_STATUS)" \
+                >> health-reports/health-check.log
             fi
           done
 
@@ -168,41 +200,50 @@ jobs:
         run: |
           echo "" >> health-reports/health-check.log
           echo "=== SSL Certificate Check ===" >> health-reports/health-check.log
-          
+
           # Check SSL certificate expiration
           DOMAIN="lougehrigfanclub.netlify.app"
-          
-          CERT_INFO=$(echo | openssl s_client -servername "$DOMAIN" -connect "$DOMAIN:443" 2>/dev/null | openssl x509 -noout -dates 2>/dev/null)
-          
+
+          CERT_INFO=$(echo | openssl s_client -servername "$DOMAIN" \
+            -connect "$DOMAIN:443" 2>/dev/null | \
+            openssl x509 -noout -dates 2>/dev/null)
+
           if [ -n "$CERT_INFO" ]; then
-            echo "✅ SSL certificate is valid" >> health-reports/health-check.log
+            echo "✅ SSL certificate is valid" \
+              >> health-reports/health-check.log
             echo "$CERT_INFO" >> health-reports/health-check.log
-            
+
             # Extract expiration date and check if it's within 30 days
             EXPIRY=$(echo "$CERT_INFO" | grep "notAfter" | cut -d= -f2)
             EXPIRY_TIMESTAMP=$(date -d "$EXPIRY" +%s 2>/dev/null || echo "0")
             CURRENT_TIMESTAMP=$(date +%s)
-            DAYS_UNTIL_EXPIRY=$(( (EXPIRY_TIMESTAMP - CURRENT_TIMESTAMP) / 86400 ))
-            
+            DAYS_UNTIL_EXPIRY=$(( (EXPIRY_TIMESTAMP - CURRENT_TIMESTAMP) \
+              / 86400 ))
+
             if [ "$DAYS_UNTIL_EXPIRY" -gt 30 ]; then
-              echo "✅ SSL certificate expires in $DAYS_UNTIL_EXPIRY days" >> health-reports/health-check.log
+              echo "✅ SSL certificate expires in $DAYS_UNTIL_EXPIRY days" \
+                >> health-reports/health-check.log
             elif [ "$DAYS_UNTIL_EXPIRY" -gt 7 ]; then
-              echo "⚠️ SSL certificate expires in $DAYS_UNTIL_EXPIRY days - renewal needed soon" >> health-reports/health-check.log
+              echo "⚠️ SSL certificate expires in $DAYS_UNTIL_EXPIRY days - renewal needed soon" \
+                >> health-reports/health-check.log
             else
-              echo "❌ SSL certificate expires in $DAYS_UNTIL_EXPIRY days - immediate renewal required!" >> health-reports/health-check.log
+              echo "❌ SSL certificate expires in $DAYS_UNTIL_EXPIRY days - immediate renewal required!" \
+                >> health-reports/health-check.log
             fi
           else
-            echo "❌ Could not retrieve SSL certificate information" >> health-reports/health-check.log
+            echo "❌ Could not retrieve SSL certificate information" \
+              >> health-reports/health-check.log
           fi
 
       - name: Check Security Headers
         run: |
           echo "" >> health-reports/health-check.log
-          echo "=== Security Headers Check ===" >> health-reports/health-check.log
-          
+          echo "=== Security Headers Check ===" \
+            >> health-reports/health-check.log
+
           # Get security headers
           HEADERS=$(curl -s -I "$PROD_URL")
-          
+
           SECURITY_HEADERS=(
             "X-Frame-Options"
             "X-Content-Type-Options"
@@ -210,12 +251,14 @@ jobs:
             "Content-Security-Policy"
             "Referrer-Policy"
           )
-          
+
           for header in "${SECURITY_HEADERS[@]}"; do
             if echo "$HEADERS" | grep -qi "$header"; then
-              echo "✅ $header header present" >> health-reports/health-check.log
+              echo "✅ $header header present" \
+                >> health-reports/health-check.log
             else
-              echo "⚠️ $header header missing" >> health-reports/health-check.log
+              echo "⚠️ $header header missing" \
+                >> health-reports/health-check.log
             fi
           done
 
@@ -223,25 +266,34 @@ jobs:
         run: |
           echo "" >> health-reports/health-check.log
           echo "=== Health Check Summary ===" >> health-reports/health-check.log
-          
-          SUCCESS_COUNT=$(grep -c "✅" health-reports/health-check.log || echo "0")
-          WARNING_COUNT=$(grep -c "⚠️" health-reports/health-check.log || echo "0")
-          ERROR_COUNT=$(grep -c "❌" health-reports/health-check.log || echo "0")
-          
-          echo "✅ Successful checks: $SUCCESS_COUNT" >> health-reports/health-check.log
-          echo "⚠️ Warnings: $WARNING_COUNT" >> health-reports/health-check.log
+
+          SUCCESS_COUNT=$(grep -c "✅" health-reports/health-check.log || \
+            echo "0")
+          WARNING_COUNT=$(grep -c "⚠️" health-reports/health-check.log || \
+            echo "0")
+          ERROR_COUNT=$(grep -c "❌" health-reports/health-check.log || \
+            echo "0")
+
+          echo "✅ Successful checks: $SUCCESS_COUNT" \
+            >> health-reports/health-check.log
+          echo "⚠️ Warnings: $WARNING_COUNT" \
+            >> health-reports/health-check.log
           echo "❌ Errors: $ERROR_COUNT" >> health-reports/health-check.log
-          echo "Health check completed at: $(date)" >> health-reports/health-check.log
-          
+          echo "Health check completed at: $(date)" \
+            >> health-reports/health-check.log
+
           # Set overall health status
           if [ "$ERROR_COUNT" -eq 0 ]; then
             if [ "$WARNING_COUNT" -eq 0 ]; then
-              echo "🟢 OVERALL HEALTH: EXCELLENT" >> health-reports/health-check.log
+              echo "🟢 OVERALL HEALTH: EXCELLENT" \
+                >> health-reports/health-check.log
             else
-              echo "🟡 OVERALL HEALTH: GOOD (with warnings)" >> health-reports/health-check.log
+              echo "🟡 OVERALL HEALTH: GOOD (with warnings)" \
+                >> health-reports/health-check.log
             fi
           else
-            echo "🔴 OVERALL HEALTH: NEEDS ATTENTION" >> health-reports/health-check.log
+            echo "🔴 OVERALL HEALTH: NEEDS ATTENTION" \
+              >> health-reports/health-check.log
           fi
 
       - name: Display Health Report
@@ -251,19 +303,22 @@ jobs:
 
       - name: Check for Critical Issues
         run: |
-          ERROR_COUNT=$(grep -c "❌" health-reports/health-check.log || echo "0")
-          
+          ERROR_COUNT=$(grep -c "❌" health-reports/health-check.log || \
+            echo "0")
+
           if [ "$ERROR_COUNT" -gt 0 ]; then
             echo "::warning::Health check found $ERROR_COUNT critical issues"
-            
+
             # Check for homepage failure (critical)
-            if grep -q "❌.*Homepage.*not accessible" health-reports/health-check.log; then
+            if grep -q "❌.*Homepage.*not accessible" \
+               health-reports/health-check.log; then
               echo "::error::Homepage is not accessible - critical system failure"
               exit 1
             fi
-            
+
             # Check for database connectivity failure (critical)
-            if grep -q "❌.*Database.*failed" health-reports/health-check.log; then
+            if grep -q "❌.*Database.*failed" \
+               health-reports/health-check.log; then
               echo "::error::Database connectivity failure - critical system failure"
               exit 1
             fi
@@ -274,5 +329,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add health-reports/
-          git commit -m "Health check report - $(date +"%Y-%m-%d %H:%M")" || echo "No health check changes to commit"
+          git commit -m "Health check report - $(date +"%Y-%m-%d %H:%M")" || \
+            echo "No health check changes to commit"
           git push
