@@ -1,6 +1,7 @@
-name: Ops-Bot: Daily Report
+---
+name: "Ops-Bot: Daily Report"
 
-on:
+"on":
   workflow_dispatch:
     inputs:
       lookback_days:

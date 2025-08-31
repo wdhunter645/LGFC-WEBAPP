@@ -1,6 +1,7 @@
+---
 name: Backup Cleanup - Retention Policy Enforcement
 
-on:
+"on":
   schedule:
     # Run weekly on Saturday at 5 AM UTC
     - cron: "0 5 * * 6"
@@ -12,87 +13,87 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Create backup directories if they don't exist
         run: |
           mkdir -p backups/daily
           mkdir -p backups/weekly
           mkdir -p backups/monthly
-          
+
       - name: Cleanup Daily Backups (14 days retention)
         run: |
           echo "Cleaning up daily backups older than 14 days..."
-          
+
           if [ ! -d "backups/daily" ]; then
             echo "Daily backup directory does not exist, creating it..."
             mkdir -p backups/daily
           fi
-          
+
           # Count files before cleanup
           BEFORE_COUNT=$(find backups/daily -name "*.sql" -type f | wc -l)
           echo "Daily backups before cleanup: $BEFORE_COUNT files"
-          
+
           # Remove files older than 14 days
           DELETED_COUNT=$(find backups/daily -name "*.sql" -type f -mtime +14 -print | wc -l)
           find backups/daily -name "*.sql" -type f -mtime +14 -delete
-          
+
           # Count files after cleanup
           AFTER_COUNT=$(find backups/daily -name "*.sql" -type f | wc -l)
           echo "Daily backups after cleanup: $AFTER_COUNT files"
           echo "Deleted $DELETED_COUNT daily backup files"
-          
+
       - name: Cleanup Weekly Backups (8 weeks retention)
         run: |
           echo "Cleaning up weekly backups older than 8 weeks..."
-          
+
           if [ ! -d "backups/weekly" ]; then
             echo "Weekly backup directory does not exist, creating it..."
             mkdir -p backups/weekly
           fi
-          
+
           # Count files before cleanup
           BEFORE_COUNT=$(find backups/weekly -name "*.sql" -type f | wc -l)
           echo "Weekly backups before cleanup: $BEFORE_COUNT files"
-          
+
           # Remove files older than 56 days (8 weeks)
           DELETED_COUNT=$(find backups/weekly -name "*.sql" -type f -mtime +56 -print | wc -l)
           find backups/weekly -name "*.sql" -type f -mtime +56 -delete
-          
+
           # Count files after cleanup
           AFTER_COUNT=$(find backups/weekly -name "*.sql" -type f | wc -l)
           echo "Weekly backups after cleanup: $AFTER_COUNT files"
           echo "Deleted $DELETED_COUNT weekly backup files"
-          
+
       - name: Cleanup Monthly Backups (13 months retention)
         run: |
           echo "Cleaning up monthly backups older than 13 months..."
-          
+
           if [ ! -d "backups/monthly" ]; then
             echo "Monthly backup directory does not exist, creating it..."
             mkdir -p backups/monthly
           fi
-          
+
           # Count files before cleanup
           BEFORE_COUNT=$(find backups/monthly -name "*.sql" -type f | wc -l)
           echo "Monthly backups before cleanup: $BEFORE_COUNT files"
-          
+
           # Remove files older than 395 days (13 months)
           DELETED_COUNT=$(find backups/monthly -name "*.sql" -type f -mtime +395 -print | wc -l)
           find backups/monthly -name "*.sql" -type f -mtime +395 -delete
-          
+
           # Count files after cleanup
           AFTER_COUNT=$(find backups/monthly -name "*.sql" -type f | wc -l)
           echo "Monthly backups after cleanup: $AFTER_COUNT files"
           echo "Deleted $DELETED_COUNT monthly backup files"
-          
+
       - name: Commit cleanup changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Add all changes
           git add -A
-          
+
           # Check if there are any changes to commit
           if git diff --cached --quiet; then
             echo "No cleanup changes to commit"
@@ -101,7 +102,7 @@ jobs:
             git push
             echo "Cleanup changes committed and pushed successfully"
           fi
-          
+
       - name: Log completion
         run: |
           echo "Backup cleanup completed at $(date)"
