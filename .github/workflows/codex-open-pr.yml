@@ -1,0 +1,148 @@
+name: Codex PR Operator
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  codex-pr:
+    if: >
+      github.event.issue_comment &&
+      !github.event.issue.pull_request &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (contains(github.event.comment.body, '/codex apply') ||
+       contains(github.event.comment.body, '/open-pr') ||
+       contains(github.event.comment.body, '/codex open') ||
+       contains(github.event.comment.body, 'ok do it'))
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Process comment and create PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+            const comment = context.payload.comment;
+            const issue = context.payload.issue;
+            const { owner, repo } = context.repo;
+            
+            // Extract command type
+            let commandType = 'standard';
+            let isDraft = false;
+            
+            if (comment.body.includes('/codex apply')) {
+              commandType = 'apply';
+            } else if (comment.body.includes('ok do it')) {
+              commandType = 'draft';
+              isDraft = true;
+            }
+            
+            // Generate branch name
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const slugTitle = issue.title.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .substring(0, 50);
+            const branchName = `codex/${timestamp}-${slugTitle}`;
+            
+            // Extract patch from comment if present
+            const codeBlockRegex = /```(?:\w+)?\n([\s\S]*?)```/g;
+            const patches = [];
+            let match;
+            while ((match = codeBlockRegex.exec(comment.body)) !== null) {
+              patches.push(match[1]);
+            }
+            
+            try {
+              // Configure git
+              execSync('git config user.name "Codex Bot"');
+              execSync('git config user.email "codex-bot@users.noreply.github.com"');
+              
+              // Create and checkout new branch
+              execSync(`git checkout -b ${branchName}`);
+              
+              let hasChanges = false;
+              
+              // Apply patches if found
+              if (patches.length > 0 && commandType === 'apply') {
+                for (const patch of patches) {
+                  try {
+                    // Write patch to temp file
+                    fs.writeFileSync('/tmp/patch.patch', patch);
+                    execSync('git apply /tmp/patch.patch');
+                    hasChanges = true;
+                  } catch (error) {
+                    core.warning(`Failed to apply patch: ${error.message}`);
+                  }
+                }
+              }
+              
+              // If no changes were staged, create a todo file
+              if (!hasChanges) {
+                const todoContent = `# TODO: Issue #${issue.number}\n\n${issue.title}\n\n${issue.body}\n\nTriggered by comment: ${comment.html_url}`;
+                fs.writeFileSync('TODO.md', todoContent);
+                execSync('git add TODO.md');
+                hasChanges = true;
+              }
+              
+              if (hasChanges) {
+                // Commit changes
+                const commitMessage = `Codex PR: ${issue.title} (#${issue.number})`;
+                execSync(`git commit -m "${commitMessage}"`);
+                
+                // Push branch
+                execSync(`git push origin ${branchName}`);
+                
+                // Create pull request
+                const prBody = `This PR was automatically created by the Codex PR operator in response to issue #${issue.number}.\n\n**Original Issue:** ${issue.html_url}\n**Triggered by:** ${comment.html_url}\n**Command:** ${commandType}\n\n---\n\n${issue.body}`;
+
+                const { data: pr } = await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  title: `${issue.title} (#${issue.number})`,
+                  head: branchName,
+                  base: 'main',
+                  body: prBody,
+                  draft: isDraft
+                });
+                
+                // Reply to the comment with PR link
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `🤖 PR created: ${pr.html_url}`
+                });
+                
+                core.info(`Created PR: ${pr.html_url}`);
+              } else {
+                core.info('No changes to commit');
+              }
+              
+            } catch (error) {
+              core.setFailed(`Error processing request: ${error.message}`);
+              
+              // Reply with error
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `❌ Failed to create PR: ${error.message}`
+              });
+            }
