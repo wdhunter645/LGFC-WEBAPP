@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Charity card container */
 .charity-card {
   width: 500px;
@@ -46,67 +50,29 @@
   margin-top: 16px;
 }
 
-/* Primary button styles (red/crimson) - High specificity to override Tailwind utilities */
-.btn-primary {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: #e53935 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  text-decoration: none !important;
-  box-sizing: border-box !important;
-  cursor: pointer !important;
-  transition: background-color 0.2s ease !important;
-}
-
-/* Use default padding and font-size for buttons without specific Tailwind utilities */
-.btn-primary:not([class*="px-"]):not([class*="py-"]) {
-  padding: 12px 24px !important;
-}
-
-.btn-primary:not([class*="text-"]) {
-  font-size: 0.875rem !important;
-}
-
-.btn-primary:hover {
-  background: #b71c1c !important;
-  color: #fff !important;
-  text-decoration: none !important;
-}
-
-/* Secondary button styles (outline/gray) - High specificity to override Tailwind utilities */
-.btn-secondary {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: transparent !important;
-  color: #374151 !important;
-  border: 2px solid #d1d5db !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  text-decoration: none !important;
-  box-sizing: border-box !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-}
-
-/* Use default padding and font-size for buttons without specific Tailwind utilities */
-.btn-secondary:not([class*="px-"]):not([class*="py-"]) {
-  padding: 12px 24px !important;
-}
-
-.btn-secondary:not([class*="text-"]) {
-  font-size: 0.875rem !important;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb !important;
-  border-color: #9ca3af !important;
-  color: #374151 !important;
-  text-decoration: none !important;
+/* Custom button styles using Tailwind's component layer */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center;
+    @apply bg-red-600 text-white border-0 rounded-lg font-semibold;
+    @apply no-underline cursor-pointer transition-colors duration-200;
+    @apply px-6 py-3 text-sm;
+  }
+  
+  .btn-primary:hover {
+    @apply bg-red-800 text-white no-underline;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center;
+    @apply bg-transparent text-gray-700 border-2 border-gray-300 rounded-lg font-semibold;
+    @apply no-underline cursor-pointer transition-all duration-200;
+    @apply px-6 py-3 text-sm;
+  }
+  
+  .btn-secondary:hover {
+    @apply bg-gray-50 border-gray-400 text-gray-700 no-underline;
+  }
 }
 
 /* Responsive adjustment for mobile */
@@ -121,16 +87,5 @@
     font-size: 0.95rem;
     padding: 0 18px;
     margin: 6px 4px 0 0;
-  }
-  
-  /* Mobile responsive for custom buttons (only apply if no Tailwind utilities) */
-  .btn-primary:not([class*="px-"]):not([class*="py-"]),
-  .btn-secondary:not([class*="px-"]):not([class*="py-"]) {
-    padding: 10px 18px !important;
-  }
-  
-  .btn-primary:not([class*="text-"]),
-  .btn-secondary:not([class*="text-"]) {
-    font-size: 0.8rem !important;
   }
 }
