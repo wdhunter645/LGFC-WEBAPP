@@ -1,6 +1,7 @@
+---
 name: search-cron
 
-on:
+"on":
   schedule:
     - cron: "0 * * * *" # hourly
   workflow_dispatch:
@@ -25,12 +26,12 @@ jobs:
         env:
           SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
         run: node scripts/check_migrations.mjs
-        
+
       - name: Run diagnostic test
         env:
           SUPABASE_PUBLIC_API_KEY: ${{ secrets.SUPABASE_PUBLIC_API_KEY }}
         run: node scripts/test_ingest.mjs
-        
+
       - name: Run ingestion (50 max)
         env:
           RSS_FEEDS: ${{ secrets.RSS_FEEDS }}

@@ -1,6 +1,7 @@
+---
 name: ops-bot
 
-on:
+"on":
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,8 @@ jobs:
       - name: Make infra change as ops-bot
         run: |
           mkdir -p infra
-          echo "ops-bot $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> infra/OPS_BOT_CHANGE.txt
+          echo "ops-bot $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> \
+            infra/OPS_BOT_CHANGE.txt
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
         with:
@@ -26,4 +28,3 @@ jobs:
           body: "Automated PR from ops-bot."
           committer: "ops-bot <ops-bot@users.noreply.github.com>"
           author: "ops-bot <ops-bot@users.noreply.github.com>"
-

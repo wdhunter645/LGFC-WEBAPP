@@ -1,6 +1,7 @@
+---
 name: dev-bot
 
-on:
+"on":
   workflow_dispatch:
 
 permissions:

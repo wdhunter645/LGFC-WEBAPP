@@ -1,6 +1,7 @@
+---
 name: Voting Automation
 
-on:
+"on":
   schedule:
     # Run every Monday at 00:00 UTC
     - cron: "0 0 * * 1"
@@ -11,21 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run Voting Automation
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/voting_automation.mjs
-      
+
       - name: Log completion
         run: echo "Voting automation completed at $(date)"

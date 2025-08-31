@@ -1,6 +1,7 @@
-name: Dev-Bot: Daily Plan
+---
+name: "Dev-Bot: Daily Plan"
 
-on:
+"on":
   workflow_dispatch:
   schedule:
     # Run at both 10:00 and 11:00 UTC to cover EDT/EST; self-gate to 6am US/Eastern
@@ -29,20 +30,24 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            // Collect open issues labeled with 'dev' or 'feature' as candidates
-            const issues = await github.paginate(github.rest.issues.listForRepo, {
-              owner, repo, state: 'open', per_page: 100, labels: 'dev,feature'
-            }).catch(() => []);
+            // Collect open issues labeled with 'dev' or 'feature'
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo, {
+                owner, repo, state: 'open', per_page: 100, labels: 'dev,feature'
+              }).catch(() => []);
 
             const lines = [];
-            lines.push(`# Dev-Bot Daily Plan (${new Date().toISOString().slice(0,10)})`);
+            lines.push(`# Dev-Bot Daily Plan (${
+              new Date().toISOString().slice(0,10)})`);
             lines.push('');
             if (!issues.length) {
               lines.push('- No dev-labeled issues open.');
             } else {
               for (const i of issues) {
-                const assignees = (i.assignees || []).map(a => `@${a.login}`).join(', ') || 'Unassigned';
-                const labels = (i.labels || []).map(l => typeof l === 'string' ? l : l.name).join(', ');
+                const assignees = (i.assignees || [])
+                  .map(a => `@${a.login}`).join(', ') || 'Unassigned';
+                const labels = (i.labels || [])
+                  .map(l => typeof l === 'string' ? l : l.name).join(', ');
                 lines.push(`- #${i.number} ${i.title} — ${assignees} (${labels})`);
               }
             }
@@ -55,15 +60,19 @@ jobs:
             const today = new Date().toISOString().slice(0,10);
             const title = `Dev Daily Plan - ${today}`;
             const body = `${{ steps.gen.outputs.body }}`;
-            const { data: existing } = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open`
-            });
+            const { data: existing } = await github.rest.search
+              .issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue in:title "${title}" state:open`
+              });
             if (existing.total_count > 0) {
               const issue = existing.items[0];
-              await github.rest.issues.update({ owner, repo, issue_number: issue.number, body });
-              core.summary.addHeading('Updated Dev Daily Plan').addLink(title, issue.html_url).write();
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number, body });
+              core.summary.addHeading('Updated Dev Daily Plan')
+                .addLink(title, issue.html_url).write();
             } else {
-              const { data: created } = await github.rest.issues.create({ owner, repo, title, body, labels: ['dev', 'plan'] });
-              core.summary.addHeading('Created Dev Daily Plan').addLink(title, created.html_url).write();
+              const { data: created } = await github.rest.issues.create({
+                owner, repo, title, body, labels: ['dev', 'plan'] });
+              core.summary.addHeading('Created Dev Daily Plan')
+                .addLink(title, created.html_url).write();
             }
-
