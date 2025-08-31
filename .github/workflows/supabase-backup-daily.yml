@@ -70,7 +70,7 @@ jobs:
           BACKUP_FILE="backups/daily/schema_backup_${TIMESTAMP}.sql"
           
           echo "Creating schema backup: $BACKUP_FILE"
-          supabase db dump --schema-only --file "$BACKUP_FILE"
+          supabase db dump --file "$BACKUP_FILE"
           
           # Validate backup was created and has content
           if [ ! -f "$BACKUP_FILE" ]; then
