@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Git Commit Wrapper
+# Replaces git commit -a with smart divergence handling
+# Author: GitHub Copilot
+# Created: 2025-08-31
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors for output
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}[GIT-COMMIT]${NC} Using smart commit with divergence detection..."
+
+# Check if user is trying to use commit -a
+if [[ "$*" == *"-a"* ]]; then
+    echo -e "${GREEN}[GIT-COMMIT]${NC} Detected 'commit -a' - using smart commit wrapper"
+    exec "${SCRIPT_DIR}/git_smart_commit.sh" "$@"
+else
+    echo -e "${GREEN}[GIT-COMMIT]${NC} Using smart commit wrapper for safety"
+    exec "${SCRIPT_DIR}/git_smart_commit.sh" "$@"
+fi
