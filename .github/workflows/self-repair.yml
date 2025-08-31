@@ -1,0 +1,282 @@
+name: Self-Repair - Context & Configuration Recovery
+
+on:
+  schedule:
+    # Run every hour
+    - cron: "0 * * * *"
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      force_restore:
+        description: 'Force restore all files (even if they exist)'
+        required: false
+        default: 'false'
+        type: boolean
+      skip_cleanup:
+        description: 'Skip temporary file cleanup'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  self-repair:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Perform Branch Audit (Before Firewall)
+        run: |
+          echo "=== Branch Audit - $(date) ==="
+          echo "Current branch: ${{ github.ref_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          
+          # Branch health check
+          git branch -a
+          git status --porcelain
+          
+          # Ensure we're on the correct branch for scheduled runs
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            git checkout main || echo "Already on main branch"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Create self-repair directories
+        run: |
+          mkdir -p self-repair-logs
+          mkdir -p self-repair-reports
+
+      - name: Check critical files status (before repair)
+        run: |
+          echo "=== Pre-Repair File Status - $(date) ===" > self-repair-logs/file-status-before.log
+          
+          CRITICAL_FILES=(
+            "COPILOT_CONTEXT.md"
+            ".github/copilot.yml"
+            "REPO_CONTEXT.md"
+            "README.md"
+          )
+          
+          MISSING_COUNT=0
+          
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✓ EXISTS: $file" >> self-repair-logs/file-status-before.log
+            else
+              echo "✗ MISSING: $file" >> self-repair-logs/file-status-before.log
+              MISSING_COUNT=$((MISSING_COUNT + 1))
+            fi
+          done
+          
+          echo "Missing files count: $MISSING_COUNT" >> self-repair-logs/file-status-before.log
+          echo "PRE_REPAIR_MISSING_COUNT=$MISSING_COUNT" >> $GITHUB_ENV
+          
+          cat self-repair-logs/file-status-before.log
+
+      - name: Run self-repair script
+        run: |
+          echo "=== Running Self-Repair Script - $(date) ==="
+          
+          # Make script executable if not already
+          chmod +x scripts/self_repair.sh
+          
+          # Set environment variables for script behavior
+          if [ "${{ github.event.inputs.force_restore }}" = "true" ]; then
+            echo "Force restore mode enabled"
+            export FORCE_RESTORE=true
+          fi
+          
+          if [ "${{ github.event.inputs.skip_cleanup }}" = "true" ]; then
+            echo "Skipping cleanup as requested"
+            export SKIP_CLEANUP=true
+          fi
+          
+          # Run the repair script
+          ./scripts/self_repair.sh
+          
+          # Move generated files to reports directory
+          mv self-repair-*.log self-repair-logs/ 2>/dev/null || true
+          mv self-repair-summary-*.md self-repair-reports/ 2>/dev/null || true
+
+      - name: Check critical files status (after repair)
+        run: |
+          echo "=== Post-Repair File Status - $(date) ===" > self-repair-logs/file-status-after.log
+          
+          CRITICAL_FILES=(
+            "COPILOT_CONTEXT.md"
+            ".github/copilot.yml"
+            "REPO_CONTEXT.md"
+            "README.md"
+          )
+          
+          STILL_MISSING=0
+          
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✓ EXISTS: $file" >> self-repair-logs/file-status-after.log
+              
+              # Check file size to ensure it's not empty
+              size=$(stat -c%s "$file" 2>/dev/null || echo "0")
+              echo "  Size: $size bytes" >> self-repair-logs/file-status-after.log
+            else
+              echo "✗ STILL MISSING: $file" >> self-repair-logs/file-status-after.log
+              STILL_MISSING=$((STILL_MISSING + 1))
+            fi
+          done
+          
+          echo "Still missing files count: $STILL_MISSING" >> self-repair-logs/file-status-after.log
+          echo "POST_REPAIR_MISSING_COUNT=$STILL_MISSING" >> $GITHUB_ENV
+          
+          cat self-repair-logs/file-status-after.log
+
+      - name: Validate template files integrity
+        run: |
+          echo "=== Template Files Validation - $(date) ===" > self-repair-logs/template-validation.log
+          
+          TEMPLATES=(
+            "COPILOT_CONTEXT.template.md"
+            ".github/copilot.template.yml"
+            "REPO_CONTEXT.template.md"
+            "README.template.md"
+          )
+          
+          for template in "${TEMPLATES[@]}"; do
+            if [ -f "$template" ]; then
+              size=$(stat -c%s "$template" 2>/dev/null || echo "0")
+              if [ "$size" -gt 100 ]; then
+                echo "✓ VALID: $template ($size bytes)" >> self-repair-logs/template-validation.log
+              else
+                echo "⚠ SMALL: $template ($size bytes)" >> self-repair-logs/template-validation.log
+              fi
+            else
+              echo "✗ MISSING: $template" >> self-repair-logs/template-validation.log
+            fi
+          done
+          
+          cat self-repair-logs/template-validation.log
+
+      - name: Test Copilot configuration syntax
+        run: |
+          echo "=== Copilot Configuration Test - $(date) ===" > self-repair-logs/copilot-config-test.log
+          
+          if [ -f ".github/copilot.yml" ]; then
+            # Basic YAML syntax check
+            if command -v python3 > /dev/null 2>&1; then
+              if python3 -c "import yaml; yaml.safe_load(open('.github/copilot.yml'))" 2>/dev/null; then
+                echo "✓ YAML syntax is valid" >> self-repair-logs/copilot-config-test.log
+              else
+                echo "✗ YAML syntax errors detected" >> self-repair-logs/copilot-config-test.log
+              fi
+            fi
+            
+            # Check for required sections
+            if grep -q "responsibilities:" ".github/copilot.yml"; then
+              echo "✓ Responsibilities section found" >> self-repair-logs/copilot-config-test.log
+            else
+              echo "⚠ Responsibilities section missing" >> self-repair-logs/copilot-config-test.log
+            fi
+            
+            if grep -q "context:" ".github/copilot.yml"; then
+              echo "✓ Context section found" >> self-repair-logs/copilot-config-test.log
+            else
+              echo "⚠ Context section missing" >> self-repair-logs/copilot-config-test.log
+            fi
+          else
+            echo "✗ .github/copilot.yml not found" >> self-repair-logs/copilot-config-test.log
+          fi
+          
+          cat self-repair-logs/copilot-config-test.log
+
+      - name: Generate comprehensive repair report
+        run: |
+          echo "=== Self-Repair Summary Report - $(date) ===" > self-repair-reports/comprehensive-report.md
+          echo "Repository: ${{ github.repository }}" >> self-repair-reports/comprehensive-report.md
+          echo "Branch: ${{ github.ref_name }}" >> self-repair-reports/comprehensive-report.md
+          echo "Commit: ${{ github.sha }}" >> self-repair-reports/comprehensive-report.md
+          echo "Trigger: ${{ github.event_name }}" >> self-repair-reports/comprehensive-report.md
+          echo "" >> self-repair-reports/comprehensive-report.md
+          
+          echo "## Repair Results" >> self-repair-reports/comprehensive-report.md
+          echo "- Files missing before repair: $PRE_REPAIR_MISSING_COUNT" >> self-repair-reports/comprehensive-report.md
+          echo "- Files missing after repair: $POST_REPAIR_MISSING_COUNT" >> self-repair-reports/comprehensive-report.md
+          echo "- Restoration performed: ${RESTORATION_PERFORMED:-unknown}" >> self-repair-reports/comprehensive-report.md
+          echo "- Cleanup performed: ${CLEANUP_PERFORMED:-unknown}" >> self-repair-reports/comprehensive-report.md
+          echo "" >> self-repair-reports/comprehensive-report.md
+          
+          if [ "$POST_REPAIR_MISSING_COUNT" -eq 0 ]; then
+            echo "🟢 **Status: SUCCESS** - All critical files are present" >> self-repair-reports/comprehensive-report.md
+          elif [ "$POST_REPAIR_MISSING_COUNT" -lt "$PRE_REPAIR_MISSING_COUNT" ]; then
+            echo "🟡 **Status: PARTIAL** - Some files restored, but issues remain" >> self-repair-reports/comprehensive-report.md
+          else
+            echo "🔴 **Status: FAILED** - Repair did not resolve missing files" >> self-repair-reports/comprehensive-report.md
+          fi
+          
+          echo "" >> self-repair-reports/comprehensive-report.md
+          echo "## Detailed Logs" >> self-repair-reports/comprehensive-report.md
+          echo "See uploaded artifacts for complete logs and analysis." >> self-repair-reports/comprehensive-report.md
+          
+          cat self-repair-reports/comprehensive-report.md
+
+      - name: Display repair summary
+        run: |
+          echo "Self-repair process completed!"
+          echo "Files missing before: $PRE_REPAIR_MISSING_COUNT"
+          echo "Files missing after: $POST_REPAIR_MISSING_COUNT"
+          
+          if [ "$POST_REPAIR_MISSING_COUNT" -eq 0 ]; then
+            echo "✅ All critical files are now present"
+          else
+            echo "⚠️ Some critical files are still missing"
+          fi
+
+      - name: Fail on unresolved issues
+        run: |
+          if [ "$POST_REPAIR_MISSING_COUNT" -gt 0 ]; then
+            echo "::error::Self-repair failed to restore all critical files"
+            echo "::error::$POST_REPAIR_MISSING_COUNT files are still missing"
+            exit 1
+          fi
+
+      - name: Upload self-repair artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: self-repair-results-${{ github.sha }}
+          path: |
+            self-repair-logs/
+            self-repair-reports/
+          retention-days: 30
+
+      - name: Commit restored files (if any)
+        if: env.RESTORATION_PERFORMED == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Self-Repair Bot"
+          
+          # Add restored files
+          git add COPILOT_CONTEXT.md .github/copilot.yml REPO_CONTEXT.md README.md 2>/dev/null || true
+          
+          # Add self-repair logs and reports
+          git add self-repair-logs/ self-repair-reports/ 2>/dev/null || true
+          
+          # Commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "🔧 Self-repair: Restored ${RESTORED_FILES_COUNT:-0} critical files - $(date +"%Y-%m-%d %H:%M")"
+            git push
+            echo "Changes committed and pushed"
+          else
+            echo "No changes to commit"
+          fi

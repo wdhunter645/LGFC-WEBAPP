@@ -1,0 +1,25 @@
+2025-08-31 12:45:51 [0;34m[INFO][0m Starting self-repair process for LGFC-WEBAPP
+2025-08-31 12:45:51 [0;34m[INFO][0m Repository root: /home/runner/work/LGFC-WEBAPP/LGFC-WEBAPP
+2025-08-31 12:45:51 [0;34m[INFO][0m Log file: /home/runner/work/LGFC-WEBAPP/LGFC-WEBAPP/self-repair-20250831_124551.log
+2025-08-31 12:45:51 [0;34m[INFO][0m Checking critical files...
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Critical file exists: .github/copilot.yml
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Critical file exists: REPO_CONTEXT.md
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Critical file exists: README.md
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Critical file exists: COPILOT_CONTEXT.md
+2025-08-31 12:45:51 [0;34m[INFO][0m Cleaning up temporary files...
+2025-08-31 12:45:51 [0;34m[INFO][0m Verifying Copilot configuration...
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m ✓ Copilot configuration syntax is valid
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m ✓ Copilot responsibilities section found
+2025-08-31 12:45:51 [0;34m[INFO][0m Performing repository health check...
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Required directory exists: .github/workflows
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Required directory exists: scripts
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Required directory exists: src
+2025-08-31 12:45:51 [0;34m[INFO][0m ✓ Required directory exists: security-scans
+2025-08-31 12:45:51 [0;34m[INFO][0m Found 23 workflow files
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m ✓ Good workflow coverage (23 workflows)
+2025-08-31 12:45:51 [0;34m[INFO][0m Generating self-repair summary...
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m Self-repair summary saved to: self-repair-summary-20250831_124551.md
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m Self-repair completed: No restoration needed - all critical files present
+2025-08-31 12:45:51 [0;32m[SUCCESS][0m Self-repair process completed successfully
+2025-08-31 12:45:51 [0;34m[INFO][0m Log file: /home/runner/work/LGFC-WEBAPP/LGFC-WEBAPP/self-repair-20250831_124551.log
+2025-08-31 12:45:51 [0;34m[INFO][0m Summary file: self-repair-summary-20250831_124551.md
