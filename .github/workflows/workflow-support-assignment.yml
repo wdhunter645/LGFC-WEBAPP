@@ -1,0 +1,100 @@
+name: Create Quarterly Workflow Support Assignment
+
+on:
+  schedule:
+    - cron: '0 6 1 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      quarter:
+        description: 'Quarter (1-4)'
+        required: true
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+      year:
+        description: 'Year (YYYY)'
+        required: true
+        type: string
+        default: '2024'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create_assignment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get current date info
+        id: date
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "year=${{ github.event.inputs.year }}" >> $GITHUB_OUTPUT
+            echo "quarter=${{ github.event.inputs.quarter }}" >> $GITHUB_OUTPUT
+          else
+            current_month=$(date +%m)
+            current_year=$(date +%Y)
+            if [ $current_month -le 3 ]; then
+              quarter=1
+            elif [ $current_month -le 6 ]; then
+              quarter=2
+            elif [ $current_month -le 9 ]; then
+              quarter=3
+            else
+              quarter=4
+            fi
+            echo "year=$current_year" >> $GITHUB_OUTPUT
+            echo "quarter=$quarter" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create assignment issue
+        id: create_assignment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const year = '${{ steps.date.outputs.year }}';
+            const quarter = '${{ steps.date.outputs.quarter }}';
+            
+            // Read template
+            const template = fs.readFileSync('.github/ISSUE_TEMPLATE/workflow-support-ongoing.md', 'utf8');
+            
+            // Extract frontmatter
+            const frontmatterMatch = template.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+            let body = template;
+            let title = `🔧 Ongoing Workflow Support Assignment - ${year} Q${quarter}`;
+            
+            if (frontmatterMatch) {
+              const frontmatter = frontmatterMatch[1];
+              body = frontmatterMatch[2];
+              
+              const titleMatch = frontmatter.match(/title:\s*"([^"]+)"/);
+              if (titleMatch) {
+                title = titleMatch[1].replace('[YEAR]', year).replace('[QUARTER]', quarter);
+              }
+            }
+            
+            // Create issue
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['workflow-support', 'ongoing-assignment', 'ops', 'priority:medium']
+            });
+
+            console.log(`Created assignment: ${issue.title} (#${issue.number})`);
+            core.setOutput('issue_number', issue.number);
+            core.setOutput('issue_url', issue.html_url);
+
+      - name: Generate summary
+        run: |
+          echo "## 🔧 Workflow Support Assignment Created" >> $GITHUB_STEP_SUMMARY
+          echo "Quarter: Q${{ steps.date.outputs.quarter }} ${{ steps.date.outputs.year }}" >> $GITHUB_STEP_SUMMARY
+          echo "Issue: [#${{ steps.create_assignment.outputs.issue_number }}](${{ steps.create_assignment.outputs.issue_url }})" >> $GITHUB_STEP_SUMMARY

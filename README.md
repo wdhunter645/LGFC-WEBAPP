@@ -118,6 +118,30 @@ npm test
 
 ---
 
+## 🔧 Workflow Automation & Support
+
+This project includes comprehensive workflow automation for monitoring, security, and operational readiness:
+
+### 📊 **Operational Readiness**
+- **19 automated workflows** covering backup, health checks, security scans, and deployment
+- Comprehensive monitoring with detailed reports and alerting
+- See [OPERATIONAL_READINESS.md](OPERATIONAL_READINESS.md) for full documentation
+
+### 🎯 **Workflow Support Assignment System**
+- **Perpetual tracking and accountability** for all workflow automation support activities
+- **Quarterly assignment issues** automatically created for sustained oversight
+- **Structured checklists** for weekly, monthly, and incident response activities
+- See [WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md](WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md) for complete framework
+
+### 🛡️ **Key Workflow Categories**
+- **Backup & Data Management**: Daily audits, cleanup, and validation
+- **Monitoring & Health Checks**: Production site monitoring and schema drift detection
+- **Security**: Vulnerability scans and dependency updates
+- **Deployment**: Preview validation and CI/CD automation
+- **Content Automation**: Search indexing, event scraping, and engagement features
+
+---
+
 ## ✅ Best Practices (In Progress)
 
 - Manual Supabase schema export after significant changes

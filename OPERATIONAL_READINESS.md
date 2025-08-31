@@ -298,6 +298,14 @@ The following Copilot agents are assigned for ongoing maintenance and updates:
 
 **Escalation:** Critical security vulnerabilities trigger immediate `priority:critical` issues assigned to security-agent.
 
+### 🔧 Workflow Support Assignment System
+
+For comprehensive ongoing support and accountability of all workflow automation:
+- See [WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md](WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md) for the perpetual tracking framework
+- Quarterly assignment issues are automatically created for sustained workflow oversight
+- Assignment issues provide structured checklists for weekly, monthly, and incident response activities
+- Manual assignment creation available via GitHub Actions workflow dispatch
+
 ---
 
 *This operational readiness implementation provides comprehensive monitoring, security, and automation capabilities while maintaining minimal operational overhead and following established patterns in the repository. GitHub Copilot provides ongoing intelligence for security configuration management.*
