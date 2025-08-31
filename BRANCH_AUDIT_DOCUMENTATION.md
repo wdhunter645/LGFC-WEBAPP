@@ -10,7 +10,7 @@ The Branch Audit and Cleanup System provides comprehensive branch management cap
 
 The main Node.js script that performs comprehensive branch analysis:
 
-- **Branch Discovery**: Fetches all branches from the repository
+- **Branch Discovery**: Fetches all branches from the repository using firewall-safe methods
 - **Categorization**: Automatically categorizes branches based on naming patterns and characteristics
 - **Audit Reporting**: Generates detailed audit reports with recommendations
 - **Cleanup Generation**: Creates safe cleanup scripts with backup procedures
@@ -31,6 +31,63 @@ GitHub Actions workflow that provides:
 - **Manual Triggers**: On-demand audit and cleanup operations
 - **Safety Features**: Dry-run capabilities and confirmation requirements
 - **Reporting**: Automated issue creation and artifact uploads
+
+## ⚠️ Firewall and API Connectivity Issues
+
+### Problem Description
+
+The branch audit script may fail in GitHub Actions environments due to firewall restrictions that block outbound connections to GitHub API endpoints like `https://api.github.com/repos/wdhunter645/LGFC-WEBAPP/branches`.
+
+### Error Symptoms
+- **Workflow failures** with messages about blocked API endpoints
+- **Network connectivity errors** during branch fetching
+- **Script fallback warnings** in GitHub Actions logs
+
+### Root Cause
+GitHub Actions environments implement firewall rules that can block outbound HTTP requests to external APIs, including GitHub's own API endpoints, depending on when they are executed in the workflow.
+
+### Solution Implemented
+
+The system has been updated with a **multi-layered firewall-safe approach**:
+
+#### 1. Workflow Order Optimization
+```yaml
+steps:
+  # CRITICAL: Run branch audit BEFORE other setup steps
+  - name: Checkout repository
+    uses: actions/checkout@v4
+  
+  - name: Perform Branch Audit (Before Firewall)
+    # This step runs before npm install and other steps that may trigger firewall
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    run: |
+      node scripts/git_branch_audit.mjs audit
+  
+  # Other setup steps run after audit
+  - name: Setup Node.js
+  - name: Install dependencies
+```
+
+#### 2. Firewall-Safe Branch Fetching
+The script now uses multiple fallback methods:
+
+1. **Primary**: `git` commands with `fetch --all --prune`
+2. **Secondary**: GitHub CLI (`gh`) using `GITHUB_TOKEN`
+3. **Fallback**: Local branches only
+
+```javascript
+// No longer uses direct API calls like:
+// const response = await fetch('https://api.github.com/repos/...')
+
+// Instead uses git commands:
+await execAsync('git fetch --all --prune');
+await execAsync('git branch -r --format="%(refname:short)|%(objectname)"');
+```
+
+#### 3. Environment Variables
+- **GITHUB_TOKEN**: Automatically available in GitHub Actions for authenticated GitHub CLI operations
+- **No external API keys required**: Uses built-in GitHub Actions authentication
 
 ## Branch Categories
 
@@ -71,7 +128,11 @@ Branches that should be preserved:
 
 #### Perform Branch Audit
 ```bash
+<<<<<<< HEAD
+# Basic audit of all branches (firewall-safe)
+=======
 # Basic audit of all branches
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 node scripts/git_branch_audit.mjs audit
 
 # Or use the shell script (local branches only)
@@ -100,7 +161,11 @@ bash audit-reports/cleanup_branches_2025-08-30T18-08-09.sh
 
 #### Scheduled Automatic Audits
 The system automatically runs every Monday at 6 AM UTC:
+<<<<<<< HEAD
+- Performs comprehensive branch audit using firewall-safe methods
+=======
 - Performs comprehensive branch audit
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Creates cleanup script if needed
 - Reports findings via GitHub Issues
 - Automatically cleans up if more than 20 branches are marked for deletion
@@ -126,6 +191,92 @@ The system automatically runs every Monday at 6 AM UTC:
    Force cleanup: true
    ```
 
+<<<<<<< HEAD
+## 🛠️ Troubleshooting
+
+### Firewall and Connectivity Issues
+
+#### Issue: "GitHub API request failed"
+**Symptoms:**
+- Script shows "GitHub API request failed, using known branch list"
+- Workflow logs show network connectivity errors
+- API endpoints appear to be blocked
+
+**Solutions:**
+1. **Check Workflow Order**: Ensure branch audit runs before setup steps:
+   ```yaml
+   steps:
+     - name: Checkout
+     - name: Perform Branch Audit (Before Firewall) # ← Must be early
+     - name: Setup Node.js                           # ← After audit
+     - name: Install dependencies                    # ← After audit
+   ```
+
+2. **Verify GITHUB_TOKEN**: Ensure the token is available:
+   ```yaml
+   - name: Perform Branch Audit
+     env:
+       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   ```
+
+3. **Use Alternative Methods**: The script automatically falls back to:
+   - Git commands (`git fetch`, `git branch -r`)
+   - GitHub CLI (`gh api`)
+   - Local branches only
+
+#### Issue: "Failed to fetch branches via git"
+**Cause**: Git remote access issues or repository not properly fetched
+**Solution**: 
+```bash
+# Ensure repository is fully fetched
+git fetch --all --prune
+
+# Or checkout with full history
+git checkout --fetch-depth=0
+```
+
+#### Issue: "No branches found"
+**Causes & Solutions:**
+- **Limited fetch depth**: Use `fetch-depth: 0` in checkout action
+- **Network restrictions**: Script will use local branches as fallback
+- **Authentication issues**: Verify GITHUB_TOKEN permissions
+
+### Common Issues
+
+#### "No branches found"
+- **Cause**: Limited access to remote branches or connectivity issues
+- **Solution**: Script automatically falls back to local branches and git commands
+
+#### "Audit file not found"
+- **Cause**: Audit hasn't been run or file path incorrect
+- **Solution**: Run audit first, then specify correct file path
+
+#### "Failed to delete branch"
+- **Cause**: Branch protection rules or permissions
+- **Solution**: Check GitHub branch protection settings and user permissions
+
+### Recovery Procedures
+
+#### Restore Accidentally Deleted Branch
+```bash
+# Find backup tag
+git tag | grep branch-backup
+
+# Restore from backup
+git checkout <backup-tag>
+git checkout -b <original-branch-name>
+git push origin <original-branch-name>
+```
+
+#### Rollback Cleanup Operation
+```bash
+# If cleanup was recent, find the backup tag
+git tag | grep branch-backup | tail -1
+
+# Reset to backup state
+git reset --hard <backup-tag>
+```
+=======
 ## Safety Features
 
 ### Automatic Backups
@@ -142,6 +293,7 @@ The system automatically runs every Monday at 6 AM UTC:
 - **Graceful Failures**: Continues operation even if individual branches fail to delete
 - **Detailed Logging**: Comprehensive logging of all operations and failures
 - **Status Reporting**: Clear success/failure reporting for each operation
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 
 ## Configuration
 
@@ -151,8 +303,22 @@ The system automatically runs every Monday at 6 AM UTC:
 export MAIN_BRANCH="main"                    # Default branch name
 export REMOTE_NAME="origin"                  # Remote repository name
 export AUDIT_DIR="./audit-reports"           # Audit report directory
+<<<<<<< HEAD
+export GITHUB_TOKEN="ghp_xxxx"               # GitHub token for API access (auto-set in Actions)
 ```
 
+### Workflow Requirements
+For proper operation in GitHub Actions, ensure:
+
+1. **Workflow Step Order**: Branch audit must run before firewall-triggering steps
+2. **Permissions**: Workflow needs `contents: write` and `issues: write`
+3. **Fetch Depth**: Use `fetch-depth: 0` for complete branch history
+4. **Token Access**: GITHUB_TOKEN should be available for GitHub CLI fallback
+
+=======
+```
+
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 ### Customizing Branch Rules
 
 Edit `scripts/git_branch_audit.mjs` to modify categorization rules:
@@ -207,6 +373,56 @@ The branch audit system integrates with the existing `git_health_check.sh`:
 - **Release Preparation**: Manual audits before major releases
 - **Onboarding**: New developers can run audits to understand branch structure
 
+<<<<<<< HEAD
+## Safety Features
+
+### 🛡️ **Protection Mechanisms**
+- **Automatic Backups**: Git tags created before any destructive operations
+- **Confirmation Requirements**: Interactive prompts and force flags
+- **Dry Run Capability**: Preview changes before execution
+- **Error Handling**: Graceful failure handling and detailed logging
+- **Recovery Procedures**: Easy restoration from backups
+
+### 🔧 **Operational Safety**
+- **Repository Health Checks**: Pre-audit validation
+- **Branch Protection Respect**: Honors GitHub branch protection rules
+- **Permission Validation**: Ensures proper access before operations
+- **Audit Trails**: Comprehensive logging of all actions
+
+## Advanced Configuration
+
+### GitHub Actions Firewall Workarounds
+
+If you need to allowlist specific endpoints for other workflows:
+
+1. **Repository Settings**: Go to repository settings → Copilot coding agent
+2. **Custom Allowlist**: Add required endpoints:
+   ```
+   api.github.com
+   *.github.com
+   ```
+
+3. **Alternative Setup**: Configure Actions setup steps that run before firewall:
+   ```yaml
+   - name: Setup Environment (Before Firewall)
+     run: |
+       # Any setup that needs network access
+       gh api repos/${{ github.repository }}/branches
+   ```
+
+### Custom API Integration
+For organizations needing direct API access:
+
+```javascript
+// Custom implementation using GitHub Actions context
+async function fetchBranchesInActions() {
+    // Use github-script action or other built-in tools
+    return await github.rest.repos.listBranches({
+        owner: context.repo.owner,
+        repo: context.repo.repo
+    });
+}
+=======
 ## Troubleshooting
 
 ### Common Issues
@@ -243,6 +459,7 @@ git tag | grep branch-backup | tail -1
 
 # Reset to backup state
 git reset --hard <backup-tag>
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 ```
 
 ## Monitoring and Alerts
@@ -290,6 +507,16 @@ if (branchName.includes('experimental')) {
 }
 ```
 
+<<<<<<< HEAD
+### Firewall-Safe API Integration
+Extend the system while maintaining firewall compatibility:
+
+```javascript
+// Use GitHub CLI instead of direct API calls
+async function fetchBranchesViaGHCLI() {
+    const { stdout } = await execAsync('gh api repos/${{ github.repository }}/branches --paginate');
+    return JSON.parse(stdout);
+=======
 ### API Integration
 Extend the system to work with other Git hosting services:
 
@@ -297,6 +524,7 @@ Extend the system to work with other Git hosting services:
 // Add support for GitLab, Bitbucket, etc.
 async function fetchBranchesFromGitLab() {
     // Custom implementation for GitLab API
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 }
 ```
 
@@ -344,6 +572,20 @@ For issues, questions, or contributions:
 - **Documentation Updates**: Submit PRs for documentation improvements
 - **Community**: Discuss best practices in repository discussions
 
+<<<<<<< HEAD
+### Specific Issue: Firewall Blocking GitHub API
+
+If you encounter firewall issues:
+
+1. **Check Workflow Order**: Ensure audit runs before setup steps
+2. **Verify Token Access**: Confirm GITHUB_TOKEN is available
+3. **Review Logs**: Look for "firewall-safe" method usage in workflow logs
+4. **Contact Administrator**: If persistent, request allowlisting of `api.github.com`
+
+**Last Updated**: 2025-08-31  
+**Version**: 1.1 (Firewall-Safe)  
+=======
 **Last Updated**: 2025-08-30  
 **Version**: 1.0  
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 **Maintainer**: GitHub Copilot

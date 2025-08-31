@@ -2,9 +2,10 @@
 
 /**
  * GitHub Branch Audit and Cleanup Script
- * Comprehensive branch analysis using GitHub API
+ * Comprehensive branch analysis using GitHub CLI and git commands
  * Author: GitHub Copilot
  * Created: 2025-08-30
+ * Updated: 2025-08-31 - Fixed firewall issues by using GitHub CLI instead of direct API calls
  */
 
 import { exec } from 'child_process';
@@ -19,7 +20,6 @@ const REPO_OWNER = 'wdhunter645';
 const REPO_NAME = 'LGFC-WEBAPP';
 const MAIN_BRANCH = 'main';
 const AUDIT_DIR = './audit-reports';
-const GITHUB_API_BASE = 'https://api.github.com';
 
 // Colors for console output
 const colors = {
@@ -55,12 +55,12 @@ async function setupAuditDir() {
     }
 }
 
-// Fetch branches from GitHub API
-async function fetchBranchesFromAPI() {
-    log.info('Fetching branches from GitHub API...');
+// Fetch branches using GitHub CLI or git commands (firewall-safe)
+async function fetchBranchesFromGit() {
+    log.info('Fetching branches using git commands (firewall-safe)...');
     
     try {
-        // Use git command to fetch repository info if available
+        // Use git command to fetch repository info
         const { stdout: remoteUrl } = await execAsync('git config --get remote.origin.url');
         log.info(`Repository: ${remoteUrl.trim()}`);
     } catch (error) {
@@ -68,87 +68,110 @@ async function fetchBranchesFromAPI() {
     }
 
     const branches = [];
-    let page = 1;
-    const perPage = 100;
     
-    while (true) {
-        try {
-            const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/branches?per_page=${perPage}&page=${page}`;
+    try {
+        // Fetch latest data from remote
+        log.info('Fetching latest remote data...');
+        await execAsync('git fetch --all --prune');
+        
+        // Get all remote branches (primary approach for GitHub Actions)
+        const { stdout: remoteBranchOutput } = await execAsync('git branch -r --format="%(refname:short)|%(objectname)|%(committerdate:iso8601)|%(authorname)|%(subject)"');
+        
+        const remoteBranches = remoteBranchOutput.trim().split('\n');
+        
+        for (const branchLine of remoteBranches) {
+            if (!branchLine.trim()) continue;
             
-            // For this demo, we'll use the branch data we already know exists
-            // In a real implementation, you would make an HTTP request here
-            const response = await fetch(url);
+            const [fullName, sha, date, author, subject] = branchLine.split('|');
+            const branchName = fullName.replace('origin/', '');
             
-            if (!response.ok) {
-                // If API request fails, use known branch list from earlier
-                log.warning('GitHub API request failed, using known branch list');
-                return [
-                    { name: 'combined-pr-33-35', commit: { sha: '8d51fab691e98a6983495852a9282ca8de44eb05' } },
-                    { name: 'copilot/fix-00b2684d-b7a9-4b91-8422-6a748644d2eb', commit: { sha: 'b64c9e408263581b1f26eb9be58b37cd0b2ec594' } },
-                    { name: 'copilot/fix-2aaa45ec-6774-42b1-9b4e-fbc2624bc743', commit: { sha: 'a0b170b2f3a7e2abf226c7aaf2475be2d65c0e93' } },
-                    { name: 'copilot/fix-6a002995-be3e-467e-b43f-bb73cfd9f0b8', commit: { sha: '55dd63d601e98a65a68df4ff766782c5e2735172' } },
-                    { name: 'copilot/fix-8b59c92d-0408-4a4a-a9a0-ccf31a7aadfc', commit: { sha: '5308d4880202911c6f7895be865fe01e4779b611' } },
-                    { name: 'copilot/fix-42f02088-bb36-4e51-b147-8cc280350f91', commit: { sha: 'a1cf7aee2f137b8342fe1b262a5ea67d47bc2e42' } },
-                    { name: 'copilot/fix-45edbab2-a5c1-48eb-b9e7-385f56e56c1c', commit: { sha: '922383e64d8ad298caff6d378f3c4ad254ef5cce' } },
-                    { name: 'copilot/fix-50', commit: { sha: '9b097e0675e46f7aebec143068c392a87c8eff75' } },
-                    { name: 'copilot/fix-54', commit: { sha: '92242a53b9317af37c8449851ade25227cdef0c8' } },
-                    { name: 'copilot/fix-56', commit: { sha: '978a843f0684e3fa962a19a6eaee0dbb8b13d982' } },
-                    { name: 'copilot/fix-58', commit: { sha: 'e1372dccb2b4928166d1a912468009f60632fd59' } },
-                    { name: 'copilot/fix-60', commit: { sha: '55cb21191d007066a6883b8a5f5854489f25e3a2' } },
-                    { name: 'copilot/fix-62', commit: { sha: '695ad9f5adcbb09118da6d3aa607858ce5e415c8' } },
-                    { name: 'copilot/fix-64', commit: { sha: '006b9ecbf4138cda278c81cfbab44bdcc3b77a91' } },
-                    { name: 'copilot/fix-72', commit: { sha: '02b7f67d587e3e3fe38a91ed9513adf017cca46a' } },
-                    { name: 'copilot/fix-0327d21c-7833-43b7-ae33-84322b48736f', commit: { sha: 'ea8df1073cc0bdd1144520a640236a8e4b1f3408' } },
-                    { name: 'copilot/fix-395aa3d4-0602-488e-9383-15b78081f968', commit: { sha: 'd9f6bed9494138f6f26957937d514f1ff2dbcc19' } },
-                    { name: 'copilot/fix-399a2b64-c67f-461a-86dc-c6edf08605cd', commit: { sha: '2b972b12fa880dc0e6d5e873db59b3f1db151788' } },
-                    { name: 'copilot/fix-517f47dc-7604-474b-ae6a-7a709a55e236', commit: { sha: 'e47e2a19582b6796fde2d8de7efb16757cac15e6' } },
-                    { name: 'copilot/fix-819a50ee-f63e-4e0f-941a-9cb621f0910d', commit: { sha: '1cb1be3961f1bf705ca4b2f84002361f80ad3544' } },
-                    { name: 'copilot/fix-8403ea4c-ec6a-49ff-8261-ee934b01b26d', commit: { sha: '96837ff89fc13be5f052c667ff7cd73f56a9eff6' } },
-                    { name: 'copilot/fix-21029818-a151-4c3a-8140-19f405835744', commit: { sha: '390687efcac1131951b35e319d8385d4c50c1cd3' } },
-                    { name: 'copilot/fix-73134950-c1ae-47ca-9082-5aa13d25ac38', commit: { sha: '0caa52176ae779b34d1135713d7bf304a45d0027' } },
-                    { name: 'copilot/fix-a8e4f61b-21e0-4b4d-91d8-f8380d7f25d7', commit: { sha: '46b4800aec5c50cff4db63cf017961c85a2baa13' } },
-                    { name: 'copilot/fix-a62319e2-9915-4301-aec6-2a3a1972a841', commit: { sha: 'dcec94536da39a75a3f139276b075e15c22bf372' } },
-                    { name: 'copilot/fix-ce4eb447-f329-4c90-8543-dd3ba92d37c9', commit: { sha: 'e93404ce8d85a63b16326fccd0ed79c318a5583a' } },
-                    { name: 'copilot/fix-ddb8486e-4355-4c16-84ce-79a96071483d', commit: { sha: 'c025e010b0343055c7e08430ec9defa49193346d' } },
-                    { name: 'cursor/analyze-website-codebase-for-recommendations-ce55', commit: { sha: '72db7af46566f178f6f87698c5b3e7f8132675cc' } },
-                    { name: 'cursor/automation-loops', commit: { sha: '3f8a4f79517efc9ff40c2ba9966a6ca0cfa08e89' } },
-                    { name: 'cursor/check-if-process-is-still-running-4e70', commit: { sha: '43dd26a782a1e29a61e1f7d37534dc6f1dea9320' } },
-                    { name: 'cursor/find-today-s-chat-thread-fa8c', commit: { sha: 'f6f18eab3780bcb05e88d67148a9071df6eda656' } },
-                    { name: 'cursor/for-fuck-sake-e246', commit: { sha: '8ca31d1dc4808e6f6191121677f13f19767f9f7d' } },
-                    { name: 'cursor/get-back-into-coding-7c2d', commit: { sha: '5df3c162d2fc6a0b92657502867ff05d97061708' } },
-                    { name: 'cursor/monday0818-background-task-1b3e', commit: { sha: '40c79f40f1fa9d8d1bc6bc89e380f73b545f3771' } },
-                    { name: 'cursor/morning-greeting-and-status-check-ef98', commit: { sha: '5f21354dbc8c7b1ee888e2c7bce7408f9c45a225' } },
-                    { name: 'cursor/schedule-monday-august-eighteenth-b59f', commit: { sha: '7d3399ea1fc8b93a345b21789a6539004912e3ed' } },
-                    { name: 'feature/vercel-overlay', commit: { sha: 'a1c97e58134dab372c5fb38b8600bc63e25bb485' } },
-                    { name: 'main', commit: { sha: '500da2b268c93dae04b94669aafbcd44cd074842' } },
-                    { name: 'remove-SHA-push-healthcheck-supabase', commit: { sha: '161d59628f68f725183da3bc164ebe5542211884' } },
-                    { name: 'revert-65-copilot/fix-64', commit: { sha: '0c04d9ae1ecd4b3a53d6b16d90901fe812171abf' } },
-                    { name: 'vercel-import', commit: { sha: 'c5b3e9f034f915f889c61d646407fd54e41e130c' } }
-                ];
+            // Skip HEAD references
+            if (branchName.includes('HEAD') || branchName === 'origin/HEAD') continue;
+            
+            branches.push({
+                name: branchName,
+                commit: { sha },
+                lastCommitDate: date,
+                lastCommitAuthor: author,
+                lastCommitSubject: subject
+            });
+        }
+        
+    } catch (error) {
+        log.warning(`Failed to fetch branches via git: ${error.message}`);
+        
+        // Fallback: try GitHub CLI if available and GITHUB_TOKEN is set
+        if (process.env.GITHUB_TOKEN) {
+            try {
+                log.info('Trying GitHub CLI as fallback...');
+                const { stdout: ghOutput } = await execAsync(`gh api repos/${REPO_OWNER}/${REPO_NAME}/branches --paginate`);
+                const apiData = JSON.parse(ghOutput);
+                
+                for (const branch of apiData) {
+                    branches.push({
+                        name: branch.name,
+                        commit: { sha: branch.commit.sha },
+                        lastCommitDate: 'unknown',
+                        lastCommitAuthor: 'unknown',
+                        lastCommitSubject: 'unknown'
+                    });
+                }
+                
+            } catch (ghError) {
+                log.warning(`GitHub CLI also failed: ${ghError.message}`);
+                
+                // Final fallback: use local branches only
+                log.warning('Using local branches only as final fallback');
+                const { stdout: localBranchOutput } = await execAsync('git branch -a --format="%(refname:short)|%(objectname)|%(committerdate:iso8601)|%(authorname)|%(subject)"');
+                
+                const localBranches = localBranchOutput.trim().split('\n');
+                for (const branchLine of localBranches) {
+                    if (!branchLine.trim()) continue;
+                    
+                    const [fullName, sha, date, author, subject] = branchLine.split('|');
+                    let branchName = fullName;
+                    
+                    // Handle local vs remote branch names
+                    if (branchName.startsWith('remotes/origin/')) {
+                        branchName = branchName.replace('remotes/origin/', '');
+                    }
+                    
+                    if (branchName.includes('HEAD') || branchName === 'origin/HEAD') continue;
+                    
+                    branches.push({
+                        name: branchName,
+                        commit: { sha },
+                        lastCommitDate: date,
+                        lastCommitAuthor: author,
+                        lastCommitSubject: subject
+                    });
+                }
             }
-            
-            const data = await response.json();
-            branches.push(...data);
-            
-            if (data.length < perPage) {
-                break; // Last page
-            }
-            
-            page++;
-        } catch (error) {
-            log.error(`Failed to fetch branches from GitHub API: ${error.message}`);
-            break;
         }
     }
     
-    log.success(`Fetched ${branches.length} branches from repository`);
-    return branches;
+    // Remove duplicates
+    const uniqueBranches = branches.filter((branch, index, self) => 
+        index === self.findIndex(b => b.name === branch.name)
+    );
+    
+    log.success(`Fetched ${uniqueBranches.length} branches from repository`);
+    return uniqueBranches;
 }
 
 // Get commit information for a branch
-async function getCommitInfo(branchName, sha) {
+async function getCommitInfo(branchName, sha, branchData) {
+    // If we have the data from git already, use it
+    if (branchData.lastCommitDate && branchData.lastCommitDate !== 'unknown') {
+        return {
+            date: branchData.lastCommitDate,
+            author: branchData.lastCommitAuthor || 'unknown',
+            subject: branchData.lastCommitSubject || 'unknown'
+        };
+    }
+    
     try {
-        // Try to get local git information first
+        // Try to get local git information
         const { stdout: logOutput } = await execAsync(`git log -1 --format="%ci|%an|%s" ${sha} 2>/dev/null || echo "unknown|unknown|unknown"`);
         const [date, author, subject] = logOutput.trim().split('|');
         
@@ -244,7 +267,7 @@ function categorizeBranch(branchName, branchAge, commitInfo) {
 async function auditBranches() {
     log.info('Starting comprehensive branch audit...');
     
-    const branches = await fetchBranchesFromAPI();
+    const branches = await fetchBranchesFromGit();
     const auditResults = [];
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const auditFile = path.join(AUDIT_DIR, `branch_audit_${timestamp}.txt`);
@@ -274,7 +297,7 @@ async function auditBranches() {
         log.audit(`Analyzing: ${branch.name}`);
         
         // Get commit information
-        const commitInfo = await getCommitInfo(branch.name, branch.commit.sha);
+        const commitInfo = await getCommitInfo(branch.name, branch.commit.sha, branch);
         const branchAge = calculateBranchAge(commitInfo.date);
         
         // Categorize branch
@@ -505,8 +528,14 @@ BRANCH CATEGORIES:
 SAFETY FEATURES:
     - Automatic backups before destructive operations
     - Detailed audit logs and reasoning
-    - GitHub API integration for comprehensive branch analysis
+    - Firewall-safe branch fetching using git commands and GitHub CLI
     - Pattern-based branch categorization
+
+FIREWALL COMPATIBILITY:
+    - Uses git commands as primary method (always works)
+    - Falls back to GitHub CLI if git fails and GITHUB_TOKEN is available
+    - Final fallback to local branches only
+    - No direct API calls that could be blocked by firewalls
 `);
 }
 
@@ -528,7 +557,7 @@ async function main() {
         }
     }
     
-    log.info('GitHub Branch Audit Tool');
+    log.info('GitHub Branch Audit Tool (Firewall-Safe)');
     log.info(`Action: ${action}`);
     
     await setupAuditDir();

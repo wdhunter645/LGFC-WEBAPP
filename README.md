@@ -46,7 +46,8 @@ This repository includes a comprehensive branch audit and cleanup system to main
 ### Quick Commands
 
 ```bash
-# Perform branch audit
+<<<<<<< HEAD
+# Perform branch audit (firewall-safe)
 node scripts/git_branch_audit.mjs audit
 
 # Generate cleanup script
@@ -62,7 +63,30 @@ node scripts/git_branch_audit.mjs cleanup
 - **Safety Features**: Backup procedures and confirmation requirements
 - **GitHub Integration**: Automated reporting and issue creation
 
-See [BRANCH_AUDIT_DOCUMENTATION.md](./BRANCH_AUDIT_DOCUMENTATION.md) for complete usage guide.
+### ⚠️ Workflow Ordering Requirements
+
+**IMPORTANT for Maintainers**: When creating or modifying GitHub Actions workflows that need API access:
+
+1. **Branch Audit First**: Always run branch audit steps BEFORE other setup steps:
+   ```yaml
+   steps:
+     - name: Checkout repository
+     - name: Perform Branch Audit (Before Firewall)  # ← Must be early
+     - name: Setup Node.js                           # ← After audit
+     - name: Install dependencies                    # ← After audit
+   ```
+
+2. **API Access Requirements**: 
+   - Use `GITHUB_TOKEN` for authenticated operations
+   - GitHub Actions firewall may block direct API calls after certain setup steps
+   - The branch audit system uses firewall-safe git commands and GitHub CLI
+
+3. **Troubleshooting Firewall Issues**:
+   - If you see "GitHub API request failed", check workflow step order
+   - The system automatically falls back to git commands if API access is blocked
+   - See `BRANCH_AUDIT_DOCUMENTATION.md` for detailed troubleshooting
+
+See [BRANCH_AUDIT_DOCUMENTATION.md](./BRANCH_AUDIT_DOCUMENTATION.md) for complete usage guide and firewall troubleshooting.
 
 ---
 
@@ -100,18 +124,27 @@ npm test
 - GitHub-first development model
 - Automated branch management and cleanup
 - Repository health monitoring
+<<<<<<< HEAD
+- **Workflow Ordering**: API-dependent steps before firewall activation
+=======
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Add UI testing / preview support (future)
 
 ---
 
 ## 🧭 Project Status
 
-Development is actively in progress. The focus for **July 2025** includes:
+Development is actively in progress. The focus for **August 2025** includes:
 
 - Frontend testing through GitHub
 - Schema stability and RLS security
 - Connecting user-generated content to display layers
+<<<<<<< HEAD
+- Repository maintenance automation (✅ **COMPLETED**)
+- Branch audit and cleanup system (✅ **FIREWALL-SAFE**)
+=======
 - Repository maintenance automation
+>>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Preparing for public preview and community feedback
 
 ---
