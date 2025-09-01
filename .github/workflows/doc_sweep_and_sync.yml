@@ -1,0 +1,419 @@
+name: Documentation Sweep and Wiki Sync
+
+on:
+  schedule:
+    # Run every 24 hours at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch: # Allow manual trigger for testing
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no actual changes)'
+        required: false
+        default: false
+        type: boolean
+      force_sync:
+        description: 'Force sync all docs to Wiki'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  doc-sweep-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      # IMPORTANT: Early API access before firewall issues
+      - name: Check Wiki Status (Before Firewall)
+        id: wiki-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking if Wiki is enabled for this repository..."
+          
+          # Check if Wiki is enabled using GitHub CLI
+          WIKI_ENABLED=$(gh api repos/${{ github.repository }} --jq '.has_wiki')
+          echo "wiki_enabled=$WIKI_ENABLED" >> $GITHUB_OUTPUT
+          
+          if [ "$WIKI_ENABLED" = "true" ]; then
+            echo "✅ Wiki is enabled for this repository"
+            
+            # Try to list Wiki pages to verify access
+            if gh api repos/${{ github.repository }}/wiki/pages 2>/dev/null; then
+              echo "wiki_accessible=true" >> $GITHUB_OUTPUT
+              echo "✅ Wiki is accessible via API"
+            else
+              echo "wiki_accessible=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Wiki exists but may not be accessible via API (no pages yet?)"
+            fi
+          else
+            echo "wiki_accessible=false" >> $GITHUB_OUTPUT
+            echo "❌ Wiki is not enabled for this repository"
+          fi
+      
+      - name: Create Documentation Directories
+        run: |
+          echo "Creating documentation structure..."
+          mkdir -p docs
+          mkdir -p docs/archive
+          mkdir -p docs/sweep-reports
+          
+          # Create .gitkeep files to ensure directories are committed
+          touch docs/.gitkeep
+          touch docs/archive/.gitkeep
+          touch docs/sweep-reports/.gitkeep
+      
+      - name: Sweep Markdown Files to docs/
+        id: sweep
+        run: |
+          echo "=== Markdown File Sweep - $(date) ===" | tee docs/sweep-reports/sweep-$(date +%Y%m%d_%H%M%S).log
+          
+          SWEEP_LOG="docs/sweep-reports/sweep-$(date +%Y%m%d_%H%M%S).log"
+          FILES_MOVED=0
+          FILES_SKIPPED=0
+          
+          # Find all .md files excluding specified directories
+          echo "Searching for markdown files to move..." >> "$SWEEP_LOG"
+          
+          find . -name "*.md" -type f \
+            -not -path "./docs/*" \
+            -not -path "./.github/*" \
+            -not -path "./node_modules/*" \
+            -not -path "./vendor/*" \
+            -not -path "./.git/*" \
+            -not -path "./.cursor/*" \
+            -not -path "./.*" \
+            > /tmp/md_files_to_move.txt
+          
+          echo "Found $(wc -l < /tmp/md_files_to_move.txt) markdown files to process" >> "$SWEEP_LOG"
+          
+          # Process each file
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then
+              continue
+            fi
+            
+            echo "Processing: $file" >> "$SWEEP_LOG"
+            
+            # Get the base filename
+            filename=$(basename "$file")
+            
+            # Check if file already exists in docs/
+            if [ -f "docs/$filename" ]; then
+              echo "  → File already exists in docs/, checking if different..." >> "$SWEEP_LOG"
+              
+              if ! cmp -s "$file" "docs/$filename"; then
+                # Files are different, backup the existing one
+                timestamp=$(date +%Y%m%d_%H%M%S)
+                mv "docs/$filename" "docs/archive/${filename%.md}_${timestamp}.md"
+                mv "$file" "docs/$filename"
+                echo "  → Updated existing file (old version archived)" >> "$SWEEP_LOG"
+                FILES_MOVED=$((FILES_MOVED + 1))
+              else
+                # Files are identical, just remove the original
+                rm "$file"
+                echo "  → Removed duplicate (identical to docs/ version)" >> "$SWEEP_LOG"
+                FILES_SKIPPED=$((FILES_SKIPPED + 1))
+              fi
+            else
+              # Move file to docs/
+              mv "$file" "docs/$filename"
+              echo "  → Moved to docs/" >> "$SWEEP_LOG"
+              FILES_MOVED=$((FILES_MOVED + 1))
+            fi
+            
+          done < /tmp/md_files_to_move.txt
+          
+          echo "" >> "$SWEEP_LOG"
+          echo "Sweep completed:" >> "$SWEEP_LOG"
+          echo "  Files moved/updated: $FILES_MOVED" >> "$SWEEP_LOG"
+          echo "  Files skipped: $FILES_SKIPPED" >> "$SWEEP_LOG"
+          
+          # Set outputs for later steps
+          echo "files_moved=$FILES_MOVED" >> $GITHUB_OUTPUT
+          echo "files_skipped=$FILES_SKIPPED" >> $GITHUB_OUTPUT
+          echo "sweep_log=$SWEEP_LOG" >> $GITHUB_OUTPUT
+          
+          # Display summary
+          echo "📁 Markdown sweep completed:"
+          echo "  - Files moved/updated: $FILES_MOVED"
+          echo "  - Files skipped: $FILES_SKIPPED"
+      
+      - name: Wiki Content Synchronization
+        if: steps.wiki-check.outputs.wiki_accessible == 'true'
+        id: wiki-sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Wiki Synchronization - $(date) ==="
+          
+          WIKI_LOG="docs/sweep-reports/wiki-sync-$(date +%Y%m%d_%H%M%S).log"
+          echo "=== Wiki Synchronization - $(date) ===" > "$WIKI_LOG"
+          
+          PAGES_UPDATED=0
+          BADGES_ADDED=0
+          BADGES_REMOVED=0
+          
+          # Get current timestamp for new badges
+          CURRENT_TIME=$(date +%s)
+          NEW_TAG_HTML='<span style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold;">New</span>'
+          
+          # Function to check if a timestamp is older than 30 days
+          is_older_than_30_days() {
+            local timestamp=$1
+            local cutoff=$((CURRENT_TIME - 30*24*60*60)) # 30 days in seconds
+            [ "$timestamp" -lt "$cutoff" ]
+          }
+          
+          # Get all Wiki pages
+          echo "Fetching Wiki pages..." >> "$WIKI_LOG"
+          if ! gh api repos/${{ github.repository }}/wiki/pages > /tmp/wiki_pages.json 2>>"$WIKI_LOG"; then
+            echo "Failed to fetch Wiki pages" >> "$WIKI_LOG"
+            echo "Failed to fetch Wiki pages"
+            exit 1
+          fi
+          
+          WIKI_PAGE_COUNT=$(jq length /tmp/wiki_pages.json 2>/dev/null || echo 0)
+          echo "Found $WIKI_PAGE_COUNT Wiki pages" >> "$WIKI_LOG"
+          
+          # Process each markdown file in docs/
+          for doc_file in docs/*.md; do
+            if [ ! -f "$doc_file" ]; then
+              continue
+            fi
+            
+            doc_name=$(basename "$doc_file" .md)
+            echo "" >> "$WIKI_LOG"
+            echo "Processing doc: $doc_name" >> "$WIKI_LOG"
+            
+            # Find corresponding Wiki page
+            WIKI_PAGE_TITLE=""
+            for i in $(seq 0 $((WIKI_PAGE_COUNT - 1))); do
+              page_title=$(jq -r ".[$i].title" /tmp/wiki_pages.json 2>/dev/null)
+              page_slug=$(echo "$page_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+              doc_slug=$(echo "$doc_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+              
+              if [ "$page_slug" = "$doc_slug" ] || [ "$page_title" = "$doc_name" ]; then
+                WIKI_PAGE_TITLE="$page_title"
+                break
+              fi
+            done
+            
+            if [ -n "$WIKI_PAGE_TITLE" ]; then
+              echo "  Found matching Wiki page: $WIKI_PAGE_TITLE" >> "$WIKI_LOG"
+              
+              # Get Wiki page content
+              if gh api "repos/${{ github.repository }}/wiki/$WIKI_PAGE_TITLE" > /tmp/wiki_content.json 2>>"$WIKI_LOG"; then
+                
+                # Extract current Wiki content
+                jq -r '.content' /tmp/wiki_content.json > /tmp/current_wiki_content.html
+                
+                # Convert markdown doc to HTML for comparison (simple conversion)
+                # This is a basic approach - in production you might want to use a proper markdown parser
+                cp "$doc_file" /tmp/doc_content.md
+                
+                # Simple markdown to text conversion for content comparison
+                sed -e 's/^# //' -e 's/^## /  /' -e 's/^### /    /' -e 's/\*\*\([^*]*\)\*\*/\1/g' "$doc_file" > /tmp/doc_content.txt
+                sed -e 's/<[^>]*>//g' /tmp/current_wiki_content.html > /tmp/wiki_content.txt
+                
+                # Compare content (basic approach)
+                if ! diff -q /tmp/doc_content.txt /tmp/wiki_content.txt >/dev/null 2>&1; then
+                  echo "  Content differs, updating Wiki page..." >> "$WIKI_LOG"
+                  
+                  # Read current Wiki content and remove old "New" tags if they're older than 30 days
+                  UPDATED_CONTENT=$(cat /tmp/current_wiki_content.html)
+                  
+                  # Remove old "New" tags (using a simple approach with sed)
+                  # Look for timestamp comments and remove associated New tags if older than 30 days
+                  echo "$UPDATED_CONTENT" | while IFS= read -r line; do
+                    if echo "$line" | grep -q "<!-- timestamp:"; then
+                      timestamp=$(echo "$line" | sed -n 's/.*<!-- timestamp:\([0-9]*\) -->.*/\1/p')
+                      if [ -n "$timestamp" ] && is_older_than_30_days "$timestamp"; then
+                        echo "    Removing old New tag (timestamp: $timestamp)" >> "$WIKI_LOG"
+                        BADGES_REMOVED=$((BADGES_REMOVED + 1))
+                        # Skip this line and the potential New tag before it
+                        continue
+                      fi
+                    fi
+                    echo "$line"
+                  done > /tmp/cleaned_wiki_content.html
+                  
+                  # Convert doc markdown to basic HTML and add New tags
+                  TIMESTAMP_COMMENT="<!-- timestamp:$CURRENT_TIME -->"
+                  
+                  # Read the doc file and convert to basic HTML with New tags
+                  {
+                    echo "<!-- Auto-updated from docs/$doc_name.md -->"
+                    echo ""
+                    while IFS= read -r line; do
+                      # Add New tags to headers and paragraphs
+                      if echo "$line" | grep -q "^#"; then
+                        echo "$line $NEW_TAG_HTML $TIMESTAMP_COMMENT"
+                        BADGES_ADDED=$((BADGES_ADDED + 1))
+                      elif echo "$line" | grep -q "^[A-Za-z]" && [ ${#line} -gt 20 ]; then
+                        echo "$line $NEW_TAG_HTML $TIMESTAMP_COMMENT"
+                        BADGES_ADDED=$((BADGES_ADDED + 1))
+                      else
+                        echo "$line"
+                      fi
+                    done < "$doc_file"
+                  } > /tmp/new_wiki_content.html
+                  
+                  # Update Wiki page if not in dry-run mode
+                  if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
+                    if gh api -X PUT "repos/${{ github.repository }}/wiki/$WIKI_PAGE_TITLE" \
+                         -f content="$(cat /tmp/new_wiki_content.html)" \
+                         -f message="Auto-updated from docs/$doc_name.md - $(date)" 2>>"$WIKI_LOG"; then
+                      echo "  ✅ Successfully updated Wiki page" >> "$WIKI_LOG"
+                      PAGES_UPDATED=$((PAGES_UPDATED + 1))
+                    else
+                      echo "  ❌ Failed to update Wiki page" >> "$WIKI_LOG"
+                    fi
+                  else
+                    echo "  🔄 DRY RUN: Would update Wiki page" >> "$WIKI_LOG"
+                  fi
+                else
+                  echo "  ✅ Content is up to date" >> "$WIKI_LOG"
+                fi
+              else
+                echo "  ❌ Failed to fetch Wiki page content" >> "$WIKI_LOG"
+              fi
+            else
+              echo "  ➡️ No matching Wiki page found, skipping" >> "$WIKI_LOG"
+            fi
+          done
+          
+          echo "" >> "$WIKI_LOG"
+          echo "Wiki synchronization completed:" >> "$WIKI_LOG"
+          echo "  Pages updated: $PAGES_UPDATED" >> "$WIKI_LOG"
+          echo "  New badges added: $BADGES_ADDED" >> "$WIKI_LOG"
+          echo "  Old badges removed: $BADGES_REMOVED" >> "$WIKI_LOG"
+          
+          # Set outputs
+          echo "pages_updated=$PAGES_UPDATED" >> $GITHUB_OUTPUT
+          echo "badges_added=$BADGES_ADDED" >> $GITHUB_OUTPUT
+          echo "badges_removed=$BADGES_REMOVED" >> $GITHUB_OUTPUT
+          echo "wiki_log=$WIKI_LOG" >> $GITHUB_OUTPUT
+          
+          echo "📖 Wiki sync completed:"
+          echo "  - Pages updated: $PAGES_UPDATED"
+          echo "  - New badges added: $BADGES_ADDED"
+          echo "  - Old badges removed: $BADGES_REMOVED"
+      
+      - name: Generate Summary Report
+        run: |
+          REPORT_FILE="docs/sweep-reports/summary-$(date +%Y%m%d_%H%M%S).md"
+          
+          cat > "$REPORT_FILE" << EOF
+          # Documentation Sweep and Wiki Sync Report
+          
+          **Date:** $(date -u)
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          
+          ## File Sweep Results
+          
+          - **Files moved/updated:** ${{ steps.sweep.outputs.files_moved }}
+          - **Files skipped:** ${{ steps.sweep.outputs.files_skipped }}
+          
+          ## Wiki Synchronization Results
+          
+          EOF
+          
+          if [ "${{ steps.wiki-check.outputs.wiki_accessible }}" = "true" ]; then
+            cat >> "$REPORT_FILE" << EOF
+          - **Wiki status:** ✅ Accessible
+          - **Pages updated:** ${{ steps.wiki-sync.outputs.pages_updated }}
+          - **New badges added:** ${{ steps.wiki-sync.outputs.badges_added }}
+          - **Old badges removed:** ${{ steps.wiki-sync.outputs.badges_removed }}
+          EOF
+          else
+            cat >> "$REPORT_FILE" << EOF
+          - **Wiki status:** ❌ Not accessible or not enabled
+          - **Pages updated:** 0
+          - **New badges added:** 0
+          - **Old badges removed:** 0
+          EOF
+          fi
+          
+          cat >> "$REPORT_FILE" << EOF
+          
+          ## Configuration
+          
+          - **Dry run mode:** ${{ github.event.inputs.dry_run || 'false' }}
+          - **Force sync:** ${{ github.event.inputs.force_sync || 'false' }}
+          
+          ## Log Files
+          
+          EOF
+          
+          if [ -n "${{ steps.sweep.outputs.sweep_log }}" ]; then
+            echo "- Sweep log: \`${{ steps.sweep.outputs.sweep_log }}\`" >> "$REPORT_FILE"
+          fi
+          
+          if [ -n "${{ steps.wiki-sync.outputs.wiki_log }}" ]; then
+            echo "- Wiki sync log: \`${{ steps.wiki-sync.outputs.wiki_log }}\`" >> "$REPORT_FILE"
+          fi
+          
+          echo "" >> "$REPORT_FILE"
+          echo "---" >> "$REPORT_FILE"
+          echo "*Generated by Documentation Sweep and Wiki Sync Workflow*" >> "$REPORT_FILE"
+          
+          echo "📄 Summary report generated: $REPORT_FILE"
+          echo "report_file=$REPORT_FILE" >> $GITHUB_OUTPUT
+      
+      - name: Commit Changes
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Add all changes
+          git add docs/
+          
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-sweep markdown files and sync reports - $(date +"%Y-%m-%d %H:%M UTC")"
+            git push
+            echo "✅ Changes committed and pushed"
+          fi
+      
+      - name: Upload Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: doc-sweep-reports-${{ github.run_number }}
+          path: docs/sweep-reports/
+          retention-days: 30
+      
+      - name: Display Final Summary
+        run: |
+          echo "🎯 Documentation Sweep and Wiki Sync Summary:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📁 File Operations:"
+          echo "   - Files moved/updated: ${{ steps.sweep.outputs.files_moved }}"
+          echo "   - Files skipped: ${{ steps.sweep.outputs.files_skipped }}"
+          echo ""
+          echo "📖 Wiki Operations:"
+          if [ "${{ steps.wiki-check.outputs.wiki_accessible }}" = "true" ]; then
+            echo "   - Pages updated: ${{ steps.wiki-sync.outputs.pages_updated }}"
+            echo "   - New badges added: ${{ steps.wiki-sync.outputs.badges_added }}"
+            echo "   - Old badges removed: ${{ steps.wiki-sync.outputs.badges_removed }}"
+          else
+            echo "   - Wiki not accessible or not enabled"
+          fi
+          echo ""
+          echo "🔄 Mode: ${{ github.event.inputs.dry_run == 'true' && 'DRY RUN' || 'ACTIVE' }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

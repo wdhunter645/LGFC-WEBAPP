@@ -1,0 +1,155 @@
+=== Test Markdown File Sweep - Mon Sep  1 15:09:41 UTC 2025 ===
+Searching for markdown files to move...
+Found 68 markdown files to process
+Processing: ./BACKEND_CONNECTIVITY_STATUS.md
+  → Copied to docs/
+Processing: ./CMS_README.md
+  → Copied to docs/
+Processing: ./README.md
+  → Copied to docs/
+Processing: ./API_KEY_CONFIGURATION.md
+  → Copied to docs/
+Processing: ./health-reports/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./GEMINI_CLI_INTEGRATION.md
+  → Copied to docs/
+Processing: ./UPDATED_PROJECT_PLAN_WITH_NOTES.md
+  → Copied to docs/
+Processing: ./scripts/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./README.template.md
+  → Copied to docs/
+Processing: ./BACKUP_TROUBLESHOOTING.md
+  → Copied to docs/
+Processing: ./PURE_JWT_MIGRATION_COMPLETE.md
+  → Copied to docs/
+Processing: ./ISSUE_TEMPLATE/build_trigger_workflow_automation.md
+  → Copied to docs/
+Processing: ./OPERATIONAL_READINESS.md
+  → Copied to docs/
+Processing: ./supabase/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./PROJECT_STATUS_ASSESSMENT.md
+  → Copied to docs/
+Processing: ./SEARCH_CRON_JWT_STATUS.md
+  → Copied to docs/
+Processing: ./NETLIFY_ENV_VARS_GUIDE.md
+  → Copied to docs/
+Processing: ./SEARCH_CRON_FINAL_STATUS.md
+  → Copied to docs/
+Processing: ./CORRECT_JWT_UNDERSTANDING.md
+  → Copied to docs/
+Processing: ./GIT_COMMIT_DIVERGENCE_SOLUTION.md
+  → Copied to docs/
+Processing: ./lou_gehrig_fan_club_master_build_v4.md
+  → Copied to docs/
+Processing: ./SUPABASE_JWT_MIGRATION.md
+  → Copied to docs/
+Processing: ./vercel_draft/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./RLS_IMPLEMENTATION_GUIDE.md
+  → Copied to docs/
+Processing: ./GIT_BRANCH_RESOLUTION_SUMMARY.md
+  → Copied to docs/
+Processing: ./backups/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./backups/daily/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./backups/weekly/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./backups/monthly/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./GIT_TROUBLESHOOTING.md
+  → Copied to docs/
+Processing: ./GIT_SMART_COMMIT_USAGE.md
+  → Copied to docs/
+Processing: ./REPO_CONTEXT.template.md
+  → Copied to docs/
+Processing: ./src/content/news/2024-01-15-welcome-to-the-fan-club.md
+  → Copied to docs/
+Processing: ./src/content/events/2024-06-02-lou-gehrig-day-celebration.md
+  → Copied to docs/
+Processing: ./src/content/photos/lou-gehrig-yankee-stadium-1938.md
+  → Copied to docs/
+Processing: ./src/content/pages/about.md
+  → Copied to docs/
+Processing: ./src/content/milestones/1925-06-15-lou-gehrig-first-game.md
+  → Copied to docs/
+Processing: ./src/content/books/lou-gehrig-pride-of-the-yankees.md
+  → Copied to docs/
+Processing: ./src/content/memorabilia/lou-gehrig-1939-baseball-card.md
+  → Copied to docs/
+Processing: ./NETLIFY_ENVIRONMENT_SETUP.md
+  → Copied to docs/
+Processing: ./schema-monitoring/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./issues/Build_Trigger_Workflow_Automation_Tuning_Project.md
+  → Copied to docs/
+Processing: ./issues/1.md
+  → Copied to docs/
+Processing: ./deploy-reports/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./audit-reports/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./SUPABASE_JWT_COMPLETE_MIGRATION.md
+  → Copied to docs/
+Processing: ./lou_gehrig_fan_club_master_build_v5.md
+  → Copied to docs/
+Processing: ./NETLIFY_SUPABASE_SETUP.md
+  → Copied to docs/
+Processing: ./COPILOT_CONTEXT.md
+  → Copied to docs/
+Processing: ./SEARCH_CRON_JWT_UPDATED.md
+  → Copied to docs/
+Processing: ./SEARCH_CRON_TROUBLESHOOTING.md
+  → Copied to docs/
+Processing: ./BRANCH_AUDIT_SUMMARY.md
+  → Copied to docs/
+Processing: ./BRANCH_AUDIT_FIREWALL_FIX.md
+  → Copied to docs/
+Processing: ./JWT_ONLY_MIGRATION_COMPLETE.md
+  → Copied to docs/
+Processing: ./SEARCH_CRON_VERIFICATION.md
+  → Copied to docs/
+Processing: ./BRANCH_AUDIT_DOCUMENTATION.md
+  → Copied to docs/
+Processing: ./test_markdown_for_sweep.md
+  → Copied to docs/
+Processing: ./JWT_CONNECTION_CLARIFICATION.md
+  → Copied to docs/
+Processing: ./ROLLBACK_DOCUMENTATION.md
+  → Copied to docs/
+Processing: ./SUPABASE_JWT_STATUS_REPORT.md
+  → Copied to docs/
+Processing: ./NO_ENV_VARS_NEEDED.md
+  → Copied to docs/
+Processing: ./SPACES_PROJECT_SUMMARY.md
+  → Copied to docs/
+Processing: ./COPILOT_CONTEXT.template.md
+  → Copied to docs/
+Processing: ./security-scans/README.md
+  → File already exists in docs/, checking if different...
+  → Updated existing file (old version archived)
+Processing: ./CONTEXT_TRACKING.md
+  → Copied to docs/
+Processing: ./REPO_CONTEXT.md
+  → Copied to docs/
+Processing: ./FRONTEND_JWT_MIGRATION.md
+  → Copied to docs/
+Processing: ./WORKFLOW_SUPPORT_ASSIGNMENT_SYSTEM.md
+  → Copied to docs/
+
+Test sweep completed:
+  Files moved/updated: 68
+  Files skipped: 0
