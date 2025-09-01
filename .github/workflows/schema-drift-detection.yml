@@ -19,15 +19,24 @@ jobs:
         
       - name: Install Supabase CLI
         run: |
-          curl -fsSL https://supabase.com/install.sh | sh
+          # Install Supabase CLI using the official method
+          curl -fsSL https://get.supabase.com | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           
       - name: Login to Supabase
         run: |
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN secret not configured"
+            exit 1
+          fi
           echo ${{ secrets.SUPABASE_ACCESS_TOKEN }} | supabase login
           
       - name: Link to Supabase project
         run: |
+          if [ -z "${{ secrets.SUPABASE_PROJECT_REF }}" ]; then
+            echo "::error::SUPABASE_PROJECT_REF secret not configured"
+            exit 1
+          fi
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           
       - name: Create schema baseline directory
@@ -35,11 +44,18 @@ jobs:
           mkdir -p schema-monitoring
           
       - name: Generate current schema snapshot
+        id: schema_snapshot
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          supabase db dump --schema-only --file "schema-monitoring/current_schema_${TIMESTAMP}.sql"
+          if ! supabase db dump --schema-only --file "schema-monitoring/current_schema_${TIMESTAMP}.sql"; then
+            echo "::error::Failed to generate schema snapshot. Check Supabase connection and credentials."
+            echo "snapshot_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "schema_file=current_schema_${TIMESTAMP}.sql" >> $GITHUB_OUTPUT
           
       - name: Compare with latest baseline
+        id: schema_comparison
         run: |
           echo "=== Schema Drift Detection - $(date) ===" > schema-monitoring/drift-report.log
           
@@ -48,12 +64,13 @@ jobs:
             echo "Found baseline schema for comparison" >> schema-monitoring/drift-report.log
             
             # Get current schema file
-            current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+            current_schema="schema-monitoring/${{ steps.schema_snapshot.outputs.schema_file }}"
             
             # Compare schemas
             if diff -q "schema-monitoring/baseline_schema.sql" "$current_schema" >/dev/null; then
               echo "✅ No schema drift detected" >> schema-monitoring/drift-report.log
               echo "Current schema matches baseline" >> schema-monitoring/drift-report.log
+              echo "drift_detected=false" >> $GITHUB_OUTPUT
             else
               echo "⚠️ SCHEMA DRIFT DETECTED!" >> schema-monitoring/drift-report.log
               echo "Changes found between baseline and current schema:" >> schema-monitoring/drift-report.log
@@ -70,16 +87,21 @@ jobs:
               echo "Change summary:" >> schema-monitoring/drift-report.log
               echo "- Lines added: $added_lines" >> schema-monitoring/drift-report.log
               echo "- Lines removed: $removed_lines" >> schema-monitoring/drift-report.log
+              
+              echo "drift_detected=true" >> $GITHUB_OUTPUT
             fi
           else
             echo "⚠️ No baseline schema found - creating initial baseline" >> schema-monitoring/drift-report.log
             cp "$current_schema" "schema-monitoring/baseline_schema.sql"
             echo "Baseline schema created from current state" >> schema-monitoring/drift-report.log
+            echo "drift_detected=false" >> $GITHUB_OUTPUT
+            echo "baseline_created=true" >> $GITHUB_OUTPUT
           fi
           
       - name: Analyze schema for potential issues
+        id: schema_analysis
         run: |
-          current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+          current_schema="schema-monitoring/${{ steps.schema_snapshot.outputs.schema_file }}"
           echo "" >> schema-monitoring/drift-report.log
           echo "=== Schema Analysis ===" >> schema-monitoring/drift-report.log
           
@@ -96,8 +118,10 @@ jobs:
           # Check for potential security issues
           if grep -q "WITHOUT ROW LEVEL SECURITY" "$current_schema"; then
             echo "⚠️ Found tables without Row Level Security" >> schema-monitoring/drift-report.log
+            echo "rls_issues=true" >> $GITHUB_OUTPUT
           else
             echo "✅ All tables appear to have Row Level Security" >> schema-monitoring/drift-report.log
+            echo "rls_issues=false" >> $GITHUB_OUTPUT
           fi
           
           # Check for required tables based on application needs
@@ -105,13 +129,17 @@ jobs:
           echo "" >> schema-monitoring/drift-report.log
           echo "Required table check:" >> schema-monitoring/drift-report.log
           
+          missing_tables=0
           for table in "${required_tables[@]}"; do
             if grep -q "CREATE TABLE.*$table" "$current_schema"; then
               echo "✅ Table '$table' exists" >> schema-monitoring/drift-report.log
             else
               echo "❌ Required table '$table' missing!" >> schema-monitoring/drift-report.log
+              missing_tables=$((missing_tables + 1))
             fi
           done
+          
+          echo "missing_tables=$missing_tables" >> $GITHUB_OUTPUT
           
       - name: Display drift report
         run: |
@@ -120,37 +148,54 @@ jobs:
           
       - name: Check for critical schema issues
         run: |
-          if grep -q "❌\|SCHEMA DRIFT DETECTED" schema-monitoring/drift-report.log; then
-            echo "::warning::Critical schema issues detected - review required"
-          fi
-          
-          # Count missing required tables
-          missing_tables=$(grep -c "❌.*missing" schema-monitoring/drift-report.log || echo "0")
-          if [ $missing_tables -gt 0 ]; then
+          # Only fail the workflow for missing required tables, not for drift detection
+          missing_tables="${{ steps.schema_analysis.outputs.missing_tables }}"
+          if [ "$missing_tables" -gt 0 ]; then
             echo "::error::$missing_tables required tables are missing from schema"
             exit 1
           fi
           
+          # Report other issues as warnings
+          if [ "${{ steps.schema_comparison.outputs.drift_detected }}" = "true" ]; then
+            echo "::warning::Schema drift detected - review required"
+          fi
+          
+          if [ "${{ steps.schema_analysis.outputs.rls_issues }}" = "true" ]; then
+            echo "::warning::Tables found without Row Level Security"
+          fi
+          
       - name: Create issue for schema drift  
-        if: contains(github.event_name, 'schedule') && success()
+        if: contains(github.event_name, 'schedule') && success() && (steps.schema_comparison.outputs.drift_detected == 'true' || steps.schema_analysis.outputs.missing_tables > 0)
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const driftReport = fs.readFileSync('schema-monitoring/drift-report.log', 'utf8');
             
-            // Check if there's schema drift or missing tables
-            const hasDrift = driftReport.includes('SCHEMA DRIFT DETECTED');
-            const hasMissingTables = driftReport.includes('❌') && driftReport.includes('missing');
+            // Check if there's actual schema drift or missing tables
+            const hasDrift = '${{ steps.schema_comparison.outputs.drift_detected }}' === 'true';
+            const missingTables = parseInt('${{ steps.schema_analysis.outputs.missing_tables }}') || 0;
+            const hasRlsIssues = '${{ steps.schema_analysis.outputs.rls_issues }}' === 'true';
+            const baselineCreated = '${{ steps.schema_comparison.outputs.baseline_created }}' === 'true';
             
-            if (hasDrift || hasMissingTables) {
+            if (hasDrift || missingTables > 0) {
               const dateStr = new Date().toISOString().split('T')[0];
               const timeStr = new Date().toISOString();
               const workflowUrl = context.payload.repository.html_url + '/actions/runs/' + context.runId;
               
               let issuesText = '';
-              if (hasDrift) issuesText += '⚠️ Schema changes detected\n';
-              if (hasMissingTables) issuesText += '❌ Missing required tables\n';
+              let priority = 'priority:high';
+              
+              if (hasDrift) {
+                issuesText += '⚠️ Schema changes detected\n';
+              }
+              if (missingTables > 0) {
+                issuesText += `❌ ${missingTables} required tables missing\n`;
+                priority = 'priority:critical';
+              }
+              if (hasRlsIssues) {
+                issuesText += '⚠️ Tables without Row Level Security found\n';
+              }
               
               const bodyParts = [
                 '## Schema Drift Detection Alert',
@@ -170,24 +215,73 @@ jobs:
                 '1. Review the schema changes in the drift report above',
                 '2. If changes are legitimate, run the workflow manually to update baseline: `gh workflow run schema-drift-detection.yml`',
                 '3. If changes are unexpected, investigate potential unauthorized modifications',
+                '4. For missing tables, check database connectivity and application deployment status',
                 '',
                 'Assigned to ops-bot for triage'
               ];
               
+              const title = baselineCreated ? 
+                'Schema Baseline Created - ' + dateStr : 
+                'Schema Drift Alert - ' + dateStr;
+              
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: 'Schema Drift Alert - ' + dateStr,
+                title: title,
                 body: bodyParts.join('\n'),
-                labels: ['ops', 'schema-drift', 'priority:high']
+                labels: ['ops', 'schema-drift', priority]
               });
             }
+            
+      - name: Create issue for workflow infrastructure failure
+        if: failure() && contains(github.event_name, 'schedule')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const dateStr = new Date().toISOString().split('T')[0];
+            const timeStr = new Date().toISOString();
+            const workflowUrl = context.payload.repository.html_url + '/actions/runs/' + context.runId;
+            
+            const bodyParts = [
+              '## Schema Drift Workflow Infrastructure Failure',
+              '',
+              'Time: ' + timeStr,
+              'Workflow: [Schema Drift Detection](' + workflowUrl + ')',
+              '',
+              '### Issue:',
+              'The schema drift detection workflow failed due to infrastructure issues, not actual schema problems.',
+              '',
+              '### Common Causes:',
+              '- Supabase CLI installation failure',
+              '- Missing or invalid repository secrets (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`)',
+              '- Network connectivity issues',
+              '- Supabase service unavailability',
+              '',
+              '### Actions Required:',
+              '1. Check workflow logs for specific error details',
+              '2. Verify repository secrets are configured correctly',
+              '3. Test Supabase connectivity manually if needed',
+              '4. Re-run workflow once infrastructure issues are resolved',
+              '',
+              '### Note:',
+              'This is NOT a schema drift alert - this is a workflow infrastructure issue.',
+              '',
+              'Assigned to ops-bot for infrastructure triage'
+            ];
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Schema Drift Workflow Infrastructure Failure - ' + dateStr,
+              body: bodyParts.join('\n'),
+              labels: ['ops', 'workflow-infrastructure', 'priority:medium']
+            });
           
       - name: Update baseline on approval
         if: github.event_name == 'workflow_dispatch'
         run: |
           # Manual workflow runs can update the baseline
-          current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+          current_schema="schema-monitoring/${{ steps.schema_snapshot.outputs.schema_file }}"
           cp "$current_schema" "schema-monitoring/baseline_schema.sql"
           echo "Baseline schema updated manually via workflow dispatch" >> schema-monitoring/drift-report.log
           
