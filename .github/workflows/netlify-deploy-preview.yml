@@ -38,6 +38,14 @@ jobs:
       - name: Deploy to Netlify Preview
         id: netlify-deploy
         run: |
+          # Check if required secrets are available
+          if [ -z "${{ secrets.NETLIFY_AUTH_TOKEN }}" ] || [ -z "${{ secrets.NETLIFY_SITE_ID }}" ]; then
+            echo "Netlify secrets not configured - skipping deployment"
+            echo "PREVIEW_URL=none" >> $GITHUB_OUTPUT
+            echo "deployment_skipped=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           # Deploy to Netlify and capture the preview URL
           DEPLOY_OUTPUT=$(netlify deploy --dir=dist --json)
           echo "$DEPLOY_OUTPUT"
@@ -45,16 +53,19 @@ jobs:
           PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy_url // .url')
           echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
           echo "Preview URL: $PREVIEW_URL"
+          echo "deployment_skipped=false" >> $GITHUB_OUTPUT
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
       - name: Wait for deployment to be ready
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           echo "Waiting for deployment to be fully ready..."
           sleep 30
 
       - name: Basic Health Check - Homepage
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           echo "Testing homepage accessibility: $PREVIEW_URL"
@@ -71,6 +82,7 @@ jobs:
           fi
 
       - name: Health Check - Critical Pages
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           
@@ -108,6 +120,7 @@ jobs:
           fi
 
       - name: Health Check - API Endpoints
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           
@@ -133,6 +146,7 @@ jobs:
           done
 
       - name: Performance Check - Load Time
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           
@@ -155,6 +169,7 @@ jobs:
           fi
 
       - name: Content Validation
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           
@@ -185,6 +200,7 @@ jobs:
           fi
 
       - name: Security Headers Check
+        if: steps.netlify-deploy.outputs.deployment_skipped == 'false'
         run: |
           PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
           
@@ -214,18 +230,33 @@ jobs:
 
       - name: Generate Health Check Summary
         run: |
-          echo "## 🚀 Netlify Deploy Preview Health Check Summary" > health-check-summary.md
-          echo "" >> health-check-summary.md
-          echo "**Preview URL:** ${{ steps.netlify-deploy.outputs.PREVIEW_URL }}" >> health-check-summary.md
-          echo "**Deploy Time:** $(date)" >> health-check-summary.md
-          echo "" >> health-check-summary.md
-          echo "### Test Results" >> health-check-summary.md
-          echo "- ✅ Build completed successfully" >> health-check-summary.md
-          echo "- ✅ Tests passed" >> health-check-summary.md
-          echo "- ✅ Linting passed" >> health-check-summary.md
-          echo "- ✅ Homepage accessibility verified" >> health-check-summary.md
-          echo "" >> health-check-summary.md
-          echo "See workflow logs for detailed health check results." >> health-check-summary.md
+          if [ "${{ steps.netlify-deploy.outputs.deployment_skipped }}" = "true" ]; then
+            echo "## 🚀 Netlify Deploy Preview Health Check Summary" > health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "**Deployment Status:** Skipped (Netlify secrets not configured)" >> health-check-summary.md
+            echo "**Deploy Time:** $(date)" >> health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "### Test Results" >> health-check-summary.md
+            echo "- ✅ Build completed successfully" >> health-check-summary.md
+            echo "- ✅ Tests passed" >> health-check-summary.md
+            echo "- ✅ Linting passed" >> health-check-summary.md
+            echo "- ⚠️ Preview deployment skipped (Netlify not configured)" >> health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "Configure Netlify secrets to enable preview deployments and health checks." >> health-check-summary.md
+          else
+            echo "## 🚀 Netlify Deploy Preview Health Check Summary" > health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "**Preview URL:** ${{ steps.netlify-deploy.outputs.PREVIEW_URL }}" >> health-check-summary.md
+            echo "**Deploy Time:** $(date)" >> health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "### Test Results" >> health-check-summary.md
+            echo "- ✅ Build completed successfully" >> health-check-summary.md
+            echo "- ✅ Tests passed" >> health-check-summary.md
+            echo "- ✅ Linting passed" >> health-check-summary.md
+            echo "- ✅ Homepage accessibility verified" >> health-check-summary.md
+            echo "" >> health-check-summary.md
+            echo "See workflow logs for detailed health check results." >> health-check-summary.md
+          fi
 
       - name: Comment PR with results
         uses: actions/github-script@v7
