@@ -2,8 +2,8 @@ name: Self-Repair - Context & Configuration Recovery
 
 on:
   schedule:
-    # Run every hour
-    - cron: "0 * * * *"
+    # Run every 6 hours (12AM, 6AM, 12PM, 6PM EST)
+    - cron: "0 0,6,12,18 * * *"
   workflow_dispatch: # Allow manual trigger
     inputs:
       force_restore:
