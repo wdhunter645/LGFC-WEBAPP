@@ -19,9 +19,14 @@ jobs:
         
       - name: Install Supabase CLI
         run: |
-          # Install Supabase CLI using the official method
-          curl -fsSL https://get.supabase.com | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          # Install Supabase CLI using GitHub releases (more reliable than install script)
+          SUPABASE_VERSION=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | grep '"tag_name"' | cut -d '"' -f 4)
+          curl -fsSL "https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz" -o supabase.tar.gz
+          tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          rm supabase.tar.gz
+          # Verify installation
+          supabase --version
           
       - name: Login to Supabase
         run: |

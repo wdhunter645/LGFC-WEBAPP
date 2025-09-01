@@ -16,7 +16,7 @@ The Schema Drift Detection system monitors changes to the Supabase database sche
 
 **Root Cause**: Incorrect or outdated Supabase CLI installation URL
 
-**Solution**: The workflow now uses the official installation method (`https://get.supabase.com`)
+**Solution**: The workflow now uses the official GitHub releases method for more reliable installation
 
 ### 2. Missing Repository Secrets
 **Symptoms**: Workflow fails with "SUPABASE_ACCESS_TOKEN secret not configured" or similar
