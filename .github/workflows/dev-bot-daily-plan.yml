@@ -1,4 +1,4 @@
-name: Dev-Bot: Daily Plan
+name: "Dev-Bot: Daily Plan"
 
 on:
   workflow_dispatch:
