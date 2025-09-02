@@ -36,6 +36,9 @@ jobs:
           mkdir -p security-scans/infrastructure-analysis
 
       - name: Install dependencies
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          ASTRO_TELEMETRY_DISABLED: 1
         run: npm install
 
       - name: Run ESLint Security Analysis

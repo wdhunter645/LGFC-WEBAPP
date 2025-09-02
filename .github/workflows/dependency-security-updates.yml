@@ -25,6 +25,9 @@ jobs:
         run: mkdir -p security-reports
 
       - name: Install dependencies for current audit
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          ASTRO_TELEMETRY_DISABLED: 1
         run: npm install
 
       - name: Run Security Audit - Current State
@@ -163,7 +166,7 @@ jobs:
           
           # Reinstall dependencies to ensure consistency
           rm -rf node_modules package-lock.json
-          npm install >> security-reports/security-audit.log 2>&1
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true ASTRO_TELEMETRY_DISABLED=1 npm install >> security-reports/security-audit.log 2>&1
           
           # Run tests to ensure nothing is broken
           if npm test >> security-reports/security-audit.log 2>&1; then

@@ -16,6 +16,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install deps
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          ASTRO_TELEMETRY_DISABLED: 1
         run: npm ci
       - name: Debug environment
         env:
