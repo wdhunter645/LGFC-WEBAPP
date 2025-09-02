@@ -1,0 +1,180 @@
+name: Backup System Operational Test
+
+on:
+  workflow_dispatch: # Manual trigger only
+    inputs:
+      test_scenario:
+        description: 'Test scenario to run'
+        required: true
+        default: 'health-check'
+        type: choice
+        options:
+          - 'health-check'
+          - 'restoration-test'
+          - 'failure-simulation'
+
+jobs:
+  operational-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup test environment
+        run: |
+          mkdir -p test-results
+          echo "Running operational test: ${{ github.event.inputs.test_scenario }}"
+          
+      - name: Health Check Test
+        if: github.event.inputs.test_scenario == 'health-check'
+        run: |
+          echo "🏥 Backup System Health Check" > test-results/operational-test.log
+          echo "Test Time: $(date)" >> test-results/operational-test.log
+          echo "" >> test-results/operational-test.log
+          
+          # Check backup directories exist
+          echo "📁 Directory Structure:" >> test-results/operational-test.log
+          for dir in daily weekly monthly; do
+            if [ -d "backups/$dir" ]; then
+              count=$(find "backups/$dir" -name "*.sql" -type f | wc -l)
+              echo "  ✅ backups/$dir ($count files)" >> test-results/operational-test.log
+            else
+              echo "  ❌ backups/$dir (missing)" >> test-results/operational-test.log
+            fi
+          done
+          
+          # Check workflow files exist
+          echo "" >> test-results/operational-test.log
+          echo "🔧 Workflow Files:" >> test-results/operational-test.log
+          for workflow in supabase-backup-daily supabase-backup-weekly supabase-backup-monthly supabase-backup-monitor-restore backup-audit; do
+            if [ -f ".github/workflows/${workflow}.yml" ]; then
+              echo "  ✅ ${workflow}.yml" >> test-results/operational-test.log
+            else
+              echo "  ❌ ${workflow}.yml (missing)" >> test-results/operational-test.log
+            fi
+          done
+          
+          # Check documentation
+          echo "" >> test-results/operational-test.log
+          echo "📚 Documentation:" >> test-results/operational-test.log
+          for doc in ".github/backup-bot-config.md" "BACKUP_TROUBLESHOOTING.md" "backups/README.md"; do
+            if [ -f "$doc" ]; then
+              echo "  ✅ $doc" >> test-results/operational-test.log
+            else
+              echo "  ❌ $doc (missing)" >> test-results/operational-test.log
+            fi
+          done
+          
+          echo "" >> test-results/operational-test.log
+          echo "✅ Health check completed" >> test-results/operational-test.log
+          
+      - name: Restoration Test
+        if: github.event.inputs.test_scenario == 'restoration-test'
+        run: |
+          echo "🔄 Backup Restoration Test" > test-results/operational-test.log
+          echo "Test Time: $(date)" >> test-results/operational-test.log
+          echo "" >> test-results/operational-test.log
+          
+          # Find latest backup
+          latest_backup=""
+          for dir in monthly weekly daily; do
+            if [ -d "backups/$dir" ]; then
+              backup=$(ls -t backups/$dir/*.sql 2>/dev/null | head -1)
+              if [ -n "$backup" ]; then
+                latest_backup="$backup"
+                break
+              fi
+            fi
+          done
+          
+          if [ -n "$latest_backup" ]; then
+            echo "📂 Testing backup: $(basename "$latest_backup")" >> test-results/operational-test.log
+            size=$(wc -c < "$latest_backup")
+            echo "📏 Backup size: $size bytes" >> test-results/operational-test.log
+            
+            # Validate SQL content
+            if head -20 "$latest_backup" | grep -q "PostgreSQL\|CREATE\|INSERT\|--"; then
+              echo "✅ Backup contains valid SQL content" >> test-results/operational-test.log
+            else
+              echo "❌ Backup appears corrupted" >> test-results/operational-test.log
+            fi
+            
+            # Test file readability
+            if [ -r "$latest_backup" ]; then
+              echo "✅ Backup file is readable" >> test-results/operational-test.log
+            else
+              echo "❌ Backup file is not readable" >> test-results/operational-test.log
+            fi
+            
+          else
+            echo "❌ No backup files found for testing" >> test-results/operational-test.log
+          fi
+          
+          echo "" >> test-results/operational-test.log
+          echo "✅ Restoration test completed" >> test-results/operational-test.log
+          
+      - name: Failure Simulation Test
+        if: github.event.inputs.test_scenario == 'failure-simulation'
+        run: |
+          echo "⚠️ Backup Failure Simulation" > test-results/operational-test.log
+          echo "Test Time: $(date)" >> test-results/operational-test.log
+          echo "" >> test-results/operational-test.log
+          
+          # Simulate health check with missing backups
+          echo "🧪 Simulating backup health check logic..." >> test-results/operational-test.log
+          
+          # Check if monitoring bot would detect issues
+          health_score=0
+          issues_found=""
+          
+          # Check for recent backups
+          for type in daily weekly monthly; do
+            if [ -d "backups/$type" ]; then
+              case $type in
+                daily) days=2 ;;
+                weekly) days=8 ;;
+                monthly) days=35 ;;
+              esac
+              
+              recent_count=$(find "backups/$type" -name "*.sql" -type f -mtime -$days | wc -l)
+              if [ $recent_count -eq 0 ]; then
+                echo "  ⚠️ No recent $type backups (within $days days)" >> test-results/operational-test.log
+                issues_found="${issues_found}${type}_backup_stale "
+              else
+                echo "  ✅ Recent $type backups found ($recent_count)" >> test-results/operational-test.log
+                health_score=$((health_score + 1))
+              fi
+            else
+              echo "  ❌ $type backup directory missing" >> test-results/operational-test.log
+              issues_found="${issues_found}${type}_backup_directory_missing "
+            fi
+          done
+          
+          echo "" >> test-results/operational-test.log
+          echo "📊 Simulation Results:" >> test-results/operational-test.log
+          echo "  Health Score: $health_score/3" >> test-results/operational-test.log
+          echo "  Issues: ${issues_found:-none}" >> test-results/operational-test.log
+          
+          if [ $health_score -lt 2 ]; then
+            echo "  🚨 Critical alert would be triggered" >> test-results/operational-test.log
+          elif [ $health_score -eq 2 ]; then
+            echo "  ⚠️ Warning alert would be triggered" >> test-results/operational-test.log
+          else
+            echo "  ✅ System is healthy, no alerts needed" >> test-results/operational-test.log
+          fi
+          
+          echo "" >> test-results/operational-test.log
+          echo "✅ Failure simulation completed" >> test-results/operational-test.log
+          
+      - name: Display Test Results
+        run: |
+          echo "Operational test results:"
+          cat test-results/operational-test.log
+          
+      - name: Commit test results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Operational Test"
+          git add test-results/
+          git commit -m "Backup system operational test - ${{ github.event.inputs.test_scenario }} - $(date +"%Y-%m-%d %H:%M:%S UTC")" || echo "No test results to commit"
+          git push

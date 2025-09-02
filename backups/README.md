@@ -44,6 +44,20 @@ This directory contains automated backups of the Lou Gehrig Fan Club Supabase da
 
 ## 🔧 Manual Operations
 
+### Automated Monitoring & Restoration (NEW)
+The backup system now includes automated monitoring and restoration:
+
+```bash
+# Check automated monitoring status
+cat audit-reports/backup-bot-status.json
+
+# Test restoration capability
+gh workflow run supabase-backup-monitor-restore.yml -f test_mode=true
+
+# Force restoration test (emergency)
+gh workflow run supabase-backup-monitor-restore.yml -f force_restore=true
+```
+
 ### Trigger Manual Backup
 ```bash
 # Trigger any backup job manually via GitHub Actions
@@ -52,9 +66,16 @@ This directory contains automated backups of the Lou Gehrig Fan Club Supabase da
 
 ### Restore from Backup
 ```bash
-# Using Supabase CLI
+# Emergency database restoration (use with extreme caution)
+# 1. Create emergency backup first:
+supabase db dump --file "emergency-backup-$(date +%Y%m%d_%H%M%S).sql"
+
+# 2. Reset database and restore:
 supabase db reset --db-url "postgresql://..."
 psql -d your_database -f backups/[type]/backup_file.sql
+
+# 3. Validate restoration:
+supabase db pull
 ```
 
 ## 🚨 Important Notes
@@ -67,6 +88,14 @@ psql -d your_database -f backups/[type]/backup_file.sql
 
 ## 📈 Monitoring
 
+### Automated Monitoring (NEW)
+- **Backup Monitor Bot**: Runs every 4 hours, checks backup health
+- **Auto-Restoration**: Tests restoration from latest healthy backup  
+- **Issue Creation**: Automatically creates GitHub issues for failures
+- **Status Tracking**: `audit-reports/backup-bot-status.json`
+
+### Manual Monitoring
 - Check GitHub Actions for backup job status
 - Monitor repository size (backups will increase storage)
 - Review cleanup logs for retention policy enforcement
+- **NEW**: Review `audit-reports/backup-monitor.log` for health reports

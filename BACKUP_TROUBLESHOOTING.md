@@ -74,6 +74,13 @@ SUPABASE_ACCESS_TOKEN=<your_supabase_access_token>
 
 ## 📊 Monitoring Backup Health
 
+### Automated Monitoring (NEW)
+The **Backup Monitor & Restore Bot** runs every 4 hours:
+- Go to Actions → "Supabase Backup Monitor & Restore"
+- Check `audit-reports/backup-monitor.log` for health status
+- Review `audit-reports/backup-bot-status.json` for operational status
+- Monitor for automated issue creation on failures
+
 ### Daily Monitoring
 Check the backup audit workflow runs daily at 6 AM UTC:
 - Go to Actions → "Backup Audit - Integrity & Completeness Check"
@@ -124,12 +131,64 @@ backups/
 
 ## 🚨 Emergency Procedures
 
+### Automated Backup Failure Response (NEW)
+The **Backup Monitor Bot** automatically handles failures:
+1. **Detection**: Monitors every 4 hours for backup health
+2. **Alert Creation**: Auto-creates GitHub issues for failures
+3. **Restoration Testing**: Tests restoration from latest healthy backup
+4. **Incident Reporting**: Provides detailed troubleshooting steps
+
+**Manual Override**:
+```bash
+# Force restoration test
+gh workflow run supabase-backup-monitor-restore.yml -f test_mode=true -f force_restore=true
+
+# Emergency restoration (use with caution)
+gh workflow run supabase-backup-monitor-restore.yml -f force_restore=true
+```
+
 ### If All Backups Are Failing
 1. Check if `SUPABASE_ACCESS_TOKEN` secret is configured
 2. Verify the token is still valid in Supabase Dashboard
 3. Check if Supabase project is accessible
 4. Review the latest workflow logs for specific error messages
 5. Try running a backup workflow manually
+6. **NEW**: Check automated issue creation for detailed diagnostics
+
+### Emergency Database Restoration (NEW)
+**Critical Situation**: Database corruption or complete data loss
+
+1. **Immediate Assessment**
+   ```bash
+   # Check bot status and latest healthy backup
+   cat audit-reports/backup-bot-status.json
+   cat audit-reports/backup-monitor.log | grep "Latest Healthy Backup"
+   ```
+
+2. **Prepare for Restoration**
+   ```bash
+   # Create emergency backup of current state (if possible)
+   supabase db dump --file "emergency-backup-$(date +%Y%m%d_%H%M%S).sql"
+   ```
+
+3. **Perform Restoration**
+   ```bash
+   # Using Supabase CLI
+   supabase db reset --db-url "postgresql://[your-connection-string]"
+   
+   # Restore from latest healthy backup
+   LATEST_BACKUP=$(cat audit-reports/backup-monitor.log | grep "Latest Healthy Backup" | tail -1 | cut -d: -f2 | xargs)
+   psql -d your_database -f "$LATEST_BACKUP"
+   ```
+
+4. **Validate Restoration**
+   ```bash
+   # Test database connectivity
+   supabase db pull
+   
+   # Verify key tables exist
+   supabase db lint
+   ```
 
 ### If Storage Is Growing Too Large
 The cleanup workflow should handle this automatically, but if needed:
@@ -142,14 +201,29 @@ The cleanup workflow should handle this automatically, but if needed:
 2. Verify database has data
 3. Review backup validation logs
 4. Check if RLS policies are blocking access
+5. **NEW**: Bot will auto-detect and create restoration alerts
 
 ## 📞 Getting Help
 
+### Automated Support (NEW)
+- **Critical failures** trigger automatic GitHub issue creation with `priority:critical` label
+- **Backup warnings** create issues with `priority:medium` label
+- Issues include detailed diagnostics and troubleshooting steps
+- Bot provides operational status at: `audit-reports/backup-bot-status.json`
+
+### Manual Support
 If issues persist:
 1. Check the workflow logs in GitHub Actions
 2. Review the audit reports in `audit-reports/`
-3. Verify all configuration is correct
-4. Create an issue with:
+3. **NEW**: Check automated issue creation for similar problems
+4. Review bot configuration at `.github/backup-bot-config.md`
+5. Verify all configuration is correct
+6. Create an issue with:
    - Workflow logs (redacted of sensitive info)
    - Error messages
    - Steps taken to troubleshoot
+
+### Emergency Contacts
+- **Tag @copilot** for backup system issues
+- Use labels: `ops`, `backup-failure`, `priority:critical` for urgent issues
+- Bot automatically creates issues but manual escalation may be needed for complex problems

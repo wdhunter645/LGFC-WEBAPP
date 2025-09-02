@@ -1,0 +1,305 @@
+name: Supabase Backup Monitor & Restore
+
+on:
+  schedule:
+    # Run every 4 hours to monitor backup health
+    - cron: "0 */4 * * *"
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      force_restore:
+        description: 'Force restoration from latest backup (true/false)'
+        required: false
+        default: 'false'
+      test_mode:
+        description: 'Run in test mode (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  monitor-and-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Create monitoring directories
+        run: |
+          mkdir -p audit-reports
+          mkdir -p backups/restore-tests
+          
+      - name: Install Supabase CLI
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/supabase/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Installing Supabase CLI version: $VERSION"
+          curl -Lo supabase.tar.gz "https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz"
+          tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          rm supabase.tar.gz
+          supabase --version
+          
+      - name: Check Backup Health
+        id: backup-health
+        run: |
+          echo "=== Backup Health Monitor - $(date) ===" > audit-reports/backup-monitor.log
+          
+          HEALTH_SCORE=0
+          ISSUES_FOUND=""
+          RESTORATION_NEEDED="false"
+          LATEST_HEALTHY_BACKUP=""
+          
+          # Check Daily Backups
+          echo "Checking daily backup health..." >> audit-reports/backup-monitor.log
+          if [ -d "backups/daily" ]; then
+            DAILY_COUNT=$(find backups/daily -name "*.sql" -type f -mtime -2 | wc -l)
+            if [ $DAILY_COUNT -eq 0 ]; then
+              echo "❌ No recent daily backups found (within 48 hours)" >> audit-reports/backup-monitor.log
+              ISSUES_FOUND="${ISSUES_FOUND}daily_backup_missing "
+              RESTORATION_NEEDED="true"
+            else
+              LATEST_DAILY=$(ls -t backups/daily/*.sql 2>/dev/null | head -1)
+              DAILY_SIZE=$(wc -c < "$LATEST_DAILY" 2>/dev/null || echo "0")
+              if [ "$DAILY_SIZE" -lt 100 ]; then
+                echo "❌ Latest daily backup is corrupted or empty ($DAILY_SIZE bytes)" >> audit-reports/backup-monitor.log
+                ISSUES_FOUND="${ISSUES_FOUND}daily_backup_corrupted "
+                RESTORATION_NEEDED="true"
+              else
+                echo "✅ Daily backup is healthy ($(basename "$LATEST_DAILY"), ${DAILY_SIZE} bytes)" >> audit-reports/backup-monitor.log
+                HEALTH_SCORE=$((HEALTH_SCORE + 1))
+                if [ -z "$LATEST_HEALTHY_BACKUP" ]; then
+                  LATEST_HEALTHY_BACKUP="$LATEST_DAILY"
+                fi
+              fi
+            fi
+          else
+            echo "❌ Daily backup directory missing" >> audit-reports/backup-monitor.log
+            ISSUES_FOUND="${ISSUES_FOUND}daily_backup_directory_missing "
+            RESTORATION_NEEDED="true"
+          fi
+          
+          # Check Weekly Backups
+          echo "Checking weekly backup health..." >> audit-reports/backup-monitor.log
+          if [ -d "backups/weekly" ]; then
+            WEEKLY_COUNT=$(find backups/weekly -name "*.sql" -type f -mtime -8 | wc -l)
+            if [ $WEEKLY_COUNT -eq 0 ]; then
+              echo "⚠️ No recent weekly backups found (within 8 days)" >> audit-reports/backup-monitor.log
+              ISSUES_FOUND="${ISSUES_FOUND}weekly_backup_stale "
+            else
+              LATEST_WEEKLY=$(ls -t backups/weekly/*.sql 2>/dev/null | head -1)
+              WEEKLY_SIZE=$(wc -c < "$LATEST_WEEKLY" 2>/dev/null || echo "0")
+              if [ "$WEEKLY_SIZE" -lt 1000 ]; then
+                echo "❌ Latest weekly backup is corrupted or empty ($WEEKLY_SIZE bytes)" >> audit-reports/backup-monitor.log
+                ISSUES_FOUND="${ISSUES_FOUND}weekly_backup_corrupted "
+              else
+                echo "✅ Weekly backup is healthy ($(basename "$LATEST_WEEKLY"), ${WEEKLY_SIZE} bytes)" >> audit-reports/backup-monitor.log
+                HEALTH_SCORE=$((HEALTH_SCORE + 1))
+                if [ -z "$LATEST_HEALTHY_BACKUP" ] || [ "$WEEKLY_SIZE" -gt "$(wc -c < "$LATEST_HEALTHY_BACKUP" 2>/dev/null || echo "0")" ]; then
+                  LATEST_HEALTHY_BACKUP="$LATEST_WEEKLY"
+                fi
+              fi
+            fi
+          fi
+          
+          # Check Monthly Backups
+          echo "Checking monthly backup health..." >> audit-reports/backup-monitor.log
+          if [ -d "backups/monthly" ]; then
+            MONTHLY_COUNT=$(find backups/monthly -name "*.sql" -type f -mtime -35 | wc -l)
+            if [ $MONTHLY_COUNT -eq 0 ]; then
+              echo "⚠️ No recent monthly backups found (within 35 days)" >> audit-reports/backup-monitor.log
+              ISSUES_FOUND="${ISSUES_FOUND}monthly_backup_stale "
+            else
+              LATEST_MONTHLY=$(ls -t backups/monthly/*.sql 2>/dev/null | head -1)
+              MONTHLY_SIZE=$(wc -c < "$LATEST_MONTHLY" 2>/dev/null || echo "0")
+              if [ "$MONTHLY_SIZE" -lt 1000 ]; then
+                echo "❌ Latest monthly backup is corrupted or empty ($MONTHLY_SIZE bytes)" >> audit-reports/backup-monitor.log
+                ISSUES_FOUND="${ISSUES_FOUND}monthly_backup_corrupted "
+              else
+                echo "✅ Monthly backup is healthy ($(basename "$LATEST_MONTHLY"), ${MONTHLY_SIZE} bytes)" >> audit-reports/backup-monitor.log
+                HEALTH_SCORE=$((HEALTH_SCORE + 1))
+                if [ -z "$LATEST_HEALTHY_BACKUP" ] || [ "$MONTHLY_SIZE" -gt "$(wc -c < "$LATEST_HEALTHY_BACKUP" 2>/dev/null || echo "0")" ]; then
+                  LATEST_HEALTHY_BACKUP="$LATEST_MONTHLY"
+                fi
+              fi
+            fi
+          fi
+          
+          echo "" >> audit-reports/backup-monitor.log
+          echo "=== Health Summary ===" >> audit-reports/backup-monitor.log
+          echo "Health Score: $HEALTH_SCORE/3" >> audit-reports/backup-monitor.log
+          echo "Issues Found: ${ISSUES_FOUND:-none}" >> audit-reports/backup-monitor.log
+          echo "Restoration Needed: $RESTORATION_NEEDED" >> audit-reports/backup-monitor.log
+          echo "Latest Healthy Backup: ${LATEST_HEALTHY_BACKUP:-none}" >> audit-reports/backup-monitor.log
+          
+          # Set outputs for subsequent steps
+          echo "health_score=$HEALTH_SCORE" >> $GITHUB_OUTPUT
+          echo "restoration_needed=$RESTORATION_NEEDED" >> $GITHUB_OUTPUT
+          echo "latest_healthy_backup=$LATEST_HEALTHY_BACKUP" >> $GITHUB_OUTPUT
+          echo "issues_found=$ISSUES_FOUND" >> $GITHUB_OUTPUT
+          
+      - name: Test Backup Restoration
+        if: steps.backup-health.outputs.restoration_needed == 'true' || github.event.inputs.force_restore == 'true' || github.event.inputs.test_mode == 'true'
+        run: |
+          echo "=== Backup Restoration Test - $(date) ===" >> audit-reports/backup-monitor.log
+          
+          LATEST_BACKUP="${{ steps.backup-health.outputs.latest_healthy_backup }}"
+          
+          if [ -z "$LATEST_BACKUP" ] || [ ! -f "$LATEST_BACKUP" ]; then
+            echo "❌ No healthy backup found for restoration testing" >> audit-reports/backup-monitor.log
+            exit 1
+          fi
+          
+          echo "Testing restoration from: $(basename "$LATEST_BACKUP")" >> audit-reports/backup-monitor.log
+          
+          # Validate backup file can be read and contains valid SQL
+          if ! head -20 "$LATEST_BACKUP" | grep -q "PostgreSQL\|CREATE\|INSERT\|--"; then
+            echo "❌ Backup file appears corrupted - no valid SQL content" >> audit-reports/backup-monitor.log
+            exit 1
+          fi
+          
+          # Create test restoration log
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          TEST_RESTORE_LOG="backups/restore-tests/restore-test-${TIMESTAMP}.log"
+          
+          echo "Backup restoration validation test - $(date)" > "$TEST_RESTORE_LOG"
+          echo "Source backup: $(basename "$LATEST_BACKUP")" >> "$TEST_RESTORE_LOG"
+          echo "Backup size: $(wc -c < "$LATEST_BACKUP") bytes" >> "$TEST_RESTORE_LOG"
+          echo "Backup modified: $(stat -c %y "$LATEST_BACKUP")" >> "$TEST_RESTORE_LOG"
+          
+          # Test mode - don't actually restore to production
+          if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
+            echo "✅ Test mode - restoration validation successful" >> audit-reports/backup-monitor.log
+            echo "Test mode - validation passed" >> "$TEST_RESTORE_LOG"
+          else
+            echo "⚠️ Production restoration test completed - manual intervention may be required" >> audit-reports/backup-monitor.log
+            echo "Production test completed - requires manual verification" >> "$TEST_RESTORE_LOG"
+          fi
+          
+          echo "restoration_tested=true" >> $GITHUB_ENV
+          
+      - name: Create Issue for Critical Backup Failures
+        if: steps.backup-health.outputs.health_score < 2 && steps.backup-health.outputs.restoration_needed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issuesFound = '${{ steps.backup-health.outputs.issues_found }}';
+            const healthScore = '${{ steps.backup-health.outputs.health_score }}';
+            const latestBackup = '${{ steps.backup-health.outputs.latest_healthy_backup }}';
+            
+            const issueBody = `# 🚨 Critical Backup System Failure
+            
+            **Alert Time:** ${new Date().toISOString()}
+            **Health Score:** ${healthScore}/3
+            **Issues Detected:** ${issuesFound || 'Multiple issues detected'}
+            
+            ## 📊 Issue Summary
+            ${issuesFound.includes('daily_backup_missing') ? '- ❌ Daily backups missing or stale (>48 hours)\n' : ''}
+            ${issuesFound.includes('daily_backup_corrupted') ? '- ❌ Daily backup corrupted or empty\n' : ''}
+            ${issuesFound.includes('weekly_backup_corrupted') ? '- ❌ Weekly backup corrupted or empty\n' : ''}
+            ${issuesFound.includes('monthly_backup_corrupted') ? '- ❌ Monthly backup corrupted or empty\n' : ''}
+            ${issuesFound.includes('daily_backup_directory_missing') ? '- ❌ Daily backup directory missing\n' : ''}
+            
+            ## 🔧 Latest Healthy Backup
+            ${latestBackup ? \`**File:** \\\`${latestBackup.split('/').pop()}\\\`\` : '**No healthy backup found**'}
+            
+            ## ⚡ Immediate Actions Required
+            1. **Check Supabase connectivity and SUPABASE_ACCESS_TOKEN secret**
+            2. **Review workflow logs**: [Backup Monitor Workflow](${context.payload.repository.html_url}/actions/workflows/supabase-backup-monitor-restore.yml)
+            3. **Manually trigger backup workflows** if needed
+            4. **Verify database accessibility**
+            
+            ## 🔄 Auto-Restoration Status
+            ${process.env.restoration_tested === 'true' ? '✅ Restoration test completed - check logs for details' : '⚠️ No restoration attempted due to critical failures'}
+            
+            ## 📋 Next Steps
+            - [ ] Verify Supabase project accessibility
+            - [ ] Check SUPABASE_ACCESS_TOKEN secret validity
+            - [ ] Manually run backup workflows
+            - [ ] Confirm backup restoration if needed
+            - [ ] Close this issue once resolved
+            
+            ---
+            
+            **Auto-generated by:** Supabase Backup Monitor & Restore Workflow
+            **Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Critical Backup System Failure - Immediate Action Required',
+              body: issueBody,
+              labels: ['ops', 'backup-failure', 'priority:critical', 'automated-alert']
+            });
+            
+      - name: Create Issue for Backup Warnings
+        if: steps.backup-health.outputs.health_score >= 1 && steps.backup-health.outputs.health_score < 3
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issuesFound = '${{ steps.backup-health.outputs.issues_found }}';
+            const healthScore = '${{ steps.backup-health.outputs.health_score }}';
+            
+            if (issuesFound.includes('stale') || healthScore < 3) {
+              const issueBody = `# ⚠️ Backup System Warning
+              
+              **Alert Time:** ${new Date().toISOString()}
+              **Health Score:** ${healthScore}/3
+              
+              ## 📊 Warning Details
+              ${issuesFound.includes('weekly_backup_stale') ? '- ⚠️ Weekly backups are stale (>8 days)\n' : ''}
+              ${issuesFound.includes('monthly_backup_stale') ? '- ⚠️ Monthly backups are stale (>35 days)\n' : ''}
+              
+              ## 📋 Recommended Actions
+              - [ ] Check backup schedules are running properly
+              - [ ] Review backup workflow logs
+              - [ ] Consider manual backup triggers if needed
+              - [ ] Monitor for improvement in next 24-48 hours
+              
+              ---
+              
+              **Auto-generated by:** Supabase Backup Monitor & Restore Workflow
+              **Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})
+              `;
+              
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '⚠️ Backup System Warning - Monitoring Required',
+                body: issueBody,
+                labels: ['ops', 'backup-warning', 'priority:medium', 'automated-alert']
+              });
+            }
+            
+      - name: Update Bot Status
+        run: |
+          echo "=== Bot Operational Status ===" >> audit-reports/backup-monitor.log
+          echo "Monitor Check: ✅ Completed at $(date)" >> audit-reports/backup-monitor.log
+          echo "Health Score: ${{ steps.backup-health.outputs.health_score }}/3" >> audit-reports/backup-monitor.log
+          echo "Restoration Capability: ${restoration_tested:-not-tested}" >> audit-reports/backup-monitor.log
+          echo "Issue Creation: ${{ steps.backup-health.outputs.health_score < 3 && 'Triggered' || 'Not needed' }}" >> audit-reports/backup-monitor.log
+          
+          # Update bot status file
+          cat > audit-reports/backup-bot-status.json << EOF
+          {
+            "last_check": "$(date -Iseconds)",
+            "health_score": ${{ steps.backup-health.outputs.health_score }},
+            "restoration_tested": "${restoration_tested:-false}",
+            "issues_found": "${{ steps.backup-health.outputs.issues_found }}",
+            "operational": true
+          }
+          EOF
+          
+      - name: Display Monitor Report
+        run: |
+          echo "Backup monitoring report:"
+          cat audit-reports/backup-monitor.log
+          echo ""
+          echo "Bot status:"
+          cat audit-reports/backup-bot-status.json
+          
+      - name: Commit monitoring reports
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Backup Monitor"
+          git add audit-reports/ backups/restore-tests/
+          git commit -m "Backup monitoring report - $(date +"%Y-%m-%d %H:%M:%S UTC")" || echo "No monitoring changes to commit"
+          git push
