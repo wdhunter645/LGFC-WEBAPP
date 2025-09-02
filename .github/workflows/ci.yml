@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     # Only trigger CI on relevant file changes
     paths-ignore:
       - '*.md'
       - 'docs/**'
       - 'README*'
-      - 'CHANGELOG*' 
+      - 'CHANGELOG*'
       - 'LICENSE*'
       - '.github/workflows/!(ci.yml)'
       - 'scripts/**'
@@ -17,10 +17,10 @@ on:
       - 'backups/**'
       - 'issues/**'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
       - '*.md'
-      - 'docs/**' 
+      - 'docs/**'
       - 'README*'
       - 'CHANGELOG*'
       - 'LICENSE*'
@@ -48,6 +48,7 @@ jobs:
         run: npm ci --cache /tmp/.npm --prefer-offline
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          ASTRO_TELEMETRY_DISABLED: 1
 
       - name: Lint (cached)
         run: npm run lint
@@ -55,3 +56,5 @@ jobs:
 
       - name: Build (optimized)
         run: npm run build
+        env:
+          ASTRO_TELEMETRY_DISABLED: 1

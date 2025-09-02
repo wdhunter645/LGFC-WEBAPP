@@ -1,4 +1,4 @@
-name: Dev-Ops: Create Issue
+name: "Dev-Ops: Create Issue"
 
 on:
   workflow_dispatch:
@@ -38,7 +38,8 @@ jobs:
             const assigneesInput = core.getInput('assignees') || '';
 
             const labels = labelsInput.split(',').map(s => s.trim()).filter(Boolean);
-            const assignees = assigneesInput.split(',').map(s => s.trim()).filter(Boolean);
+            const assignees = assigneesInput.split(',')
+              .map(s => s.trim()).filter(Boolean);
 
             const { owner, repo } = context.repo;
             const { data: issue } = await github.rest.issues.create({
@@ -57,4 +58,3 @@ jobs:
               .addHeading('Issue created')
               .addLink(issue.title, issue.html_url)
               .write();
-

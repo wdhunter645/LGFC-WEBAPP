@@ -5,6 +5,7 @@ import react from "@astrojs/react";
 
 export default defineConfig({
   site: "https://lougehrigfanclub.com",
+  telemetry: false,
   integrations: [tailwind(), sitemap(), react()],
   output: "static",
   build: {

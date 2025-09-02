@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "ASTRO_TELEMETRY_DISABLED=1 npm run build"
 
 # Build optimization: Only trigger builds for relevant file changes
 [build.ignore]
@@ -10,8 +10,10 @@
   NODE_VERSION = "20.19.4"
   # Enable Netlify build cache
   NETLIFY_CACHE_NODE_MODULES = "true"
-  # Skip Chromium download for faster builds  
+  # Skip Chromium download for faster builds
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+  # Disable Astro telemetry for firewall compatibility
+  ASTRO_TELEMETRY_DISABLED = "1"
 
 # Build plugins for optimization
 [[plugins]]

@@ -7,6 +7,7 @@ dist/
 .astro/
 node_modules/.cache/
 .npm/
+.eslintcache
 
 # Build optimization reports
 build-reports/
