@@ -165,6 +165,9 @@ jobs:
           rm -rf node_modules package-lock.json
           npm install >> security-reports/security-audit.log 2>&1
           
+          # Disable Astro telemetry
+          npx astro telemetry disable >> security-reports/security-audit.log 2>&1 || echo "Telemetry disable failed or not applicable" >> security-reports/security-audit.log
+          
           # Run tests to ensure nothing is broken
           if npm test >> security-reports/security-audit.log 2>&1; then
             echo "✅ All tests pass with updated dependencies" >> security-reports/security-audit.log
@@ -174,7 +177,7 @@ jobs:
           fi
           
           # Run build to ensure it still works
-          if npm run build >> security-reports/security-audit.log 2>&1; then
+          if ASTRO_TELEMETRY_DISABLED=1 npm run build >> security-reports/security-audit.log 2>&1; then
             echo "✅ Build successful with updated dependencies" >> security-reports/security-audit.log
           else
             echo "❌ Build failed with updated dependencies" >> security-reports/security-audit.log
