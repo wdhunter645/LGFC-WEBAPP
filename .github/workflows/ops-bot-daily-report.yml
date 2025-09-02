@@ -1,4 +1,4 @@
-name: Ops-Bot: Daily Report
+name: "Ops-Bot: Daily Report"
 
 on:
   workflow_dispatch:
