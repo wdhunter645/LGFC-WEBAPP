@@ -1,0 +1,211 @@
+name: Automated Issue Resolver
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to attempt automated resolution"
+        required: true
+        type: string
+      force_attempt:
+        description: "Force attempt resolution even if not auto-resolvable"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  auto-resolve:
+    runs-on: ubuntu-latest
+    # Only run for specific labels or manual dispatch
+    if: contains(github.event.issue.labels.*.name, 'workflow-failure') || contains(github.event.issue.labels.*.name, 'auto-fix') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Analyze issue for auto-resolution potential
+        id: analyze
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue?.number || parseInt('${{ inputs.issue_number }}');
+            
+            const { data: issue } = await github.rest.issues.get({
+              owner, repo, issue_number: issueNumber
+            });
+            
+            console.log(`Analyzing issue #${issueNumber}: ${issue.title}`);
+            
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            const labels = issue.labels.map(l => l.name);
+            
+            let resolutionType = null;
+            let confidence = 0;
+            let reason = '';
+            
+            // Analyze issue type and determine if auto-resolvable
+            if (labels.includes('workflow-failure')) {
+              if (title.includes('dependency') || body.includes('npm audit')) {
+                resolutionType = 'dependency_update';
+                confidence = 0.8;
+                reason = 'Dependency-related workflow failure detected';
+              } else if (title.includes('security-scans') || body.includes('security')) {
+                resolutionType = 'security_fix';
+                confidence = 0.7;
+                reason = 'Security workflow failure detected';
+              } else if (title.includes('build') || body.includes('build failed')) {
+                resolutionType = 'config_fix';
+                confidence = 0.6;
+                reason = 'Build failure detected';
+              } else if (title.includes('workflow') || body.includes('yaml')) {
+                resolutionType = 'workflow_fix';
+                confidence = 0.5;
+                reason = 'General workflow failure detected';
+              }
+            } else if (labels.includes('security')) {
+              resolutionType = 'security_fix';
+              confidence = 0.9;
+              reason = 'Security issue with high auto-fix potential';
+            } else if (labels.includes('auto-fix')) {
+              resolutionType = 'analyze';
+              confidence = 0.6;
+              reason = 'Marked for automated fixing';
+            }
+            
+            // Only proceed if confidence is reasonable or force is enabled
+            const shouldAttempt = confidence >= 0.5 || '${{ inputs.force_attempt }}' === 'true';
+            
+            core.setOutput('should_attempt', shouldAttempt);
+            core.setOutput('resolution_type', resolutionType || 'analyze');
+            core.setOutput('confidence', confidence);
+            core.setOutput('reason', reason);
+            core.setOutput('issue_number', issueNumber);
+            
+            console.log(`Analysis: type=${resolutionType}, confidence=${confidence}, attempt=${shouldAttempt}`);
+            console.log(`Reason: ${reason}`);
+
+      - name: Attempt automated resolution
+        if: steps.analyze.outputs.should_attempt == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            // Trigger ops-bot workflow for the specific issue
+            await github.rest.actions.createWorkflowDispatch({
+              owner, repo,
+              workflow_id: 'ops-bot.yml',
+              ref: 'main',
+              inputs: {
+                issue_number: '${{ steps.analyze.outputs.issue_number }}',
+                fix_type: '${{ steps.analyze.outputs.resolution_type }}',
+                create_pr: 'true'
+              }
+            });
+            
+            console.log('Triggered ops-bot workflow for automated resolution');
+
+      - name: Comment on issue with auto-resolution attempt
+        if: steps.analyze.outputs.should_attempt == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.analyze.outputs.issue_number }}');
+            const { owner, repo } = context.repo;
+            
+            const comment = '🤖 **Automated Resolution Attempt**\\n\\n' +
+              'I\\'ve analyzed this issue and believe it may be auto-resolvable.\\n\\n' +
+              '**Analysis Results:**\\n' +
+              '- **Resolution Type**: ${{ steps.analyze.outputs.resolution_type }}\\n' +
+              '- **Confidence Level**: ${{ steps.analyze.outputs.confidence }}\\n' +
+              '- **Reasoning**: ${{ steps.analyze.outputs.reason }}\\n\\n' +
+              '**Actions Taken:**\\n' +
+              '✅ Triggered ops-bot workflow for automated diagnostics and fix generation\\n' +
+              '✅ A draft PR will be created with proposed solutions (if fixes are found)\\n\\n' +
+              '**Next Steps:**\\n' +
+              '1. Wait for ops-bot workflow to complete (check Actions tab)\\n' +
+              '2. Review the generated draft PR for proposed fixes\\n' +
+              '3. Test the proposed solutions in a development environment\\n' +
+              '4. Approve and merge the PR if the fixes are appropriate\\n' +
+              '5. Verify that this issue is resolved after the fixes are applied\\n\\n' +
+              '**Manual Override:**\\n' +
+              'If the automated resolution doesn\\'t work, you can:\\n' +
+              '- Run ops-bot manually with different fix types\\n' +
+              '- Label this issue with `manual-fix-required` to skip future auto-attempts\\n' +
+              '- Provide specific guidance in comments for targeted troubleshooting\\n\\n' +
+              '---\\n' +
+              '*This comment was generated by the automated-issue-resolver workflow*';
+
+            await github.rest.issues.createComment({
+              owner, repo,
+              issue_number: issueNumber,
+              body: comment
+            });
+
+      - name: Add labels for tracking
+        if: steps.analyze.outputs.should_attempt == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.analyze.outputs.issue_number }}');
+            const { owner, repo } = context.repo;
+            
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: issueNumber,
+              labels: ['auto-resolution-attempted', 'ops-bot-assigned']
+            });
+
+      - name: Comment if not auto-resolvable
+        if: steps.analyze.outputs.should_attempt != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.analyze.outputs.issue_number }}');
+            const { owner, repo } = context.repo;
+            
+            const comment = '🤖 **Auto-Resolution Analysis**\\n\\n' +
+              'I\\'ve analyzed this issue but determined it\\'s not suitable for automated resolution.\\n\\n' +
+              '**Analysis Results:**\\n' +
+              '- **Confidence Level**: ${{ steps.analyze.outputs.confidence }}\\n' +
+              '- **Reasoning**: ${{ steps.analyze.outputs.reason || \\'Issue type not recognized for auto-resolution\\' }}\\n\\n' +
+              '**Recommended Actions:**\\n' +
+              '- Manual investigation required\\n' +
+              '- Consider adding `auto-fix` label if you believe this should be auto-resolvable\\n' +
+              '- Use workflow dispatch to force automated resolution attempt if desired\\n' +
+              '- Assign to appropriate team member for manual resolution\\n\\n' +
+              '**Available Tools:**\\n' +
+              'You can still use ops-bot for diagnostics by running the ops-bot workflow manually with this issue number.\\n\\n' +
+              '---\\n' +
+              '*This comment was generated by the automated-issue-resolver workflow*';
+
+            await github.rest.issues.createComment({
+              owner, repo,
+              issue_number: issueNumber,
+              body: comment
+            });
+
+      - name: Summary
+        run: |
+          echo "Auto-resolution analysis complete"
+          echo "Issue: #${{ steps.analyze.outputs.issue_number }}"
+          echo "Should attempt: ${{ steps.analyze.outputs.should_attempt }}"
+          echo "Resolution type: ${{ steps.analyze.outputs.resolution_type }}"
+          echo "Confidence: ${{ steps.analyze.outputs.confidence }}"
+          echo "Reason: ${{ steps.analyze.outputs.reason }}"
