@@ -5,13 +5,19 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:fast": "astro build --mode production",
     "preview": "astro preview",
     "test": "jest",
-    "lint": "eslint .",
-    "format": "prettier --write .",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --cache --fix",
+    "format": "prettier --write . --cache",
     "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
     "scrape:als": "node scripts/scrape_als_events.mjs",
-    "voting:automate": "node scripts/voting_automation.mjs"
+    "voting:automate": "node scripts/voting_automation.mjs",
+    "clean": "rimraf dist .astro node_modules/.cache",
+    "build:analyze": "astro build && npx vite-bundle-analyzer dist",
+    "build:monitor": "node scripts/monitor-build-usage.mjs",
+    "build:test-ignore": "./scripts/test-build-ignore-rules.sh"
   },
   "dependencies": {
     "@astrojs/react": "^4.3.0",
@@ -38,8 +44,11 @@
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "jest": "^30.1.1",
+    "netlify-plugin-cache": "^1.0.3",
+    "netlify-plugin-inline-critical-css": "^2.0.0",
     "postcss": "^8.4.21",
     "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.3.3",
     "vite": "^7.0.6"
   },

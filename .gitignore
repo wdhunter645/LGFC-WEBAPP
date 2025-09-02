@@ -1,13 +1,31 @@
 
 .env
 node_modules
+
+# Build artifacts and cache
+dist/
+.astro/
+node_modules/.cache/
+.npm/
+
+# Build optimization reports
+build-reports/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
 supabase_token.sh
 auth_debug.log
-
-# In .gitignore
-*.txt
-
-dist/
 
 # Netlify functions build artifacts
 netlify/functions-dist/

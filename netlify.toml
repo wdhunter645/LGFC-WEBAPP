@@ -2,8 +2,26 @@
   publish = "dist"
   command = "npm run build"
 
+# Build optimization: Only trigger builds for relevant file changes
+[build.ignore]
+  command = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!docs/' ':!README*' ':!CHANGELOG*' ':!LICENSE*' ':!.github/workflows/' ':!scripts/' ':!security-*' ':!audit-reports/' ':!backups/' ':!issues/'"
+
 [build.environment]
   NODE_VERSION = "20.19.4"
+  # Enable Netlify build cache
+  NETLIFY_CACHE_NODE_MODULES = "true"
+  # Skip Chromium download for faster builds  
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+
+# Build plugins for optimization
+[[plugins]]
+  package = "netlify-plugin-cache"
+  [plugins.inputs]
+    # Cache node_modules for faster builds
+    paths = ["node_modules", ".npm"]
+    
+[[plugins]]
+  package = "netlify-plugin-inline-critical-css"
 
 # Environment variables for Supabase integration
 [context.production.environment]
