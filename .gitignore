@@ -15,3 +15,6 @@ netlify/functions-dist/
 # Self-repair workflow generated files (logs and temporary reports)
 self-repair-*.log
 self-repair-summary-*.md
+
+# Health check reports (runtime artifacts)
+health-reports/

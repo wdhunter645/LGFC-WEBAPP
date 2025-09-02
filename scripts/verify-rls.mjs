@@ -7,12 +7,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+// Get environment variables
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
