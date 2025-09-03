@@ -9,7 +9,7 @@ export function createClient() {
   const supabasePublicKey = (typeof window !== 'undefined' && window.__SUPABASE_KEY) || 
                            import.meta.env.SUPABASE_PUBLIC_API_KEY || 
                            import.meta.env.VITE_SUPABASE_ANON_KEY ||
-                           'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs'
+                           'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX'
   
   return createBrowserClient(
     supabaseUrl,
@@ -31,7 +31,7 @@ export function createServerClient(cookies) {
   
   const supabasePublicKey = process.env.SUPABASE_PUBLIC_API_KEY || 
                            process.env.VITE_SUPABASE_ANON_KEY ||
-                           'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs'
+                           'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX'
   
   return createServerClient(
     supabaseUrl,
@@ -69,7 +69,7 @@ export function createJWTClient() {
   const supabasePublicKey = (typeof window !== 'undefined' && window.__SUPABASE_KEY) || 
                            import.meta.env.SUPABASE_PUBLIC_API_KEY || 
                            import.meta.env.VITE_SUPABASE_ANON_KEY ||
-                           'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs'
+                           'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX'
   
   return createBrowserClient(
     supabaseUrl,

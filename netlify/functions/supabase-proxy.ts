@@ -16,7 +16,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+    const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX';
 
     // Extract the path after /api/supabase/
     const path = event.path.replace('/api/supabase/', '');

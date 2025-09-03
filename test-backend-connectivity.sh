@@ -28,7 +28,7 @@ node -e "
 console.log('Testing Supabase connection...');
 import('@supabase/supabase-js').then(async ({createClient})=>{
   const supabaseUrl = process.env.SUPABASE_URL || 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-  const supabaseKey = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+  const supabaseKey = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX';
   
   console.log('URL:', supabaseUrl);
   console.log('Key:', supabaseKey.substring(0, 20) + '...');
