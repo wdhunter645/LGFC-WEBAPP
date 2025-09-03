@@ -9,6 +9,8 @@
     "test": "jest",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "validate:json": "node scripts/validate-json.mjs",
+    "precommit": "npm run validate:json && npm run lint",
     "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
     "scrape:als": "node scripts/scrape_als_events.mjs",
     "voting:automate": "node scripts/voting_automation.mjs"
