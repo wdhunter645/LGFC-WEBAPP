@@ -7,7 +7,7 @@ name: Git Repository Health Check
     - cron: '0 6 * * *'
   workflow_dispatch:  # Allow manual trigger
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - '.git/**'
       - 'scripts/git_*.sh'

@@ -220,7 +220,8 @@ jobs:
           if [ "$POST_REPAIR_MISSING_COUNT" -eq 0 ]; then
             echo "🟢 **Status: SUCCESS** - All critical files are present" >> self-repair-reports/comprehensive-report.md
           elif [ "$POST_REPAIR_MISSING_COUNT" -lt "$PRE_REPAIR_MISSING_COUNT" ]; then
-            echo "🟡 **Status: PARTIAL** - Some files restored, but issues remain" >> self-repair-reports/comprehensive-report.md
+            echo "🟡 **Status: PARTIAL** - Some files restored, but issues remain" \
+          >> self-repair-reports/comprehensive-report.md
           else
             echo "🔴 **Status: FAILED** - Repair did not resolve missing files" >> self-repair-reports/comprehensive-report.md
           fi

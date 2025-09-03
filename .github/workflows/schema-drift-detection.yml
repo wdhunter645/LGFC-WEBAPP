@@ -38,49 +38,50 @@ jobs:
       - name: Generate current schema snapshot
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          supabase db dump --schema-only --file "schema-monitoring/current_schema_${TIMESTAMP}.sql"
+          supabase \
+          db dump --schema-only --file "schema-monitor/current_schema_${TIMESTAMP}.sql"
 
       - name: Compare with latest baseline
         run: |
-          echo "=== Schema Drift Detection - $(date) ===" > schema-monitoring/drift-report.log
+          echo "=== Schema Drift Detection - $(date) ===" > schema-monitor/drift-report.log
 
           # Find the most recent baseline schema
           if [ -f "schema-monitoring/baseline_schema.sql" ]; then
-            echo "Found baseline schema for comparison" >> schema-monitoring/drift-report.log
+            echo "Found baseline schema for comparison" >> schema-monitor/drift-report.log
 
             # Get current schema file
-            current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+            current_schema=$(ls -t schema-monitor/current_schema_*.sql | head -1)
 
             # Compare schemas
-            if diff -q "schema-monitoring/baseline_schema.sql" "$current_schema" >/dev/null; then
-              echo "✅ No schema drift detected" >> schema-monitoring/drift-report.log
-              echo "Current schema matches baseline" >> schema-monitoring/drift-report.log
+            if diff -q "schema-monitor/baseline_schema.sql" "$current_schema" >/dev/null; then
+              echo "✅ No schema drift detected" >> schema-monitor/drift-report.log
+              echo "Current schema matches baseline" >> schema-monitor/drift-report.log
             else
-              echo "⚠️ SCHEMA DRIFT DETECTED!" >> schema-monitoring/drift-report.log
-              echo "Changes found between baseline and current schema:" >> schema-monitoring/drift-report.log
+              echo "⚠️ SCHEMA DRIFT DETECTED!" >> schema-monitor/drift-report.log
+              echo "Changes found between baseline and current schema:" >> schema-monitor/drift-report.log
               echo "" >> schema-monitoring/drift-report.log
 
               # Generate detailed diff
-              diff -u "schema-monitoring/baseline_schema.sql" "$current_schema" >> schema-monitoring/drift-report.log || true
+              diff -u "schema-monitor/baseline_schema.sql" "$current_schema" >> schema-monitor/drift-report.log || true
 
               # Count changes
-              added_lines=$(diff "schema-monitoring/baseline_schema.sql" "$current_schema" | grep "^>" | wc -l)
-              removed_lines=$(diff "schema-monitoring/baseline_schema.sql" "$current_schema" | grep "^<" | wc -l)
+              added_lines=$(diff "schema-monitor/baseline_schema.sql" "$current_schema" | grep "^>" | wc -l)
+              removed_lines=$(diff "schema-monitor/baseline_schema.sql" "$current_schema" | grep "^<" | wc -l)
 
               echo "" >> schema-monitoring/drift-report.log
               echo "Change summary:" >> schema-monitoring/drift-report.log
-              echo "- Lines added: $added_lines" >> schema-monitoring/drift-report.log
-              echo "- Lines removed: $removed_lines" >> schema-monitoring/drift-report.log
+              echo "- Lines added: $added_lines" >> schema-monitor/drift-report.log
+              echo "- Lines removed: $removed_lines" >> schema-monitor/drift-report.log
             fi
           else
-            echo "⚠️ No baseline schema found - creating initial baseline" >> schema-monitoring/drift-report.log
+            echo "⚠️ No baseline schema found - creating initial baseline" >> schema-monitor/drift-report.log
             cp "$current_schema" "schema-monitoring/baseline_schema.sql"
-            echo "Baseline schema created from current state" >> schema-monitoring/drift-report.log
+            echo "Baseline schema created from current state" >> schema-monitor/drift-report.log
           fi
 
       - name: Analyze schema for potential issues
         run: |
-          current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+          current_schema=$(ls -t schema-monitor/current_schema_*.sql | head -1)
           echo "" >> schema-monitoring/drift-report.log
           echo "=== Schema Analysis ===" >> schema-monitoring/drift-report.log
 
@@ -92,13 +93,13 @@ jobs:
           echo "Schema statistics:" >> schema-monitoring/drift-report.log
           echo "- Tables: $table_count" >> schema-monitoring/drift-report.log
           echo "- Indexes: $index_count" >> schema-monitoring/drift-report.log
-          echo "- Constraints: $constraint_count" >> schema-monitoring/drift-report.log
+          echo "- Constraints: $constraint_count" >> schema-monitor/drift-report.log
 
           # Check for potential security issues
           if grep -q "WITHOUT ROW LEVEL SECURITY" "$current_schema"; then
-            echo "⚠️ Found tables without Row Level Security" >> schema-monitoring/drift-report.log
+            echo "⚠️ Found tables without Row Level Security" >> schema-monitor/drift-report.log
           else
-            echo "✅ All tables appear to have Row Level Security" >> schema-monitoring/drift-report.log
+            echo "✅ All tables appear to have Row Level Security" >> schema-monitor/drift-report.log
           fi
 
           # Check for required tables based on application needs
@@ -108,9 +109,9 @@ jobs:
 
           for table in "${required_tables[@]}"; do
             if grep -q "CREATE TABLE.*$table" "$current_schema"; then
-              echo "✅ Table '$table' exists" >> schema-monitoring/drift-report.log
+              echo "✅ Table '$table' exists" >> schema-monitor/drift-report.log
             else
-              echo "❌ Required table '$table' missing!" >> schema-monitoring/drift-report.log
+              echo "❌ Required table '$table' missing!" >> schema-monitor/drift-report.log
             fi
           done
 
@@ -121,12 +122,12 @@ jobs:
 
       - name: Check for critical schema issues
         run: |
-          if grep -q "❌\|SCHEMA DRIFT DETECTED" schema-monitoring/drift-report.log; then
+          if grep -q "❌\|SCHEMA DRIFT DETECTED" schema-monitor/drift-report.log; then
             echo "::warning::Critical schema issues detected - review required"
           fi
 
           # Count missing required tables
-          missing_tables=$(grep -c "❌.*missing" schema-monitoring/drift-report.log || echo "0")
+          missing_tables=$(grep -c "❌.*missing" schema-monitor/drift-report.log || echo "0")
           if [ $missing_tables -gt 0 ]; then
             echo "::error::$missing_tables required tables are missing from schema"
             exit 1
@@ -138,7 +139,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const driftReport = fs.readFileSync('schema-monitoring/drift-report.log', 'utf8');
+            const driftReport = fs.readFileSync('schema-monitor/drift-report.log', 'utf8');
 
             // Check if there's schema drift or missing tables
             const hasDrift = driftReport.includes('SCHEMA DRIFT DETECTED');
@@ -169,7 +170,7 @@ jobs:
                 '',
                 '### Actions Required:',
                 '1. Review the schema changes in the drift report above',
-                '2. If changes are legitimate, run the workflow manually to update baseline: `gh workflow run schema-drift-detection.yml`',
+                '2. If changes are legitimate, run the workflow manually to update baseline: `gh workflow run schema-drift-detect.yml`',
                 '3. If changes are unexpected, investigate potential unauthorized modifications',
                 '',
                 'Assigned to ops-bot for triage'
@@ -188,9 +189,9 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           # Manual workflow runs can update the baseline
-          current_schema=$(ls -t schema-monitoring/current_schema_*.sql | head -1)
+          current_schema=$(ls -t schema-monitor/current_schema_*.sql | head -1)
           cp "$current_schema" "schema-monitoring/baseline_schema.sql"
-          echo "Baseline schema updated manually via workflow dispatch" >> schema-monitoring/drift-report.log
+          echo "Baseline schema updated manually via workflow dispatch" >> schema-monitor/drift-report.log
 
       - name: Cleanup old snapshots
         run: |
@@ -203,5 +204,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add schema-monitoring/
-          git commit -m "Schema drift detection - $(date +"%Y-%m-%d %H:%M")" || echo "No schema changes to commit"
+          git commit -m "Schema drift detect - $(date +"%Y-%m-%d %H:%M")" || echo "No schema changes to commit"
           git push
