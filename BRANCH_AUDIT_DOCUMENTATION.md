@@ -128,11 +128,7 @@ Branches that should be preserved:
 
 #### Perform Branch Audit
 ```bash
-<<<<<<< HEAD
 # Basic audit of all branches (firewall-safe)
-=======
-# Basic audit of all branches
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 node scripts/git_branch_audit.mjs audit
 
 # Or use the shell script (local branches only)
@@ -161,11 +157,7 @@ bash audit-reports/cleanup_branches_2025-08-30T18-08-09.sh
 
 #### Scheduled Automatic Audits
 The system automatically runs every Monday at 6 AM UTC:
-<<<<<<< HEAD
 - Performs comprehensive branch audit using firewall-safe methods
-=======
-- Performs comprehensive branch audit
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Creates cleanup script if needed
 - Reports findings via GitHub Issues
 - Automatically cleans up if more than 20 branches are marked for deletion
@@ -191,7 +183,6 @@ The system automatically runs every Monday at 6 AM UTC:
    Force cleanup: true
    ```
 
-<<<<<<< HEAD
 ## 🛠️ Troubleshooting
 
 ### Firewall and Connectivity Issues
@@ -276,24 +267,6 @@ git tag | grep branch-backup | tail -1
 # Reset to backup state
 git reset --hard <backup-tag>
 ```
-=======
-## Safety Features
-
-### Automatic Backups
-- **Git Tags**: Creates timestamped backup tags before any destructive operations
-- **Recovery**: Easy restoration using `git checkout <backup-tag>`
-- **Validation**: Verifies branch existence before attempting deletion
-
-### Confirmation Requirements
-- **Interactive Mode**: Requires confirmation for each branch deletion
-- **Force Flags**: Manual workflow execution requires explicit force flag
-- **Dry Run**: Shows what would be deleted without making changes
-
-### Error Handling
-- **Graceful Failures**: Continues operation even if individual branches fail to delete
-- **Detailed Logging**: Comprehensive logging of all operations and failures
-- **Status Reporting**: Clear success/failure reporting for each operation
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 
 ## Configuration
 
@@ -303,7 +276,6 @@ git reset --hard <backup-tag>
 export MAIN_BRANCH="main"                    # Default branch name
 export REMOTE_NAME="origin"                  # Remote repository name
 export AUDIT_DIR="./audit-reports"           # Audit report directory
-<<<<<<< HEAD
 export GITHUB_TOKEN="ghp_xxxx"               # GitHub token for API access (auto-set in Actions)
 ```
 
@@ -315,10 +287,6 @@ For proper operation in GitHub Actions, ensure:
 3. **Fetch Depth**: Use `fetch-depth: 0` for complete branch history
 4. **Token Access**: GITHUB_TOKEN should be available for GitHub CLI fallback
 
-=======
-```
-
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 ### Customizing Branch Rules
 
 Edit `scripts/git_branch_audit.mjs` to modify categorization rules:
@@ -373,7 +341,6 @@ The branch audit system integrates with the existing `git_health_check.sh`:
 - **Release Preparation**: Manual audits before major releases
 - **Onboarding**: New developers can run audits to understand branch structure
 
-<<<<<<< HEAD
 ## Safety Features
 
 ### 🛡️ **Protection Mechanisms**
@@ -422,44 +389,6 @@ async function fetchBranchesInActions() {
         repo: context.repo.repo
     });
 }
-=======
-## Troubleshooting
-
-### Common Issues
-
-#### "No branches found"
-- **Cause**: Limited access to remote branches or API issues
-- **Solution**: Ensure proper Git configuration and network access
-
-#### "Audit file not found"
-- **Cause**: Audit hasn't been run or file path incorrect
-- **Solution**: Run audit first, then specify correct file path
-
-#### "Failed to delete branch"
-- **Cause**: Branch protection rules or permissions
-- **Solution**: Check GitHub branch protection settings and user permissions
-
-### Recovery Procedures
-
-#### Restore Accidentally Deleted Branch
-```bash
-# Find backup tag
-git tag | grep branch-backup
-
-# Restore from backup
-git checkout <backup-tag>
-git checkout -b <original-branch-name>
-git push origin <original-branch-name>
-```
-
-#### Rollback Cleanup Operation
-```bash
-# If cleanup was recent, find the backup tag
-git tag | grep branch-backup | tail -1
-
-# Reset to backup state
-git reset --hard <backup-tag>
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 ```
 
 ## Monitoring and Alerts
@@ -507,7 +436,6 @@ if (branchName.includes('experimental')) {
 }
 ```
 
-<<<<<<< HEAD
 ### Firewall-Safe API Integration
 Extend the system while maintaining firewall compatibility:
 
@@ -516,15 +444,6 @@ Extend the system while maintaining firewall compatibility:
 async function fetchBranchesViaGHCLI() {
     const { stdout } = await execAsync('gh api repos/${{ github.repository }}/branches --paginate');
     return JSON.parse(stdout);
-=======
-### API Integration
-Extend the system to work with other Git hosting services:
-
-```javascript
-// Add support for GitLab, Bitbucket, etc.
-async function fetchBranchesFromGitLab() {
-    // Custom implementation for GitLab API
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 }
 ```
 
@@ -572,7 +491,6 @@ For issues, questions, or contributions:
 - **Documentation Updates**: Submit PRs for documentation improvements
 - **Community**: Discuss best practices in repository discussions
 
-<<<<<<< HEAD
 ### Specific Issue: Firewall Blocking GitHub API
 
 If you encounter firewall issues:
@@ -584,8 +502,4 @@ If you encounter firewall issues:
 
 **Last Updated**: 2025-08-31  
 **Version**: 1.1 (Firewall-Safe)  
-=======
-**Last Updated**: 2025-08-30  
-**Version**: 1.0  
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 **Maintainer**: GitHub Copilot

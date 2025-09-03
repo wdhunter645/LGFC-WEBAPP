@@ -46,7 +46,6 @@ This repository includes a comprehensive branch audit and cleanup system to main
 ### Quick Commands
 
 ```bash
-<<<<<<< HEAD
 # Perform branch audit (firewall-safe)
 node scripts/git_branch_audit.mjs audit
 
@@ -148,10 +147,7 @@ This project includes comprehensive workflow automation for monitoring, security
 - GitHub-first development model
 - Automated branch management and cleanup
 - Repository health monitoring
-<<<<<<< HEAD
 - **Workflow Ordering**: API-dependent steps before firewall activation
-=======
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Add UI testing / preview support (future)
 
 ---
@@ -163,12 +159,8 @@ Development is actively in progress. The focus for **August 2025** includes:
 - Frontend testing through GitHub
 - Schema stability and RLS security
 - Connecting user-generated content to display layers
-<<<<<<< HEAD
 - Repository maintenance automation (✅ **COMPLETED**)
 - Branch audit and cleanup system (✅ **FIREWALL-SAFE**)
-=======
-- Repository maintenance automation
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 - Preparing for public preview and community feedback
 
 ---
