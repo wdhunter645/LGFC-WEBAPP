@@ -1,0 +1,194 @@
+name: Workflow Failure Detector
+
+on:
+  schedule:
+    # Run every 15 minutes to catch failures quickly
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      lookback_hours:
+        description: "Hours to look back for failed workflows"
+        required: false
+        default: "4"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  detect-failures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect workflow failures and create issues
+        uses: actions/github-script@v7
+        env:
+          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '4' }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const lookbackHours = parseInt(process.env.LOOKBACK_HOURS || '4', 10);
+            const sinceIso = new Date(Date.now() - lookbackHours*60*60*1000).toISOString();
+
+            console.log(`Looking for failed workflows since ${sinceIso}`);
+
+            // Fetch recent workflow runs
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner, repo, per_page: 100
+            });
+
+            const recentRuns = runs.filter(r => new Date(r.created_at) >= new Date(sinceIso));
+            const failedRuns = recentRuns.filter(r => 
+              r.conclusion === 'failure' || 
+              r.conclusion === 'timed_out' || 
+              r.conclusion === 'cancelled'
+            );
+
+            console.log(`Found ${failedRuns.length} failed runs in the last ${lookbackHours} hours`);
+
+            for (const run of failedRuns) {
+              const workflowName = run.name || `Workflow ${run.workflow_id}`;
+              const issueTitle = `🚨 Workflow Failure: ${workflowName} #${run.run_number}`;
+              
+              // Check if an issue already exists for this specific failure
+              const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue in:title "${workflowName} #${run.run_number}" state:open`
+              });
+
+              if (existingIssues.total_count > 0) {
+                console.log(`Issue already exists for ${workflowName} #${run.run_number}`);
+                continue;
+              }
+
+              // Determine priority based on workflow type and failure pattern
+              let priority = 'medium';
+              let assignee = null;
+              let botResponsible = 'ops-bot';
+
+              if (workflowName.toLowerCase().includes('security')) {
+                priority = 'high';
+                assignee = 'security-agent';
+                botResponsible = 'security-agent';
+              } else if (workflowName.toLowerCase().includes('backup')) {
+                priority = 'high';
+              } else if (workflowName.toLowerCase().includes('deploy')) {
+                priority = 'high';
+              } else if (run.conclusion === 'timed_out') {
+                priority = 'high';
+              }
+
+              // Get workflow logs for troubleshooting context
+              let logsUrl = run.logs_url;
+              let troubleshootingHints = '';
+
+              // Add workflow-specific troubleshooting hints
+              if (workflowName.toLowerCase().includes('security-scans')) {
+                troubleshootingHints = '### Troubleshooting Hints for Security Scans:\\n' +
+                  '- Check if dependencies are up to date\\n' +
+                  '- Verify that security scan patterns are still valid\\n' +
+                  '- Look for new vulnerabilities that need addressing\\n' +
+                  '- Check if npm audit is failing due to new security issues\\n\\n' +
+                  '### Quick Actions:\\n' +
+                  '- Run `npm audit fix` to resolve dependency vulnerabilities\\n' +
+                  '- Review security scan logs in the `security-scans/` directory\\n' +
+                  '- Update security scanning patterns if needed\\n';
+              } else if (workflowName.toLowerCase().includes('backup')) {
+                troubleshootingHints = '### Troubleshooting Hints for Backup Workflows:\\n' +
+                  '- Check Supabase connection and credentials\\n' +
+                  '- Verify backup storage availability\\n' +
+                  '- Look for database connectivity issues\\n' +
+                  '- Check if backup cleanup policies are working correctly\\n\\n' +
+                  '### Quick Actions:\\n' +
+                  '- Verify `SUPABASE_ACCESS_TOKEN` secret is valid\\n' +
+                  '- Check database connectivity with test scripts\\n' +
+                  '- Review backup storage quotas and limits\\n';
+              } else if (workflowName.toLowerCase().includes('deploy')) {
+                troubleshootingHints = '### Troubleshooting Hints for Deployment:\\n' +
+                  '- Check build process for errors\\n' +
+                  '- Verify environment variables are set correctly\\n' +
+                  '- Look for dependency conflicts\\n' +
+                  '- Check if Netlify deployment limits are reached\\n\\n' +
+                  '### Quick Actions:\\n' +
+                  '- Run `npm run build` locally to reproduce build issues\\n' +
+                  '- Check Netlify build logs for specific error messages\\n' +
+                  '- Verify all required environment variables are present\\n';
+              }
+
+              const issueBody = 
+                '## 🚨 Automated Workflow Failure Alert\\n\\n' +
+                '**Workflow**: ' + workflowName + '\\n' +
+                '**Run Number**: #' + run.run_number + '\\n' +
+                '**Conclusion**: ' + run.conclusion + '\\n' +
+                '**Started**: ' + run.run_started_at + '\\n' +
+                '**Branch**: ' + run.head_branch + '\\n' +
+                '**Commit**: ' + run.head_sha.substring(0, 7) + '\\n\\n' +
+                '### 🔗 Links\\n' +
+                '- [View Workflow Run](' + run.html_url + ')\\n' +
+                '- [Download Logs](' + logsUrl + ')\\n\\n' +
+                '### 📊 Failure Details\\n' +
+                '- **Event**: ' + run.event + '\\n' +
+                '- **Actor**: ' + (run.actor?.login || 'Unknown') + '\\n' +
+                '- **Repository**: ' + owner + '/' + repo + '\\n\\n' +
+                troubleshootingHints + '\\n' +
+                '### 🤖 Bot Assignment\\n' +
+                '**Responsible Bot**: @copilot[' + botResponsible + ']\\n\\n' +
+                '**Next Actions Required:**\\n' +
+                '1. Review workflow logs for specific error messages\\n' +
+                '2. Identify root cause of the failure\\n' +
+                '3. Implement fix or create PR with solution\\n' +
+                '4. Test fix to ensure workflow passes\\n' +
+                '5. Update this issue with resolution details\\n\\n' +
+                '### 📋 Resolution Checklist\\n' +
+                '- [ ] Logs reviewed and error identified\\n' +
+                '- [ ] Root cause analysis completed\\n' +
+                '- [ ] Fix implemented and tested\\n' +
+                '- [ ] Workflow re-run successful\\n' +
+                '- [ ] Documentation updated if needed\\n' +
+                '- [ ] Prevention measures considered\\n\\n' +
+                '**Auto-generated by**: workflow-failure-detector.yml\\n' +
+                '**Detection Time**: ' + new Date().toISOString();
+
+              // Create the issue
+              const labels = ['workflow-failure', 'ops', `priority:${priority}`];
+              if (workflowName.toLowerCase().includes('security')) {
+                labels.push('security');
+              }
+              if (workflowName.toLowerCase().includes('backup')) {
+                labels.push('backup');
+              }
+
+              try {
+                const { data: issue } = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: issueTitle,
+                  body: issueBody,
+                  labels
+                });
+
+                console.log(`Created issue #${issue.number} for failed workflow: ${workflowName}`);
+                
+                // Add a comment with immediate troubleshooting steps
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `**Next:** @copilot[${botResponsible}] please investigate this workflow failure and propose a fix. Start by examining the workflow logs and identifying the specific error that caused the failure.`
+                });
+
+              } catch (error) {
+                console.error(`Failed to create issue for ${workflowName}: ${error.message}`);
+              }
+            }
+
+            // Summary report
+            if (failedRuns.length > 0) {
+              console.log(`✅ Processed ${failedRuns.length} workflow failures`);
+            } else {
+              console.log(`🟢 No workflow failures detected in the last ${lookbackHours} hours`);
+            }

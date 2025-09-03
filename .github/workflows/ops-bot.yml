@@ -2,28 +2,314 @@ name: ops-bot
 
 on:
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to investigate and potentially fix"
+        required: false
+        type: string
+      fix_type:
+        description: "Type of fix to attempt"
+        required: false
+        default: "analyze"
+        type: choice
+        options:
+          - analyze
+          - dependency_update
+          - workflow_fix
+          - config_fix
+          - security_fix
+      create_pr:
+        description: "Create a PR with the proposed fix"
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
   pull-requests: write
+  actions: read
+  issues: write
 
 jobs:
-  propose:
+  troubleshoot:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Make infra change as ops-bot
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.1'
+          cache: 'npm'
+
+      - name: Install dependencies for diagnostics
+        run: npm install
+
+      - name: Create ops-bot working directory
         run: |
-          mkdir -p infra
-          echo "ops-bot $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> infra/OPS_BOT_CHANGE.txt
-      - name: Create PR
+          mkdir -p ops-bot-work
+          mkdir -p ops-bot-work/diagnostics
+          mkdir -p ops-bot-work/fixes
+
+      - name: Analyze issue if provided
+        if: inputs.issue_number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = parseInt('${{ inputs.issue_number }}');
+            
+            if (issueNumber) {
+              const { data: issue } = await github.rest.issues.get({
+                owner, repo, issue_number: issueNumber
+              });
+              
+              console.log(`Analyzing issue #${issueNumber}: ${issue.title}`);
+              
+              // Write issue analysis to file
+              const fs = require('fs');
+              const analysis = {
+                number: issue.number,
+                title: issue.title,
+                body: issue.body,
+                labels: issue.labels.map(l => l.name),
+                state: issue.state,
+                created_at: issue.created_at,
+                updated_at: issue.updated_at
+              };
+              
+              fs.writeFileSync('ops-bot-work/issue-analysis.json', JSON.stringify(analysis, null, 2));
+              console.log('Issue analysis saved to ops-bot-work/issue-analysis.json');
+            }
+
+      - name: Run diagnostics based on fix type
+        run: |
+          echo "=== Ops-Bot Diagnostics - $(date) ===" > ops-bot-work/diagnostics/diagnostic-report.log
+          echo "Fix Type: ${{ inputs.fix_type }}" >> ops-bot-work/diagnostics/diagnostic-report.log
+          echo "" >> ops-bot-work/diagnostics/diagnostic-report.log
+
+          case "${{ inputs.fix_type }}" in
+            "dependency_update")
+              echo "Running dependency diagnostics..." >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check for outdated dependencies
+              echo "=== Outdated Dependencies ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              npm outdated >> ops-bot-work/diagnostics/diagnostic-report.log 2>&1 || echo "No outdated dependencies or npm outdated failed" >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check for security vulnerabilities
+              echo "=== Security Audit ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              npm audit --audit-level=moderate >> ops-bot-work/diagnostics/diagnostic-report.log 2>&1 || echo "Security issues found or audit failed" >> ops-bot-work/diagnostics/diagnostic-report.log
+              ;;
+              
+            "workflow_fix")
+              echo "Running workflow diagnostics..." >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check workflow syntax
+              echo "=== Workflow Files Check ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              find .github/workflows -name "*.yml" -o -name "*.yaml" | while read file; do
+                echo "Checking $file..." >> ops-bot-work/diagnostics/diagnostic-report.log
+                if command -v yamllint > /dev/null 2>&1; then
+                  yamllint "$file" >> ops-bot-work/diagnostics/diagnostic-report.log 2>&1 || echo "YAML issues found in $file" >> ops-bot-work/diagnostics/diagnostic-report.log
+                fi
+              done
+              ;;
+              
+            "config_fix")
+              echo "Running configuration diagnostics..." >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check important config files
+              echo "=== Configuration Files Check ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              CONFIG_FILES=("package.json" "netlify.toml" "astro.config.mjs" "tailwind.config.mjs")
+              for file in "${CONFIG_FILES[@]}"; do
+                if [ -f "$file" ]; then
+                  echo "✅ $file exists" >> ops-bot-work/diagnostics/diagnostic-report.log
+                  
+                  # Basic validation for JSON files
+                  if [[ "$file" == *.json ]]; then
+                    if jq empty "$file" 2>/dev/null; then
+                      echo "  ✅ Valid JSON syntax" >> ops-bot-work/diagnostics/diagnostic-report.log
+                    else
+                      echo "  ❌ Invalid JSON syntax" >> ops-bot-work/diagnostics/diagnostic-report.log
+                    fi
+                  fi
+                else
+                  echo "❌ $file missing" >> ops-bot-work/diagnostics/diagnostic-report.log
+                fi
+              done
+              ;;
+              
+            "security_fix")
+              echo "Running security diagnostics..." >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check for common security issues
+              echo "=== Security Configuration Check ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              if [ -f "netlify.toml" ]; then
+                echo "Checking security headers in netlify.toml..." >> ops-bot-work/diagnostics/diagnostic-report.log
+                if grep -q "X-Frame-Options" netlify.toml; then
+                  echo "  ✅ X-Frame-Options configured" >> ops-bot-work/diagnostics/diagnostic-report.log
+                else
+                  echo "  ❌ X-Frame-Options missing" >> ops-bot-work/diagnostics/diagnostic-report.log
+                fi
+              fi
+              ;;
+              
+            *)
+              echo "Running general system diagnostics..." >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # General health check
+              echo "=== System Health Check ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              echo "Node version: $(node --version)" >> ops-bot-work/diagnostics/diagnostic-report.log
+              echo "NPM version: $(npm --version)" >> ops-bot-work/diagnostics/diagnostic-report.log
+              
+              # Check if project builds
+              echo "=== Build Test ===" >> ops-bot-work/diagnostics/diagnostic-report.log
+              if npm run build > ops-bot-work/diagnostics/build-test.log 2>&1; then
+                echo "  ✅ Project builds successfully" >> ops-bot-work/diagnostics/diagnostic-report.log
+              else
+                echo "  ❌ Project build failed" >> ops-bot-work/diagnostics/diagnostic-report.log
+                echo "Build errors:" >> ops-bot-work/diagnostics/diagnostic-report.log
+                tail -20 ops-bot-work/diagnostics/build-test.log >> ops-bot-work/diagnostics/diagnostic-report.log
+              fi
+              ;;
+          esac
+
+      - name: Generate automated fixes
+        run: |
+          echo "=== Automated Fix Generation - $(date) ===" > ops-bot-work/fixes/proposed-fixes.md
+          echo "" >> ops-bot-work/fixes/proposed-fixes.md
+
+          case "${{ inputs.fix_type }}" in
+            "dependency_update")
+              echo "## 🔧 Dependency Update Fixes" >> ops-bot-work/fixes/proposed-fixes.md
+              echo "" >> ops-bot-work/fixes/proposed-fixes.md
+              
+              # Attempt npm audit fix
+              if npm audit fix --dry-run > ops-bot-work/fixes/npm-audit-fix-preview.log 2>&1; then
+                echo "### NPM Audit Fix Available" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "```bash" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "npm audit fix" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "```" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "" >> ops-bot-work/fixes/proposed-fixes.md
+                cat ops-bot-work/fixes/npm-audit-fix-preview.log >> ops-bot-work/fixes/proposed-fixes.md
+                
+                # Actually apply the fix
+                npm audit fix > ops-bot-work/fixes/npm-audit-fix-result.log 2>&1 || echo "npm audit fix failed" > ops-bot-work/fixes/npm-audit-fix-result.log
+              fi
+              ;;
+              
+            "config_fix")
+              echo "## ⚙️ Configuration Fixes" >> ops-bot-work/fixes/proposed-fixes.md
+              echo "" >> ops-bot-work/fixes/proposed-fixes.md
+              
+              # Check for missing package.json scripts
+              if ! grep -q "build" package.json; then
+                echo "### Missing Build Script" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "Add build script to package.json" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "" >> ops-bot-work/fixes/proposed-fixes.md
+              fi
+              ;;
+              
+            "security_fix")
+              echo "## 🔒 Security Fixes" >> ops-bot-work/fixes/proposed-fixes.md
+              echo "" >> ops-bot-work/fixes/proposed-fixes.md
+              
+              # Add security headers if missing from netlify.toml
+              if [ -f "netlify.toml" ] && ! grep -q "X-Frame-Options" netlify.toml; then
+                echo "### Add Security Headers to netlify.toml" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "```toml" >> ops-bot-work/fixes/proposed-fixes.md
+                echo "[[headers]]" >> ops-bot-work/fixes/proposed-fixes.md
+                echo '  for = "/*"' >> ops-bot-work/fixes/proposed-fixes.md
+                echo "  [headers.values]" >> ops-bot-work/fixes/proposed-fixes.md
+                echo '    X-Frame-Options = "DENY"' >> ops-bot-work/fixes/proposed-fixes.md
+                echo '    Content-Security-Policy = "default-src '\''self'\''"' >> ops-bot-work/fixes/proposed-fixes.md
+                echo '    Strict-Transport-Security = "max-age=31536000; includeSubDomains"' >> ops-bot-work/fixes/proposed-fixes.md
+                echo "```" >> ops-bot-work/fixes/proposed-fixes.log
+                echo "" >> ops-bot-work/fixes/proposed-fixes.md
+              fi
+              ;;
+          esac
+          
+          # Add timestamp and diagnostic reference
+          echo "" >> ops-bot-work/fixes/proposed-fixes.md
+          echo "---" >> ops-bot-work/fixes/proposed-fixes.md
+          echo "*Generated by ops-bot at $(date)*" >> ops-bot-work/fixes/proposed-fixes.md
+          echo "*See diagnostics in ops-bot-work/diagnostics/ for detailed analysis*" >> ops-bot-work/fixes/proposed-fixes.md
+
+      - name: Display diagnostic results
+        run: |
+          echo "=== Diagnostic Report ==="
+          cat ops-bot-work/diagnostics/diagnostic-report.log
+          echo ""
+          echo "=== Proposed Fixes ==="
+          cat ops-bot-work/fixes/proposed-fixes.md
+
+      - name: Create PR with fixes
+        if: inputs.create_pr == true
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ops-bot: infra example"
-          branch: "cursor/ops-bot/example-${{ github.run_id }}"
-          title: "ops-bot: infra example"
-          body: "Automated PR from ops-bot."
+          commit-message: "ops-bot: ${{ inputs.fix_type }} fixes and diagnostics"
+          branch: "cursor/ops-bot/${{ inputs.fix_type }}-${{ github.run_id }}"
+          title: "ops-bot: ${{ inputs.fix_type }} - Automated Fixes"
+          body: |
+            ## 🤖 Ops-Bot Automated Fix
+
+            **Fix Type**: ${{ inputs.fix_type }}
+            **Issue Reference**: ${{ inputs.issue_number && format('#{0}', inputs.issue_number) || 'N/A' }}
+            **Generated**: ${{ github.run_id }}
+
+            ### 🔍 Diagnostics
+            See `ops-bot-work/diagnostics/diagnostic-report.log` for detailed analysis.
+
+            ### 🔧 Proposed Changes
+            See `ops-bot-work/fixes/proposed-fixes.md` for detailed fix descriptions.
+
+            ### ✅ Validation Steps
+            - [ ] Review diagnostic findings
+            - [ ] Test proposed fixes
+            - [ ] Verify no regressions introduced
+            - [ ] Check that original issue is resolved
+
+            ### 🎯 Impact Assessment
+            **Risk Level**: Low (automated fixes with diagnostics)
+            **Rollback Plan**: Simply close this PR if fixes are not suitable
+            **Testing**: Please run full test suite after merge
+
+            **Next**: Review the diagnostic report and proposed fixes. If acceptable, approve and merge. If issues are found, provide feedback for ops-bot improvement.
+
+            ---
+            *This PR was automatically generated by ops-bot workflow*
           committer: "ops-bot <ops-bot@users.noreply.github.com>"
           author: "ops-bot <ops-bot@users.noreply.github.com>"
+          draft: true
+
+      - name: Comment on issue if provided
+        if: inputs.issue_number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ inputs.issue_number }}');
+            if (issueNumber) {
+              const { owner, repo } = context.repo;
+              
+              const comment = '**🤖 Ops-Bot Investigation Complete**\\n\\n' +
+                'I\\'ve analyzed this issue and run diagnostics for: **${{ inputs.fix_type }}**\\n\\n' +
+                '**Diagnostic Results**: See workflow run logs for detailed analysis\\n' +
+                '**Actions Taken**: ${{ inputs.create_pr == true && \\'Created draft PR with proposed fixes\\' || \\'Analysis only - no PR created\\' }}\\n\\n' +
+                '**Next Steps:**\\n' +
+                '1. Review the diagnostic findings in the workflow logs\\n' +
+                '2. ${{ inputs.create_pr == true && \\'Check the draft PR for proposed fixes\\' || \\'Manually implement recommended fixes\\' }}\\n' +
+                '3. Test the proposed solutions\\n' +
+                '4. Update this issue with resolution status\\n\\n' +
+                '**Workflow Run**: [View Details](${context.payload.workflow_run?.html_url || \\'Check Actions tab\\'})';
+
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: issueNumber,
+                body: comment
+              });
+            }
 

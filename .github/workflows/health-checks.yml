@@ -1,10 +1,11 @@
 name: Application Health Checks
 
-on:
-  schedule:
-    # Run every 2 hours during business hours (8 AM - 8 PM UTC)
-    - cron: "0 8,10,12,14,16,18,20 * * *"
-  workflow_dispatch: # Allow manual trigger
+# Temporarily disabled - production URL does not exist
+# on:
+#   schedule:
+#     # Run every 2 hours during business hours (8 AM - 8 PM UTC)
+#     - cron: "0 8,10,12,14,16,18,20 * * *"
+#   workflow_dispatch: # Allow manual trigger
 
 jobs:
   health-check:

@@ -1,0 +1,140 @@
+
+{
+  "added": 0,
+  "removed": 0,
+  "changed": 0,
+  "audited": 1423,
+  "funding": 431,
+  "audit": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {
+      "decap-cms-app": {
+        "name": "decap-cms-app",
+        "severity": "high",
+        "isDirect": true,
+        "via": [
+          "decap-cms-widget-markdown"
+        ],
+        "effects": [],
+        "range": "*",
+        "nodes": [
+          "node_modules/decap-cms-app"
+        ],
+        "fixAvailable": false
+      },
+      "decap-cms-widget-markdown": {
+        "name": "decap-cms-widget-markdown",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          "remark-parse",
+          "remark-rehype"
+        ],
+        "effects": [
+          "decap-cms-app"
+        ],
+        "range": "*",
+        "nodes": [
+          "node_modules/decap-cms-widget-markdown"
+        ],
+        "fixAvailable": false
+      },
+      "mdast-util-to-hast": {
+        "name": "mdast-util-to-hast",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          "trim"
+        ],
+        "effects": [
+          "remark-rehype"
+        ],
+        "range": "<=6.0.2",
+        "nodes": [
+          "node_modules/decap-cms-widget-markdown/node_modules/mdast-util-to-hast"
+        ],
+        "fixAvailable": true
+      },
+      "remark-parse": {
+        "name": "remark-parse",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          "trim"
+        ],
+        "effects": [
+          "decap-cms-widget-markdown"
+        ],
+        "range": "<=8.0.3",
+        "nodes": [
+          "node_modules/decap-cms-widget-markdown/node_modules/remark-parse"
+        ],
+        "fixAvailable": false
+      },
+      "remark-rehype": {
+        "name": "remark-rehype",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          "mdast-util-to-hast"
+        ],
+        "effects": [],
+        "range": "<=5.0.0",
+        "nodes": [
+          "node_modules/decap-cms-widget-markdown/node_modules/remark-rehype"
+        ],
+        "fixAvailable": true
+      },
+      "trim": {
+        "name": "trim",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1089867,
+            "name": "trim",
+            "dependency": "trim",
+            "title": "Regular Expression Denial of Service in trim",
+            "url": "https://github.com/advisories/GHSA-w5p7-h5w8-2hfq",
+            "severity": "high",
+            "cwe": [
+              "CWE-400"
+            ],
+            "cvss": {
+              "score": 7.5,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": "<0.0.3"
+          }
+        ],
+        "effects": [
+          "mdast-util-to-hast",
+          "remark-parse"
+        ],
+        "range": "<0.0.3",
+        "nodes": [
+          "node_modules/trim"
+        ],
+        "fixAvailable": false
+      }
+    },
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 6,
+        "critical": 0,
+        "total": 6
+      },
+      "dependencies": {
+        "prod": 999,
+        "dev": 404,
+        "optional": 19,
+        "peer": 3,
+        "peerOptional": 0,
+        "total": 1422
+      }
+    }
+  }
+}

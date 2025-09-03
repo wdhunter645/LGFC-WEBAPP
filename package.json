@@ -9,6 +9,8 @@
     "test": "jest",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "validate:json": "node scripts/validate-json.mjs",
+    "precommit": "npm run validate:json && npm run lint",
     "ingest": "node scripts/ingest.mjs 'Lou Gehrig' 50",
     "scrape:als": "node scripts/scrape_als_events.mjs",
     "voting:automate": "node scripts/voting_automation.mjs"
@@ -17,6 +19,7 @@
     "@astrojs/react": "^4.3.0",
     "@astrojs/sitemap": "^3.2.0",
     "@astrojs/tailwind": "^6.0.2",
+    "@netlify/functions": "^4.2.5",
     "@sentry/node": "^10.8.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.43.2",
@@ -42,6 +45,9 @@
     "prettier": "^3.3.3",
     "tailwindcss": "^3.3.3",
     "vite": "^7.0.6"
+  },
+  "overrides": {
+    "trim": "^1.0.1"
   },
   "description": "This repository contains the source code and schema for the **Lou Gehrig Fan Club** web application, currently under development using **GitHub** (frontend) and **Supabase** (backend).",
   "main": "index.js",
