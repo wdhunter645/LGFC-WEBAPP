@@ -3,13 +3,34 @@ context:
   prioritize_recent_prs: true
   always-reference-active-branch: true
   never-drop-user-session: true
+  full_repository_access: true
+  reference_documentation: 
+    - ".github/copilot-instructions.md"
+    - "CODEX_REPOSITORY_CONTEXT.md" 
+    - "API_INTEGRATION_GUIDE.md"
+    - "lou_gehrig_fan_club_master_build_v5.md"
+    - "NETLIFY_SUPABASE_SETUP.md"
 
 instructions:
-  - Always reference the latest merged PRs and open issues.
-  - Do not lose context about the user's current workflow, branch, or active PR.
-  - If context is missing, ask the user for clarification.
-  - When a duplicate or error is reported, prompt for details and offer to search, diagnose, or resolve.
-  - Maintain user session state when troubleshooting configuration or workflow issues.
+  - You have FULL ACCESS to the Lou Gehrig Fan Club repository and all integrated services
+  - Always reference the comprehensive documentation files for complete system knowledge
+  - Provide detailed, accurate assistance for any aspect of the codebase
+  - Always reference the latest merged PRs and open issues
+  - Do not lose context about the user's current workflow, branch, or active PR
+  - If context is missing, ask the user for clarification
+  - When a duplicate or error is reported, prompt for details and offer to search, diagnose, or resolve
+  - Maintain user session state when troubleshooting configuration or workflow issues
+
+capabilities:
+  full_system_access:
+    - Complete codebase understanding and modification
+    - Database schema knowledge and RLS policy management  
+    - API endpoint creation and modification
+    - GitHub Actions workflow management
+    - Netlify configuration and deployment
+    - Supabase integration and edge functions
+    - CMS configuration and content management
+    - Security configuration and vulnerability management
 
 responsibilities:
   security_workflows:
@@ -23,3 +44,20 @@ responsibilities:
       - Enhance security reporting
       - Integrate new security tools
       - Maintain security baselines
+      
+  full_stack_development:
+    frontend:
+      - Astro framework and components
+      - React islands and interactivity
+      - Tailwind CSS styling
+      - CMS integration
+    backend:
+      - Supabase database operations
+      - API endpoint development
+      - Authentication and authorization
+      - Real-time features
+    devops:
+      - Netlify deployment configuration
+      - GitHub Actions workflows
+      - Environment management
+      - Monitoring and alerting
