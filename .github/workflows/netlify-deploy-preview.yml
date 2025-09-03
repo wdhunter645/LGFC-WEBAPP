@@ -61,7 +61,8 @@ jobs:
           echo "Testing homepage accessibility: $PREVIEW_URL"
 
           # Check if homepage loads
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL" || echo "000")
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$PREVIEW_URL" || echo "000")
           echo "Homepage HTTP status: $HTTP_STATUS"
 
           if [ "$HTTP_STATUS" = "200" ]; then
@@ -90,7 +91,8 @@ jobs:
 
           for page in "${PAGES[@]}"; do
             echo "Testing: $PREVIEW_URL$page"
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL$page" || echo "000")
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$PREVIEW_URL$page" || echo "000")
 
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "✅ $page - OK ($HTTP_STATUS)"
@@ -124,9 +126,11 @@ jobs:
             echo "Testing: $PREVIEW_URL$func"
 
             # Test with OPTIONS request (CORS preflight)
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS "$PREVIEW_URL$func" || echo "000")
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              -X OPTIONS "$PREVIEW_URL$func" || echo "000")
 
-            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ] || [ "$HTTP_STATUS" = "405" ]; then
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ] || \
+               [ "$HTTP_STATUS" = "405" ]; then
               echo "✅ $func - Endpoint exists ($HTTP_STATUS)"
             else
               echo "⚠️ $func - May not be available ($HTTP_STATUS)"
@@ -149,10 +153,10 @@ jobs:
             echo "✅ Load time is acceptable (${LOAD_TIME_MS}ms < 3000ms)"
           elif [ "$LOAD_TIME_MS" -lt 5000 ]; then
             echo "⚠️ Load time is slow but acceptable (${LOAD_TIME_MS}ms)"
-            echo "::warning::Page load time is ${LOAD_TIME_MS}ms - consider optimization"
+            echo "::warning::Page load time is ${LOAD_TIME_MS}ms - optimize"
           else
             echo "❌ Load time is too slow (${LOAD_TIME_MS}ms > 5000ms)"
-            echo "::warning::Page load time is critically slow: ${LOAD_TIME_MS}ms"
+            echo "::warning::Page load time critically slow: ${LOAD_TIME_MS}ms"
           fi
 
       - name: Content Validation
@@ -178,7 +182,8 @@ jobs:
           fi
 
           # Check for JavaScript errors in HTML
-          if echo "$HOMEPAGE_CONTENT" | grep -q "error\|Error\|ERROR" | grep -v "stylesheet"; then
+          if echo "$HOMEPAGE_CONTENT" | grep -q "error\|Error\|ERROR" | \
+             grep -v "stylesheet"; then
             echo "⚠️ Potential JavaScript errors detected in HTML"
             echo "::warning::Check console for JavaScript errors"
           else
@@ -215,9 +220,10 @@ jobs:
 
       - name: Generate Health Check Summary
         run: |
-          echo "## 🚀 Netlify Deploy Preview Health Check Summary" > health-check-summary.md
+          echo "## 🚀 Netlify Deploy Preview" > health-check-summary.md
           echo "" >> health-check-summary.md
-          echo "**Preview URL:** ${{ steps.netlify-deploy.outputs.PREVIEW_URL }}" >> health-check-summary.md
+          PREVIEW_URL="${{ steps.netlify-deploy.outputs.PREVIEW_URL }}"
+          echo "**Preview URL:** $PREVIEW_URL" >> health-check-summary.md
           echo "**Deploy Time:** $(date)" >> health-check-summary.md
           echo "" >> health-check-summary.md
           echo "### Test Results" >> health-check-summary.md
@@ -226,7 +232,8 @@ jobs:
           echo "- ✅ Linting passed" >> health-check-summary.md
           echo "- ✅ Homepage accessibility verified" >> health-check-summary.md
           echo "" >> health-check-summary.md
-          echo "See workflow logs for detailed health check results." >> health-check-summary.md
+          echo "See workflow logs for detailed health check results." >> \
+            health-check-summary.md
 
       - name: Comment PR with results
         uses: actions/github-script@v7
@@ -246,12 +253,13 @@ jobs:
       - name: Save health check report
         run: |
           mkdir -p deploy-reports
-          cp health-check-summary.md "deploy-reports/health-check-$(date +%Y%m%d-%H%M%S).md"
+          cp health-check-summary.md \
+            "deploy-reports/health-check-$(date +%Y%m%d-%H%M%S).md"
 
       - name: Commit health check report
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add deploy-reports/
-          git commit -m "Health check report for PR preview - $(date +"%Y-%m-%d")" || echo "No health check changes to commit"
+          git commit -m "Health check - $(date +"%Y-%m-%d")" || echo "No change"
           git push

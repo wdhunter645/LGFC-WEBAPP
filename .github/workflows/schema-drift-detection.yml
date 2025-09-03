@@ -5,7 +5,7 @@ name: Schema Drift Detection
   schedule:
     # Run every 4 hours to catch schema changes quickly
     - cron: "0 */4 * * *"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:  # Allow manual trigger
 
 permissions:
   contents: write    # For committing schema monitoring data
