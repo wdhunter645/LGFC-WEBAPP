@@ -7,7 +7,7 @@ const supabaseUrl = import.meta.env.SUPABASE_URL ||
 
 const supabasePublicKey = import.meta.env.SUPABASE_PUBLIC_API_KEY || 
                          import.meta.env.VITE_SUPABASE_ANON_KEY ||
-                         'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs'
+                         'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX'
 
 if (!supabaseUrl || !supabasePublicKey) {
   console.warn('Supabase configuration missing, using fallback values')

@@ -13,7 +13,7 @@ This checklist provides step-by-step instructions for rotating the Supabase publ
 ## 🎯 Current Configuration Reference
 **Project Details:**
 - **Supabase URL**: `https://vkwhrbjkdznncjkzkiuo.supabase.co`
-- **Current Public Key**: `sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs`
+- **Current Public Key**: `sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX` *(Never commit real keys)*
 - **Project ID**: `vkwhrbjkdznncjkzkiuo`
 
 ---
@@ -30,7 +30,7 @@ This checklist provides step-by-step instructions for rotating the Supabase publ
 - [ ] **1.7** Generate a new anon/public key (if available) or note the current one for rotation
 - [ ] **1.8** **Securely document the new key** - you'll need it for all subsequent steps
 
-**⚠️ Security Note:** Never commit the raw key to version control. Store it securely for the update process.
+**⚠️ Security Note:** Never commit the raw key to version control. Store it securely for the update process. **ALL COMMITTED FILES SHOULD ONLY CONTAIN PLACEHOLDERS, NEVER REAL KEYS.**
 
 ---
 
@@ -50,6 +50,8 @@ This checklist provides step-by-step instructions for rotating the Supabase publ
 ```
 SUPABASE_PUBLIC_API_KEY=<NEW_KEY_HERE>
 ```
+
+**⚠️ CRITICAL SECURITY REMINDER:** Never commit actual API keys to version control. Always use environment variables and placeholders in committed files.
 
 ---
 
@@ -105,7 +107,7 @@ SUPABASE_PUBLIC_API_KEY=<NEW_KEY_HERE>
 VITE_SUPABASE_ANON_KEY=<NEW_KEY_HERE>
 ```
 
-- [ ] **4.4** **Do NOT commit** the actual keys - only update the example placeholders if needed
+- [ ] **4.4** **DO NOT commit** the actual keys - only update the example placeholders if needed. **NEVER COMMIT REAL API KEYS TO VERSION CONTROL.**
 - [ ] **4.5** Restart any local development servers:
 ```bash
 # Stop current dev server (Ctrl+C)
@@ -230,12 +232,13 @@ After successful rotation:
 
 ## 🔐 Security Best Practices
 
-- **Never commit API keys** to version control
+- **Never commit API keys** to version control - **USE PLACEHOLDERS IN ALL COMMITTED FILES**
 - **Use environment variables** for all key storage
 - **Rotate keys regularly** as part of security maintenance
 - **Test thoroughly** in staging before production rotation
 - **Document the process** for future rotations
 - **Monitor applications** after rotation for issues
+- **Verify all fallback values are placeholders** before committing code changes
 
 ---
 
@@ -251,5 +254,5 @@ If critical issues occur, immediately revert to the backup key in all environmen
 
 ---
 
-*Last Updated: January 2024 - Version 1.0*
-*Next Scheduled Review: July 2024*
+*Last Updated: September 2025 - Version 1.1*
+*Next Scheduled Review: January 2026*

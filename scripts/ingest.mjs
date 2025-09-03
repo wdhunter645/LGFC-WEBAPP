@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // JWT approach: Public API key for connection, JWT for authentication
 const SUPABASE_URL = 'https://vkwhrbjkdznncjkzkiuo.supabase.co';
-const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_Ujfa9-Q184jwhMXRHt3NFQ_DGXvAcDs';
+const SUPABASE_PUBLIC_API_KEY = process.env.SUPABASE_PUBLIC_API_KEY || 'sb_publishable_XXXXXXXXXXXXXXXXXXXXXXX';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_API_KEY, {
   auth: {
