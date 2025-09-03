@@ -1,0 +1,352 @@
+name: Aggregate Bot Issues
+
+on:
+  schedule:
+    # Run daily at 4 AM UTC to aggregate overnight bot findings
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: "Hours to look back for bot issues to aggregate"
+        required: false
+        default: "24"
+        type: string
+      force_create_tracker:
+        description: "Force create new Bot Issue Tracker even if one exists"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  aggregate-bot-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find or create Bot Issue Tracker
+        id: tracker
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const forceCreate = '${{ inputs.force_create_tracker }}' === 'true';
+            
+            let tracker = null;
+            
+            // Search for existing Bot Issue Tracker
+            if (!forceCreate) {
+              const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue label:bot-tracking state:open in:title "Bot Issue Tracker"`
+              });
+              
+              if (existingIssues.total_count > 0) {
+                tracker = existingIssues.items[0];
+                console.log(`Found existing Bot Issue Tracker: #${tracker.number}`);
+              }
+            }
+            
+            // Create new tracker if none exists or forced
+            if (!tracker) {
+              const trackerBody = 
+                '# 🤖 Bot Issue Tracker\\n\\n' +
+                'This issue aggregates all automated bot findings, alerts, and issues to provide a centralized view of system health and required actions.\\n\\n' +
+                '## 📊 Purpose\\n\\n' +
+                'Instead of creating individual issues for each bot finding, this tracker consolidates:\\n' +
+                '- **Security vulnerabilities** (CodeQL, dependency scans)\\n' +
+                '- **Workflow failures** (CI/CD, automation breakdowns)\\n' +
+                '- **Dependabot alerts** (outdated dependencies, security patches)\\n' +
+                '- **Configuration issues** (infrastructure, deployment problems)\\n' +
+                '- **Automated quality checks** (code analysis, performance alerts)\\n\\n' +
+                '## 🔍 How It Works\\n\\n' +
+                '1. **Daily Aggregation**: The `aggregate-bot-issues` workflow runs daily at 4 AM UTC\\n' +
+                '2. **Issue Detection**: Scans for bot-generated issues and alerts from the past 24 hours\\n' +
+                '3. **Consolidated Reporting**: Adds summary comments below instead of creating separate issues\\n' +
+                '4. **Action Required**: Review comments below for issues requiring attention\\n\\n' +
+                '## 📋 Status Legend\\n\\n' +
+                '- 🔴 **Critical**: Immediate action required (security vulnerabilities, system down)\\n' +
+                '- 🟠 **High**: Action needed within 24-48 hours (workflow failures, major issues)\\n' +
+                '- 🟡 **Medium**: Action needed within a week (dependency updates, minor issues)\\n' +
+                '- 🟢 **Low**: Informational or can be addressed in next maintenance cycle\\n\\n' +
+                '## 🚨 Current Status\\n\\n' +
+                'This tracker was created on ' + new Date().toISOString().split('T')[0] + '. Bot findings will appear as comments below.\\n\\n' +
+                '---\\n' +
+                '*This issue is automatically managed by the aggregate-bot-issues workflow*';
+
+              const { data: newTracker } = await github.rest.issues.create({
+                owner,
+                repo,
+                title: 'Bot Issue Tracker',
+                body: trackerBody,
+                labels: ['bot-tracking', 'automation', 'ops']
+              });
+              
+              tracker = newTracker;
+              console.log(`Created new Bot Issue Tracker: #${tracker.number}`);
+            }
+            
+            core.setOutput('tracker_number', tracker.number);
+            core.setOutput('tracker_url', tracker.html_url);
+            return tracker.number;
+
+      - name: Scan for bot-generated issues
+        id: scan
+        uses: actions/github-script@v7
+        env:
+          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '24' }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const lookbackHours = parseInt(process.env.LOOKBACK_HOURS || '24', 10);
+            const sinceIso = new Date(Date.now() - lookbackHours*60*60*1000).toISOString();
+            const trackerNumber = parseInt('${{ steps.tracker.outputs.tracker_number }}');
+            
+            console.log(`Scanning for bot issues since ${sinceIso}`);
+            
+            // Bot issue indicators - labels and patterns that identify automated issues
+            const botLabels = [
+              'workflow-failure',
+              'security', 
+              'vulnerability',
+              'dependency',
+              'automated',
+              'ops-bot-assigned',
+              'auto-resolution-attempted',
+              'backup',
+              'priority:critical',
+              'priority:high'
+            ];
+            
+            // Search for recent issues with bot-related labels
+            const botIssues = [];
+            
+            for (const label of botLabels) {
+              try {
+                const { data: issues } = await github.rest.search.issuesAndPullRequests({
+                  q: `repo:${owner}/${repo} is:issue label:"${label}" created:>${sinceIso.split('T')[0]} -label:bot-tracking`
+                });
+                
+                for (const issue of issues.items) {
+                  // Avoid duplicates and don't include the tracker itself
+                  if (!botIssues.find(i => i.number === issue.number) && issue.number !== trackerNumber) {
+                    botIssues.push({
+                      number: issue.number,
+                      title: issue.title,
+                      url: issue.html_url,
+                      created_at: issue.created_at,
+                      labels: issue.labels.map(l => l.name),
+                      body: (issue.body || '').substring(0, 500) + (issue.body?.length > 500 ? '...' : '')
+                    });
+                  }
+                }
+              } catch (error) {
+                console.log(`Error searching for label ${label}: ${error.message}`);
+              }
+            }
+            
+            // Also check for Dependabot PRs/issues (these might not have the above labels)
+            try {
+              const { data: dependabotIssues } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} author:app/dependabot created:>${sinceIso.split('T')[0]} state:open`
+              });
+              
+              for (const issue of dependabotIssues.items) {
+                if (!botIssues.find(i => i.number === issue.number)) {
+                  botIssues.push({
+                    number: issue.number,
+                    title: issue.title,
+                    url: issue.html_url,
+                    created_at: issue.created_at,
+                    labels: issue.labels.map(l => l.name),
+                    body: (issue.body || '').substring(0, 500) + (issue.body?.length > 500 ? '...' : ''),
+                    type: 'dependabot'
+                  });
+                }
+              }
+            } catch (error) {
+              console.log(`Error searching for Dependabot issues: ${error.message}`);
+            }
+            
+            // Sort by creation date (newest first)
+            botIssues.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            console.log(`Found ${botIssues.length} bot-generated issues in the last ${lookbackHours} hours`);
+            
+            core.setOutput('bot_issues_count', botIssues.length);
+            core.setOutput('bot_issues_json', JSON.stringify(botIssues));
+            
+            return botIssues;
+
+      - name: Add aggregated findings to tracker
+        if: steps.scan.outputs.bot_issues_count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const trackerNumber = parseInt('${{ steps.tracker.outputs.tracker_number }}');
+            const botIssues = JSON.parse('${{ steps.scan.outputs.bot_issues_json }}');
+            const lookbackHours = '${{ inputs.lookback_hours || "24" }}';
+            
+            if (botIssues.length === 0) {
+              console.log('No bot issues found to aggregate');
+              return;
+            }
+            
+            // Categorize issues by priority/type
+            const critical = botIssues.filter(i => 
+              i.labels.includes('priority:critical') || 
+              i.title.toLowerCase().includes('critical') ||
+              i.title.includes('🚨')
+            );
+            
+            const high = botIssues.filter(i => 
+              i.labels.includes('priority:high') || 
+              i.labels.includes('workflow-failure') ||
+              i.labels.includes('security') ||
+              i.title.toLowerCase().includes('failure') ||
+              i.title.includes('⚠️')
+            );
+            
+            const dependencies = botIssues.filter(i => 
+              i.type === 'dependabot' ||
+              i.labels.includes('dependency') ||
+              i.labels.includes('vulnerability')
+            );
+            
+            const other = botIssues.filter(i => 
+              !critical.includes(i) && !high.includes(i) && !dependencies.includes(i)
+            );
+            
+            // Generate summary comment
+            let comment = `## 🤖 Bot Findings Summary - ${new Date().toISOString().split('T')[0]}\\n\\n`;
+            comment += `**Scan Period**: Last ${lookbackHours} hours\\n`;
+            comment += `**Total Issues Found**: ${botIssues.length}\\n\\n`;
+            
+            if (critical.length > 0) {
+              comment += `### 🔴 Critical Issues (${critical.length})\\n\\n`;
+              critical.forEach(issue => {
+                comment += `- **[#${issue.number}](${issue.url})** ${issue.title}\\n`;
+                comment += `  *Created: ${new Date(issue.created_at).toLocaleString()}*\\n`;
+                comment += `  *Labels: ${issue.labels.join(', ')}*\\n\\n`;
+              });
+            }
+            
+            if (high.length > 0) {
+              comment += `### 🟠 High Priority Issues (${high.length})\\n\\n`;
+              high.forEach(issue => {
+                comment += `- **[#${issue.number}](${issue.url})** ${issue.title}\\n`;
+                comment += `  *Created: ${new Date(issue.created_at).toLocaleString()}*\\n`;
+                comment += `  *Labels: ${issue.labels.join(', ')}*\\n\\n`;
+              });
+            }
+            
+            if (dependencies.length > 0) {
+              comment += `### 📦 Dependency Issues (${dependencies.length})\\n\\n`;
+              dependencies.forEach(issue => {
+                comment += `- **[#${issue.number}](${issue.url})** ${issue.title}\\n`;
+                comment += `  *Created: ${new Date(issue.created_at).toLocaleString()}*\\n`;
+                if (issue.type === 'dependabot') comment += `  *Type: Dependabot*\\n`;
+                comment += `\\n`;
+              });
+            }
+            
+            if (other.length > 0) {
+              comment += `### 🟡 Other Bot Issues (${other.length})\\n\\n`;
+              other.forEach(issue => {
+                comment += `- **[#${issue.number}](${issue.url})** ${issue.title}\\n`;
+                comment += `  *Created: ${new Date(issue.created_at).toLocaleString()}*\\n`;
+                comment += `  *Labels: ${issue.labels.join(', ')}*\\n\\n`;
+              });
+            }
+            
+            comment += `\\n### 📊 Action Items\\n\\n`;
+            
+            if (critical.length > 0) {
+              comment += `- 🔴 **URGENT**: Review and address ${critical.length} critical issue(s) immediately\\n`;
+            }
+            if (high.length > 0) {
+              comment += `- 🟠 **HIGH**: Address ${high.length} high priority issue(s) within 24-48 hours\\n`;
+            }
+            if (dependencies.length > 0) {
+              comment += `- 📦 **DEPENDENCIES**: Review and update ${dependencies.length} dependency-related issue(s)\\n`;
+            }
+            if (other.length > 0) {
+              comment += `- 🟡 **MAINTENANCE**: Address ${other.length} other automated finding(s) during next maintenance window\\n`;
+            }
+            
+            comment += `\\n---\\n`;
+            comment += `*Aggregated by bot-issue-tracker at ${new Date().toISOString()}*\\n`;
+            comment += `*Next scan: Tomorrow at 4 AM UTC*`;
+            
+            // Post comment to tracker issue
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: trackerNumber,
+              body: comment
+            });
+            
+            console.log(`Added aggregated findings comment to tracker #${trackerNumber}`);
+            
+            // Optionally label the individual bot issues as "tracked"
+            for (const issue of botIssues) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  labels: ['bot-tracked']
+                });
+              } catch (error) {
+                console.log(`Could not add bot-tracked label to #${issue.number}: ${error.message}`);
+              }
+            }
+
+      - name: No new bot issues found
+        if: steps.scan.outputs.bot_issues_count == '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const trackerNumber = parseInt('${{ steps.tracker.outputs.tracker_number }}');
+            const lookbackHours = '${{ inputs.lookback_hours || "24" }}';
+            
+            const comment = 
+              `## ✅ Bot Status Check - ${new Date().toISOString().split('T')[0]}\\n\\n` +
+              `**Scan Period**: Last ${lookbackHours} hours\\n` +
+              `**Status**: 🟢 No new bot issues detected\\n\\n` +
+              `All automated systems appear to be functioning normally. No critical alerts, workflow failures, or security issues found.\\n\\n` +
+              `---\\n` +
+              `*Status check completed at ${new Date().toISOString()}*\\n` +
+              `*Next scan: Tomorrow at 4 AM UTC*`;
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: trackerNumber,
+              body: comment
+            });
+            
+            console.log('Posted "all clear" status to Bot Issue Tracker');
+
+      - name: Summary
+        run: |
+          echo "Bot Issue Aggregation Summary:"
+          echo "=============================="
+          echo "Tracker Issue: #${{ steps.tracker.outputs.tracker_number }}"
+          echo "Tracker URL: ${{ steps.tracker.outputs.tracker_url }}"
+          echo "Bot Issues Found: ${{ steps.scan.outputs.bot_issues_count }}"
+          echo "Lookback Period: ${{ inputs.lookback_hours || '24' }} hours"
+          echo "Scan Completed: $(date)"
+          echo ""
+          if [ "${{ steps.scan.outputs.bot_issues_count }}" != "0" ]; then
+            echo "✅ Aggregated ${{ steps.scan.outputs.bot_issues_count }} bot issues into tracker"
+            echo "🔗 Review details at: ${{ steps.tracker.outputs.tracker_url }}"
+          else
+            echo "✅ No new bot issues found - all systems healthy"
+          fi
