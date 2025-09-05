@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Git Branch Audit and Cleanup Script
-<<<<<<< HEAD
 # Comprehensive branch analysis and cleanup system (Firewall-Safe)
 # Author: GitHub Copilot
 # Created: 2025-08-30
@@ -141,15 +140,9 @@ get_branch_info() {
         category="DELETE"
         reason="Temporary Copilot fix branch with UUID"
     elif [[ "$branch" =~ ^cursor/ ]]; then
-<<<<<<< HEAD
         if [[ $branch_age -gt 30 ]] || [[ "$branch_age" == "unknown" ]]; then
             category="DELETE"
             reason="Cursor branch${branch_age:+ (${branch_age} days old)}"
-=======
-        if [[ $branch_age -gt 30 ]]; then
-            category="DELETE"
-            reason="Old Cursor branch (${branch_age} days old)"
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
         else
             category="REVIEW"
             reason="Recent Cursor branch"
@@ -176,15 +169,12 @@ get_branch_info() {
             category="DELETE"
             reason="Numbered Copilot fix, likely merged"
         fi
-<<<<<<< HEAD
     elif [[ "$branch" =~ ^combined-pr- ]]; then
         category="DELETE"
         reason="Combined PR branch, likely already merged"
     elif [[ "$branch" =~ import ]]; then
         category="DELETE"
         reason="Import branch, likely temporary"
-=======
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
     elif [[ $branch_age -gt 60 && $ahead_count -eq 0 ]]; then
         category="DELETE"
         reason="Old branch with no unique commits (${branch_age} days old)"
@@ -207,7 +197,6 @@ get_branch_info() {
     echo "---"
 }
 
-<<<<<<< HEAD
 # Audit all branches using firewall-safe methods
 audit_all_branches() {
     log_info "Starting comprehensive branch audit (firewall-safe)..."
@@ -217,17 +206,6 @@ audit_all_branches() {
     if ! git fetch --all --prune >/dev/null 2>&1; then
         log_warning "Failed to fetch from remotes, continuing with local data"
     fi
-=======
-# Audit all branches
-audit_all_branches() {
-    log_info "Starting comprehensive branch audit..."
-    
-    # Fetch latest information
-    log_info "Fetching latest branch information..."
-    git fetch --all --prune >/dev/null 2>&1 || {
-        log_warning "Failed to fetch from remotes, continuing with local data"
-    }
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
     
     local audit_file="$AUDIT_DIR/branch_audit_$(date +%Y%m%d_%H%M%S).txt"
     
@@ -237,20 +215,13 @@ audit_all_branches() {
         echo "Repository: $(pwd)"
         echo "Main Branch: $MAIN_BRANCH"
         echo "Remote: $REMOTE_NAME"
-<<<<<<< HEAD
         echo "Method: Firewall-safe git commands"
-=======
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
         echo "==============================="
         echo
     } > "$audit_file"
     
     # Audit remote branches (primary source of truth)
-<<<<<<< HEAD
     log_audit "Auditing remote branches using git commands..."
-=======
-    log_audit "Auditing remote branches..."
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
     local remote_branches
     remote_branches=$(git branch -r --no-merged "$REMOTE_NAME/$MAIN_BRANCH" 2>/dev/null | grep -v " -> " | sed 's/^[[:space:]]*//' || true)
     
@@ -361,15 +332,9 @@ generate_cleanup_script() {
         echo "YELLOW='\\033[1;33m'"
         echo "NC='\\033[0m'"
         echo
-<<<<<<< HEAD
         echo "log_info() { echo -e \"\${GREEN}[INFO]\${NC} \$1\"; }"
         echo "log_warning() { echo -e \"\${YELLOW}[WARNING]\${NC} \$1\"; }"
         echo "log_error() { echo -e \"\${RED}[ERROR]\${NC} \$1\"; }"
-=======
-        echo "log_info() { echo -e \"\\${GREEN}[INFO]\\${NC} \$1\"; }"
-        echo "log_warning() { echo -e \"\\${YELLOW}[WARNING]\\${NC} \$1\"; }"
-        echo "log_error() { echo -e \"\\${RED}[ERROR]\\${NC} \$1\"; }"
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
         echo
         echo "echo \"Branch Cleanup Script\""
         echo "echo \"Generated: $(date)\""
@@ -525,11 +490,7 @@ interactive_cleanup() {
 # Show help
 show_help() {
     cat << EOF
-<<<<<<< HEAD
 Git Branch Audit and Cleanup Tool (Firewall-Safe)
-=======
-Git Branch Audit and Cleanup Tool
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 
 USAGE:
     $0 [action] [options]
@@ -545,11 +506,7 @@ OPTIONS:
     -d, --dir      - Specify audit directory (default: ./audit-reports)
 
 EXAMPLES:
-<<<<<<< HEAD
     # Perform branch audit (firewall-safe)
-=======
-    # Perform branch audit
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
     $0 audit
     
     # Generate cleanup script
@@ -574,15 +531,12 @@ SAFETY FEATURES:
     - Remote and local branch synchronization
     - Failed operation logging
 
-<<<<<<< HEAD
 FIREWALL COMPATIBILITY:
     - Uses git commands exclusively (no API calls)
     - Works in restricted network environments
     - Compatible with GitHub Actions firewalls
     - No external dependencies beyond git
 
-=======
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
 EOF
 }
 
@@ -618,11 +572,7 @@ main() {
         esac
     done
     
-<<<<<<< HEAD
     log_info "Git Branch Audit Tool (Firewall-Safe)"
-=======
-    log_info "Git Branch Audit Tool"
->>>>>>> 87f2978d7dc1cf40bc71ad595e7897013cfae089
     log_info "Action: $action"
     
     check_git_repo
