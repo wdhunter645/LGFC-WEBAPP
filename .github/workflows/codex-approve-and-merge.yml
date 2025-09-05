@@ -1,0 +1,26 @@
+# .github/workflows/codex-approve-and-merge.yml
+name: codex-approve-and-merge
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  approve_and_merge:
+    if: github.event.label.name == 'codex-approve'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve PR
+        run: gh pr review "$NUMBER" --approve
+        env:
+          GH_TOKEN: ${{ github.token }}               # or: ${{ secrets.CODEX_PAT }}
+          NUMBER: ${{ github.event.pull_request.number }}
+
+      - name: Enable auto-merge (squash, delete branch)
+        run: gh pr merge "$NUMBER" --squash --auto --delete-branch
+        env:
+          GH_TOKEN: ${{ github.token }}               # or: ${{ secrets.CODEX_PAT }}
+          NUMBER: ${{ github.event.pull_request.number }}
