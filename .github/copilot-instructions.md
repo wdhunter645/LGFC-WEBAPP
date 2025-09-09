@@ -104,7 +104,7 @@ npm test           # Run tests
 
 ### **Development & Deployment**
 - `ci.yml` - Build and test automation
-- `netlify-deploy-preview.yml` - Preview deployment automation
+- `netlify-deploy-preview.yml` - Manual deployment automation
 - `search-cron.yml` - Content ingestion automation
 - `voting-automation.yml` - User engagement automation
 
