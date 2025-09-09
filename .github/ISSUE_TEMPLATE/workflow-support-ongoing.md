@@ -30,7 +30,7 @@ Maintain reliable, secure, and efficient workflow automation across the LGFC-WEB
 - [ ] **Security Scans** (`security-scans.yml`) - Security assessment and vulnerability management
 
 ### 🚀 **Deployment & Integration**
-- [ ] **Netlify Deploy Preview** (`netlify-deploy-preview.yml`) - Deployment validation
+- [ ] **Manual Netlify Deployment** (`netlify-deploy-preview.yml`) - Manual deployment validation
 - [ ] **CI/CD Pipeline** (`ci.yml`) - Build and test automation
 - [ ] **Dependency Security Updates** (`dependency-security-updates.yml`) - Security maintenance
 
