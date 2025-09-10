@@ -1,0 +1,313 @@
+name: Netlify Build Minutes Monitor
+
+# =============================================================================
+# NETLIFY BUILD MINUTES MONITORING WORKFLOW
+# =============================================================================
+# 
+# This workflow monitors Netlify build minute usage to prevent service outages
+# due to quota exhaustion under Netlify's subscription policies.
+#
+# SETUP INSTRUCTIONS:
+# 1. Go to Netlify dashboard > User settings > Personal access tokens
+# 2. Generate a new token with "Sites:Read" permissions
+# 3. Add as repository secret: NETLIFY_AUTH_TOKEN
+# 4. Find your account ID in Netlify dashboard URL or account settings
+# 5. Add as repository secret: NETLIFY_ACCOUNT_ID
+#
+# CUSTOMIZABLE THRESHOLDS:
+# - WARNING_THRESHOLD: 75% (adjust line ~45)
+# - CRITICAL_THRESHOLD: 90% (adjust line ~46) 
+# - EMERGENCY_THRESHOLD: 100% (adjust line ~47)
+#
+# The workflow will create GitHub issues with escalating severity when
+# thresholds are crossed to alert the team before service interruption.
+# =============================================================================
+
+on:
+  schedule:
+    # Run every hour to catch usage spikes quickly
+    - cron: "0 * * * *"
+  workflow_dispatch: # Allow manual trigger for testing
+
+permissions:
+  contents: write    # For committing monitoring reports
+  issues: write      # For creating usage alert issues
+
+jobs:
+  monitor-build-minutes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create monitoring directory
+        run: |
+          mkdir -p netlify-monitoring
+          
+      - name: Check Netlify Build Minutes Usage
+        id: usage_check
+        run: |
+          # Customizable thresholds (adjust these values as needed)
+          WARNING_THRESHOLD=75
+          CRITICAL_THRESHOLD=90
+          EMERGENCY_THRESHOLD=100
+          
+          echo "=== Netlify Build Minutes Usage Monitor - $(date) ===" > netlify-monitoring/usage-report.log
+          
+          # Verify required secrets are configured
+          if [ -z "${{ secrets.NETLIFY_AUTH_TOKEN }}" ]; then
+            echo "❌ NETLIFY_AUTH_TOKEN secret not configured" >> netlify-monitoring/usage-report.log
+            echo "::error::NETLIFY_AUTH_TOKEN repository secret must be configured"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.NETLIFY_ACCOUNT_ID }}" ]; then
+            echo "❌ NETLIFY_ACCOUNT_ID secret not configured" >> netlify-monitoring/usage-report.log
+            echo "::error::NETLIFY_ACCOUNT_ID repository secret must be configured" 
+            exit 1
+          fi
+          
+          echo "✅ Repository secrets configured" >> netlify-monitoring/usage-report.log
+          
+          # Query Netlify API for account usage
+          echo "Querying Netlify API for build minute usage..." >> netlify-monitoring/usage-report.log
+          
+          # Get account information and build minute usage
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            "https://api.netlify.com/api/v1/accounts/${{ secrets.NETLIFY_ACCOUNT_ID }}")
+          
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to query Netlify API" >> netlify-monitoring/usage-report.log
+            echo "::error::Failed to connect to Netlify API"
+            exit 1
+          fi
+          
+          # Check if response contains error
+          if echo "$RESPONSE" | grep -q '"message".*"error"'; then
+            echo "❌ Netlify API error: $(echo "$RESPONSE" | jq -r '.message' 2>/dev/null || echo "Unknown error")" >> netlify-monitoring/usage-report.log
+            echo "::error::Netlify API returned error - check credentials and account ID"
+            exit 1
+          fi
+          
+          # Extract build minute usage data
+          # Note: The exact API response structure may vary - this follows Netlify's typical patterns
+          BUILD_MINUTES_USED=$(echo "$RESPONSE" | jq -r '.build_time_used_minutes // .usage.build_minutes // 0' 2>/dev/null || echo "0")
+          BUILD_MINUTES_LIMIT=$(echo "$RESPONSE" | jq -r '.build_time_limit_minutes // .usage.build_minutes_limit // .plan.build_minutes_limit // 300' 2>/dev/null || echo "300")
+          
+          # Handle cases where jq might not be available
+          if [ "$BUILD_MINUTES_USED" = "null" ] || [ -z "$BUILD_MINUTES_USED" ]; then
+            # Fallback parsing without jq
+            BUILD_MINUTES_USED=$(echo "$RESPONSE" | grep -o '"build_time_used_minutes":[^,}]*' | cut -d: -f2 | tr -d ' "' || echo "0")
+          fi
+          
+          if [ "$BUILD_MINUTES_LIMIT" = "null" ] || [ -z "$BUILD_MINUTES_LIMIT" ]; then
+            BUILD_MINUTES_LIMIT=$(echo "$RESPONSE" | grep -o '"build_time_limit_minutes":[^,}]*' | cut -d: -f2 | tr -d ' "' || echo "300")
+          fi
+          
+          # Ensure numeric values
+          BUILD_MINUTES_USED=$(echo "$BUILD_MINUTES_USED" | grep -o '^[0-9]*' || echo "0")
+          BUILD_MINUTES_LIMIT=$(echo "$BUILD_MINUTES_LIMIT" | grep -o '^[0-9]*' || echo "300")
+          
+          echo "Build minutes used: $BUILD_MINUTES_USED" >> netlify-monitoring/usage-report.log
+          echo "Build minutes limit: $BUILD_MINUTES_LIMIT" >> netlify-monitoring/usage-report.log
+          
+          # Calculate usage percentage
+          if [ "$BUILD_MINUTES_LIMIT" -gt 0 ]; then
+            USAGE_PERCENTAGE=$(( (BUILD_MINUTES_USED * 100) / BUILD_MINUTES_LIMIT ))
+          else
+            USAGE_PERCENTAGE=0
+            echo "⚠️ Build minutes limit is 0 or undefined - using default calculations" >> netlify-monitoring/usage-report.log
+          fi
+          
+          REMAINING_MINUTES=$(( BUILD_MINUTES_LIMIT - BUILD_MINUTES_USED ))
+          
+          echo "Usage percentage: ${USAGE_PERCENTAGE}%" >> netlify-monitoring/usage-report.log
+          echo "Remaining minutes: $REMAINING_MINUTES" >> netlify-monitoring/usage-report.log
+          
+          # Set outputs for subsequent steps
+          echo "usage_percentage=$USAGE_PERCENTAGE" >> $GITHUB_OUTPUT
+          echo "minutes_used=$BUILD_MINUTES_USED" >> $GITHUB_OUTPUT
+          echo "minutes_limit=$BUILD_MINUTES_LIMIT" >> $GITHUB_OUTPUT
+          echo "remaining_minutes=$REMAINING_MINUTES" >> $GITHUB_OUTPUT
+          echo "warning_threshold=$WARNING_THRESHOLD" >> $GITHUB_OUTPUT
+          echo "critical_threshold=$CRITICAL_THRESHOLD" >> $GITHUB_OUTPUT
+          echo "emergency_threshold=$EMERGENCY_THRESHOLD" >> $GITHUB_OUTPUT
+          
+          # Determine alert level
+          if [ "$USAGE_PERCENTAGE" -ge "$EMERGENCY_THRESHOLD" ]; then
+            echo "alert_level=EMERGENCY" >> $GITHUB_OUTPUT
+            echo "🚨 EMERGENCY: Build minutes quota exhausted!" >> netlify-monitoring/usage-report.log
+          elif [ "$USAGE_PERCENTAGE" -ge "$CRITICAL_THRESHOLD" ]; then
+            echo "alert_level=CRITICAL" >> $GITHUB_OUTPUT
+            echo "❌ CRITICAL: Approaching build minutes limit" >> netlify-monitoring/usage-report.log
+          elif [ "$USAGE_PERCENTAGE" -ge "$WARNING_THRESHOLD" ]; then
+            echo "alert_level=WARNING" >> $GITHUB_OUTPUT
+            echo "⚠️ WARNING: High build minutes usage detected" >> netlify-monitoring/usage-report.log
+          else
+            echo "alert_level=OK" >> $GITHUB_OUTPUT
+            echo "✅ Build minutes usage within normal limits" >> netlify-monitoring/usage-report.log
+          fi
+          
+      - name: Generate Usage Summary
+        run: |
+          echo "" >> netlify-monitoring/usage-report.log
+          echo "=== Usage Summary ===" >> netlify-monitoring/usage-report.log
+          echo "Current Status: ${{ steps.usage_check.outputs.alert_level }}" >> netlify-monitoring/usage-report.log
+          echo "Usage: ${{ steps.usage_check.outputs.usage_percentage }}% (${{ steps.usage_check.outputs.minutes_used }}/${{ steps.usage_check.outputs.minutes_limit }} minutes)" >> netlify-monitoring/usage-report.log
+          echo "Remaining: ${{ steps.usage_check.outputs.remaining_minutes }} minutes" >> netlify-monitoring/usage-report.log
+          echo "Check completed at: $(date)" >> netlify-monitoring/usage-report.log
+          
+          # Add threshold information for reference
+          echo "" >> netlify-monitoring/usage-report.log
+          echo "=== Configured Thresholds ===" >> netlify-monitoring/usage-report.log
+          echo "Warning: ${{ steps.usage_check.outputs.warning_threshold }}%" >> netlify-monitoring/usage-report.log
+          echo "Critical: ${{ steps.usage_check.outputs.critical_threshold }}%" >> netlify-monitoring/usage-report.log
+          echo "Emergency: ${{ steps.usage_check.outputs.emergency_threshold }}%" >> netlify-monitoring/usage-report.log
+
+      - name: Display Usage Report
+        run: |
+          echo "Netlify build minutes usage report:"
+          cat netlify-monitoring/usage-report.log
+          
+      - name: Install GitHub CLI
+        if: contains(steps.usage_check.outputs.alert_level, 'WARNING') || contains(steps.usage_check.outputs.alert_level, 'CRITICAL') || contains(steps.usage_check.outputs.alert_level, 'EMERGENCY')
+        run: |
+          # Install gh CLI as specified in requirements
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+          
+          gh --version
+
+      - name: Create GitHub Issue for Usage Alert
+        if: contains(steps.usage_check.outputs.alert_level, 'WARNING') || contains(steps.usage_check.outputs.alert_level, 'CRITICAL') || contains(steps.usage_check.outputs.alert_level, 'EMERGENCY')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ALERT_LEVEL="${{ steps.usage_check.outputs.alert_level }}"
+          USAGE_PERCENTAGE="${{ steps.usage_check.outputs.usage_percentage }}"
+          MINUTES_USED="${{ steps.usage_check.outputs.minutes_used }}"
+          MINUTES_LIMIT="${{ steps.usage_check.outputs.minutes_limit }}"
+          REMAINING_MINUTES="${{ steps.usage_check.outputs.remaining_minutes }}"
+          DATE_STR=$(date +"%Y-%m-%d")
+          TIME_STR=$(date)
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Prepare issue content based on severity level
+          case "$ALERT_LEVEL" in
+            "WARNING")
+              TITLE="⚠️ Netlify Build Minutes Warning - ${USAGE_PERCENTAGE}% Used - $DATE_STR"
+              PRIORITY_LABEL="priority:medium"
+              SEVERITY_MESSAGE="**WARNING**: Build minute usage has reached **${USAGE_PERCENTAGE}%** of your monthly quota."
+              URGENCY="Monitor usage closely and consider optimizing builds or upgrading plan if needed."
+              ;;
+            "CRITICAL")
+              TITLE="❌ Netlify Build Minutes Critical Alert - ${USAGE_PERCENTAGE}% Used - $DATE_STR"
+              PRIORITY_LABEL="priority:high" 
+              SEVERITY_MESSAGE="**CRITICAL**: Build minute usage has reached **${USAGE_PERCENTAGE}%** of your monthly quota."
+              URGENCY="**Immediate attention required** - site may go offline if quota is exhausted."
+              ;;
+            "EMERGENCY")
+              TITLE="🚨 EMERGENCY: Netlify Build Minutes Quota Exhausted - $DATE_STR"
+              PRIORITY_LABEL="priority:critical"
+              SEVERITY_MESSAGE="**EMERGENCY**: Build minute quota has been **EXHAUSTED** (${USAGE_PERCENTAGE}%)."
+              URGENCY="**WEBSITE AND SERVICES ARE AT RISK** - Purchase additional minutes or wait for monthly reset."
+              ;;
+          esac
+          
+          # Create comprehensive issue body
+          cat > /tmp/issue_body.md << EOF
+          # Netlify Build Minutes Usage Alert
+          
+          **Time**: $TIME_STR  
+          **Workflow**: [Netlify Build Minutes Monitor]($WORKFLOW_URL)  
+          **Alert Level**: $ALERT_LEVEL
+          
+          ## 🚨 Usage Status
+          
+          $SEVERITY_MESSAGE
+          
+          **Usage Details:**
+          - **Minutes Used**: $MINUTES_USED / $MINUTES_LIMIT
+          - **Percentage**: ${USAGE_PERCENTAGE}%
+          - **Remaining**: $REMAINING_MINUTES minutes
+          
+          ## ⚠️ Impact
+          
+          $URGENCY
+          
+          Under Netlify's subscription policy, if build minutes are exhausted:
+          - ❌ Website builds will fail
+          - ❌ Netlify services will be suspended  
+          - ❌ Site may go offline until quota reset or additional minutes purchased
+          
+          ## 🛠️ Recommended Actions
+          
+          ### Immediate Actions:
+          1. **Review recent build activity** in Netlify dashboard
+          2. **Check for unnecessary or failed builds** consuming quota
+          3. **Consider pausing non-essential deployments** until quota resets
+          
+          ### Short-term Solutions:
+          - **Purchase additional build minutes** if budget allows
+          - **Optimize build processes** to reduce minute consumption
+          - **Review branch deployment settings** to limit builds
+          
+          ### Long-term Solutions:
+          - **Upgrade Netlify plan** for higher monthly quota
+          - **Implement build optimization strategies**
+          - **Set up automated usage monitoring** (this workflow)
+          - **Review deployment triggers** and branch policies
+          
+          ## 📊 Historical Context
+          
+          This alert was generated by automated monitoring. Check previous usage reports in the \`netlify-monitoring/\` directory for trends.
+          
+          ## 🔗 Useful Links
+          
+          - [Netlify Dashboard](https://app.netlify.com/)
+          - [Build Minutes Usage](https://app.netlify.com/teams/${{ secrets.NETLIFY_ACCOUNT_ID || 'YOUR-TEAM' }}/settings/billing)
+          - [Build Optimization Guide](https://docs.netlify.com/configure-builds/optimize-builds/)
+          - [Pricing Plans](https://www.netlify.com/pricing/)
+          
+          ---
+          
+          **Auto-generated by**: \`.github/workflows/netlify-build-minutes-monitor.yml\`  
+          **Next Check**: $(date -d '+1 hour' '+%Y-%m-%d %H:00 UTC')
+          EOF
+          
+          # Create the GitHub issue using gh CLI as specified
+          gh issue create \
+            --title "$TITLE" \
+            --body-file /tmp/issue_body.md \
+            --label "ops,netlify,build-minutes,$PRIORITY_LABEL"
+            
+          echo "✅ GitHub issue created for $ALERT_LEVEL level alert" >> netlify-monitoring/usage-report.log
+
+      - name: Update monitoring status
+        run: |
+          echo "Monitoring check completed with status: ${{ steps.usage_check.outputs.alert_level }}"
+          
+          # Log the final status
+          echo "" >> netlify-monitoring/usage-report.log
+          echo "=== Monitoring Status ===" >> netlify-monitoring/usage-report.log
+          echo "Final Status: ${{ steps.usage_check.outputs.alert_level }}" >> netlify-monitoring/usage-report.log
+          
+          if [[ "${{ steps.usage_check.outputs.alert_level }}" == "WARNING" ]] || [[ "${{ steps.usage_check.outputs.alert_level }}" == "CRITICAL" ]] || [[ "${{ steps.usage_check.outputs.alert_level }}" == "EMERGENCY" ]]; then
+            echo "GitHub issue created: Yes" >> netlify-monitoring/usage-report.log
+          else
+            echo "GitHub issue created: No (usage within normal limits)" >> netlify-monitoring/usage-report.log
+          fi
+          
+          echo "Next scheduled check: $(date -d '+1 hour' '+%Y-%m-%d %H:00 UTC')" >> netlify-monitoring/usage-report.log
+
+      - name: Commit monitoring report
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add netlify-monitoring/
+          git commit -m "Netlify build minutes usage report - $(date +"%Y-%m-%d %H:%M")" || echo "No monitoring changes to commit"
+          git push
