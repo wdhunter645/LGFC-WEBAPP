@@ -1,0 +1,713 @@
+name: Incident Response Bot
+
+on:
+  schedule:
+    # Run every hour at the top of the hour
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: "Type of incident check to perform"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - workflow_failures
+          - security_alerts
+          - system_health
+          - external_services
+      create_issue:
+        description: "Create issues for detected incidents"
+        required: false
+        default: true
+        type: boolean
+      severity_threshold:
+        description: "Minimum severity level to report"
+        required: false
+        default: "medium"
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - critical
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+  pull-requests: read
+  security-events: read
+
+jobs:
+  incident-detection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create incident response working directory
+        run: |
+          mkdir -p incident-reports
+          mkdir -p incident-reports/checks
+          mkdir -p incident-reports/issues
+
+      - name: Initialize incident report
+        run: |
+          echo "=== Incident Response Bot Report - $(date) ===" > incident-reports/incident-report.log
+          echo "Repository: ${{ github.repository }}" >> incident-reports/incident-report.log
+          echo "Check Type: ${{ inputs.check_type || 'all' }}" >> incident-reports/incident-report.log
+          echo "Severity Threshold: ${{ inputs.severity_threshold || 'medium' }}" >> incident-reports/incident-report.log
+          echo "Branch: ${{ github.ref_name }}" >> incident-reports/incident-report.log
+          echo "Commit: ${{ github.sha }}" >> incident-reports/incident-report.log
+          echo "" >> incident-reports/incident-report.log
+
+      - name: Check for workflow failures
+        if: inputs.check_type == 'all' || inputs.check_type == 'workflow_failures' || github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            console.log('🔍 Checking for workflow failures...');
+            
+            // Get recent workflow runs (last 24 hours)
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const { data: workflows } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              status: 'failure',
+              created: `>${oneDayAgo.toISOString()}`,
+              per_page: 10
+            });
+
+            const fs = require('fs');
+            let checkResult = {
+              type: 'workflow_failures',
+              timestamp: new Date().toISOString(),
+              severity: 'low',
+              incidents: []
+            };
+
+            console.log(`Found ${workflows.total_count} failed workflow runs in the last 24 hours`);
+            
+            if (workflows.total_count > 0) {
+              // Analyze failure patterns
+              const criticalWorkflows = ['security-scans', 'ops-bot', 'health-checks'];
+              const failedCriticalWorkflows = workflows.workflow_runs.filter(run => 
+                criticalWorkflows.some(critical => run.name?.toLowerCase().includes(critical.toLowerCase()))
+              );
+
+              if (failedCriticalWorkflows.length > 0) {
+                checkResult.severity = 'high';
+                checkResult.incidents.push({
+                  type: 'critical_workflow_failure',
+                  count: failedCriticalWorkflows.length,
+                  details: failedCriticalWorkflows.map(run => ({
+                    name: run.name,
+                    conclusion: run.conclusion,
+                    created_at: run.created_at,
+                    html_url: run.html_url
+                  }))
+                });
+                console.log(`🚨 HIGH SEVERITY: ${failedCriticalWorkflows.length} critical workflow failures detected`);
+              }
+
+              if (workflows.total_count >= 5) {
+                checkResult.severity = workflows.total_count >= 10 ? 'critical' : 'high';
+                checkResult.incidents.push({
+                  type: 'multiple_workflow_failures',
+                  count: workflows.total_count,
+                  threshold: 5
+                });
+                console.log(`⚠️ ${checkResult.severity.toUpperCase()} SEVERITY: ${workflows.total_count} workflow failures in 24 hours`);
+              } else {
+                checkResult.severity = 'medium';
+                checkResult.incidents.push({
+                  type: 'workflow_failures',
+                  count: workflows.total_count
+                });
+                console.log(`📊 MEDIUM SEVERITY: ${workflows.total_count} workflow failures detected`);
+              }
+            } else {
+              console.log('✅ No workflow failures detected in the last 24 hours');
+            }
+
+            // Save check results
+            fs.writeFileSync('incident-reports/checks/workflow-failures.json', JSON.stringify(checkResult, null, 2));
+            
+            // Log summary
+            const logEntry = `
+            === Workflow Failures Check ===
+            Timestamp: ${checkResult.timestamp}
+            Severity: ${checkResult.severity.toUpperCase()}
+            Failed runs in 24h: ${workflows.total_count}
+            Incidents detected: ${checkResult.incidents.length}
+            Critical workflow failures: ${checkResult.incidents.filter(i => i.type === 'critical_workflow_failure').length}
+
+            `;
+            fs.appendFileSync('incident-reports/incident-report.log', logEntry);
+
+      - name: Check for security alerts
+        if: inputs.check_type == 'all' || inputs.check_type == 'security_alerts' || github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            console.log('🔒 Checking for security alerts...');
+            
+            const fs = require('fs');
+            let checkResult = {
+              type: 'security_alerts',
+              timestamp: new Date().toISOString(),
+              severity: 'low',
+              incidents: []
+            };
+
+            try {
+              // Check for security advisories (if available)
+              const { data: advisories } = await github.rest.securityAdvisories.listRepositoryAdvisories({
+                owner,
+                repo,
+                state: 'published'
+              }).catch(() => ({ data: [] }));
+
+              if (advisories.length > 0) {
+                checkResult.severity = 'high';
+                checkResult.incidents.push({
+                  type: 'security_advisories',
+                  count: advisories.length,
+                  details: advisories.slice(0, 5).map(advisory => ({
+                    ghsa_id: advisory.ghsa_id,
+                    severity: advisory.severity,
+                    summary: advisory.summary,
+                    published_at: advisory.published_at
+                  }))
+                });
+                console.log(`🚨 HIGH SEVERITY: ${advisories.length} security advisories found`);
+              }
+
+              // Check for recent security-related issues
+              const { data: securityIssues } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue is:open label:security created:>=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}`
+              });
+
+              if (securityIssues.total_count > 0) {
+                const criticalSecurityIssues = securityIssues.items.filter(issue => 
+                  issue.labels.some(label => label.name.includes('critical') || label.name.includes('vulnerability'))
+                );
+
+                if (criticalSecurityIssues.length > 0) {
+                  checkResult.severity = 'critical';
+                  checkResult.incidents.push({
+                    type: 'critical_security_issues',
+                    count: criticalSecurityIssues.length,
+                    details: criticalSecurityIssues.slice(0, 3).map(issue => ({
+                      number: issue.number,
+                      title: issue.title,
+                      labels: issue.labels.map(l => l.name),
+                      created_at: issue.created_at
+                    }))
+                  });
+                  console.log(`💥 CRITICAL SEVERITY: ${criticalSecurityIssues.length} critical security issues open`);
+                } else if (securityIssues.total_count >= 3) {
+                  checkResult.severity = 'high';
+                  checkResult.incidents.push({
+                    type: 'multiple_security_issues',
+                    count: securityIssues.total_count,
+                    threshold: 3
+                  });
+                  console.log(`🚨 HIGH SEVERITY: ${securityIssues.total_count} security issues in the last week`);
+                } else {
+                  checkResult.severity = 'medium';
+                  checkResult.incidents.push({
+                    type: 'security_issues',
+                    count: securityIssues.total_count
+                  });
+                  console.log(`⚠️ MEDIUM SEVERITY: ${securityIssues.total_count} security issues detected`);
+                }
+              } else {
+                console.log('✅ No open security issues found in the last week');
+              }
+
+            } catch (error) {
+              console.log('⚠️ Warning: Limited access to security data:', error.message);
+              checkResult.incidents.push({
+                type: 'security_check_limited',
+                message: 'Limited access to security APIs'
+              });
+            }
+
+            // Save check results
+            fs.writeFileSync('incident-reports/checks/security-alerts.json', JSON.stringify(checkResult, null, 2));
+            
+            // Log summary
+            const logEntry = `
+            === Security Alerts Check ===
+            Timestamp: ${checkResult.timestamp}
+            Severity: ${checkResult.severity.toUpperCase()}
+            Security advisories: ${checkResult.incidents.filter(i => i.type === 'security_advisories').length}
+            Security issues: ${checkResult.incidents.filter(i => i.type.includes('security_issues')).length}
+            Total incidents: ${checkResult.incidents.length}
+
+            `;
+            fs.appendFileSync('incident-reports/incident-report.log', logEntry);
+
+      - name: Check system health indicators
+        if: inputs.check_type == 'all' || inputs.check_type == 'system_health' || github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            console.log('🏥 Checking system health indicators...');
+            
+            const fs = require('fs');
+            let checkResult = {
+              type: 'system_health',
+              timestamp: new Date().toISOString(),
+              severity: 'low',
+              incidents: []
+            };
+
+            try {
+              // Check repository activity patterns (low activity might indicate issues)
+              const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+              const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+              const { data: recentCommits } = await github.rest.repos.listCommits({
+                owner,
+                repo,
+                since: oneWeekAgo.toISOString(),
+                per_page: 100
+              });
+
+              const { data: recentIssues } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue created:>=${oneWeekAgo.toISOString().split('T')[0]}`
+              });
+
+              // Check for unusual patterns
+              const criticalLabels = ['bug', 'critical', 'outage', 'emergency'];
+              const criticalRecentIssues = recentIssues.items.filter(issue =>
+                issue.labels.some(label => 
+                  criticalLabels.some(critical => label.name.toLowerCase().includes(critical))
+                )
+              );
+
+              if (criticalRecentIssues.length >= 3) {
+                checkResult.severity = 'high';
+                checkResult.incidents.push({
+                  type: 'critical_issues_spike',
+                  count: criticalRecentIssues.length,
+                  threshold: 3,
+                  details: criticalRecentIssues.slice(0, 3).map(issue => ({
+                    number: issue.number,
+                    title: issue.title,
+                    labels: issue.labels.map(l => l.name),
+                    created_at: issue.created_at
+                  }))
+                });
+                console.log(`🚨 HIGH SEVERITY: ${criticalRecentIssues.length} critical issues in the last week`);
+              }
+
+              // Check for deployment/build issues pattern
+              const buildKeywords = ['build', 'deploy', 'failed', 'error', 'breaking'];
+              const buildIssues = recentIssues.items.filter(issue =>
+                buildKeywords.some(keyword => 
+                  issue.title.toLowerCase().includes(keyword) || 
+                  issue.body?.toLowerCase().includes(keyword)
+                )
+              );
+
+              if (buildIssues.length >= 2) {
+                checkResult.severity = Math.max(checkResult.severity === 'low' ? 1 : checkResult.severity === 'medium' ? 2 : checkResult.severity === 'high' ? 3 : 4, 2);
+                checkResult.severity = ['low', 'medium', 'high', 'critical'][Math.max(checkResult.severity === 'low' ? 0 : checkResult.severity === 'medium' ? 1 : checkResult.severity === 'high' ? 2 : 3, 1)];
+                checkResult.incidents.push({
+                  type: 'build_deploy_issues',
+                  count: buildIssues.length,
+                  threshold: 2
+                });
+                console.log(`⚠️ ${checkResult.severity.toUpperCase()} SEVERITY: ${buildIssues.length} build/deployment issues detected`);
+              }
+
+              // Health score calculation
+              const activityScore = Math.min(100, (recentCommits.length * 10) + (recentIssues.total_count * 5));
+              if (activityScore < 20) {
+                checkResult.severity = Math.max(checkResult.severity === 'low' ? 1 : checkResult.severity === 'medium' ? 2 : 3, 1);
+                checkResult.severity = ['low', 'medium', 'high'][Math.max(checkResult.severity === 'low' ? 0 : checkResult.severity === 'medium' ? 1 : 2, 1)];
+                checkResult.incidents.push({
+                  type: 'low_activity',
+                  activity_score: activityScore,
+                  commits_week: recentCommits.length,
+                  issues_week: recentIssues.total_count
+                });
+                console.log(`📊 MEDIUM SEVERITY: Low repository activity (score: ${activityScore})`);
+              } else {
+                console.log(`✅ Repository activity healthy (score: ${activityScore})`);
+              }
+
+            } catch (error) {
+              console.log('⚠️ Error checking system health:', error.message);
+              checkResult.incidents.push({
+                type: 'health_check_error',
+                message: error.message
+              });
+            }
+
+            // Save check results
+            fs.writeFileSync('incident-reports/checks/system-health.json', JSON.stringify(checkResult, null, 2));
+            
+            // Log summary
+            const logEntry = `
+            === System Health Check ===
+            Timestamp: ${checkResult.timestamp}
+            Severity: ${checkResult.severity.toUpperCase()}
+            Health incidents: ${checkResult.incidents.length}
+            Critical issue spikes: ${checkResult.incidents.filter(i => i.type === 'critical_issues_spike').length}
+            Build/Deploy issues: ${checkResult.incidents.filter(i => i.type === 'build_deploy_issues').length}
+
+            `;
+            fs.appendFileSync('incident-reports/incident-report.log', logEntry);
+
+      - name: Check external services availability
+        if: inputs.check_type == 'all' || inputs.check_type == 'external_services' || github.event_name == 'schedule'
+        run: |
+          echo "🌐 Checking external services availability..." 
+          
+          # Create external services check result
+          cat > incident-reports/checks/external-services.json << 'EOF'
+          {
+            "type": "external_services",
+            "timestamp": "",
+            "severity": "low",
+            "incidents": []
+          }
+          EOF
+          
+          # Update timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          sed -i "s/\"timestamp\": \"\"/\"timestamp\": \"$TIMESTAMP\"/" incident-reports/checks/external-services.json
+          
+          # Initialize severity and incident count
+          SEVERITY="low"
+          INCIDENT_COUNT=0
+          
+          # Check Supabase availability
+          echo "Checking Supabase service..."
+          SUPABASE_URL="https://vkwhrbjkdznncjkzkiuo.supabase.co"
+          SUPABASE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE_URL" || echo "000")
+          
+          if [ "$SUPABASE_STATUS" != "200" ]; then
+            echo "🚨 CRITICAL: Supabase service unavailable (HTTP $SUPABASE_STATUS)"
+            SEVERITY="critical"
+            INCIDENT_COUNT=$((INCIDENT_COUNT + 1))
+            # Add incident to JSON (simplified approach)
+            sed -i 's/"incidents": \[\]/"incidents": [{"type": "supabase_unavailable", "status_code": "'$SUPABASE_STATUS'", "service": "Supabase"}]/' incident-reports/checks/external-services.json
+          else
+            echo "✅ Supabase service is available"
+          fi
+          
+          # Check Netlify status
+          echo "Checking Netlify service..."
+          NETLIFY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://www.netlifystatus.com" || echo "000")
+          
+          if [ "$NETLIFY_STATUS" != "200" ]; then
+            echo "⚠️ HIGH: Netlify status page unavailable (HTTP $NETLIFY_STATUS)"
+            if [ "$SEVERITY" != "critical" ]; then
+              SEVERITY="high"
+            fi
+            INCIDENT_COUNT=$((INCIDENT_COUNT + 1))
+          else
+            echo "✅ Netlify status page is accessible"
+          fi
+          
+          # Update severity in JSON
+          sed -i "s/\"severity\": \"low\"/\"severity\": \"$SEVERITY\"/" incident-reports/checks/external-services.json
+          
+          # Log summary to incident report
+          cat >> incident-reports/incident-report.log << EOF
+          
+          === External Services Check ===
+          Timestamp: $TIMESTAMP
+          Severity: ${SEVERITY^^}
+          Services checked: 2
+          Service incidents: $INCIDENT_COUNT
+          Supabase status: $SUPABASE_STATUS
+          Netlify status: $NETLIFY_STATUS
+          
+          EOF
+          
+          echo "External services check completed with severity: $SEVERITY"
+
+      - name: Consolidate incident findings
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            console.log('📊 Consolidating incident findings...');
+            
+            // Load all check results
+            const checkTypes = ['workflow-failures', 'security-alerts', 'system-health', 'external-services'];
+            let allIncidents = [];
+            let maxSeverity = 'low';
+            
+            const severityLevels = { low: 1, medium: 2, high: 3, critical: 4 };
+            
+            for (const checkType of checkTypes) {
+              const filePath = `incident-reports/checks/${checkType}.json`;
+              if (fs.existsSync(filePath)) {
+                try {
+                  const checkResult = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                  allIncidents.push(...checkResult.incidents.map(incident => ({
+                    ...incident,
+                    check_type: checkResult.type,
+                    severity: checkResult.severity,
+                    timestamp: checkResult.timestamp
+                  })));
+                  
+                  if (severityLevels[checkResult.severity] > severityLevels[maxSeverity]) {
+                    maxSeverity = checkResult.severity;
+                  }
+                } catch (error) {
+                  console.log(`Warning: Could not parse ${filePath}:`, error.message);
+                }
+              }
+            }
+            
+            // Create consolidated report
+            const consolidatedReport = {
+              timestamp: new Date().toISOString(),
+              repository: context.repo.owner + '/' + context.repo.repo,
+              overall_severity: maxSeverity,
+              total_incidents: allIncidents.length,
+              incidents_by_severity: {
+                critical: allIncidents.filter(i => i.severity === 'critical').length,
+                high: allIncidents.filter(i => i.severity === 'high').length,
+                medium: allIncidents.filter(i => i.severity === 'medium').length,
+                low: allIncidents.filter(i => i.severity === 'low').length
+              },
+              incidents_by_type: {
+                workflow_failures: allIncidents.filter(i => i.check_type === 'workflow_failures').length,
+                security_alerts: allIncidents.filter(i => i.check_type === 'security_alerts').length,
+                system_health: allIncidents.filter(i => i.check_type === 'system_health').length,
+                external_services: allIncidents.filter(i => i.check_type === 'external_services').length
+              },
+              all_incidents: allIncidents,
+              should_create_issue: false
+            };
+            
+            // Determine if we should create an issue based on severity threshold
+            const thresholdMap = { low: 1, medium: 2, high: 3, critical: 4 };
+            const inputThreshold = '${{ inputs.severity_threshold || 'medium' }}';
+            const createIssue = '${{ inputs.create_issue || 'true' }}' === 'true';
+            
+            if (createIssue && severityLevels[maxSeverity] >= thresholdMap[inputThreshold]) {
+              consolidatedReport.should_create_issue = true;
+            }
+            
+            // Save consolidated report
+            fs.writeFileSync('incident-reports/consolidated-report.json', JSON.stringify(consolidatedReport, null, 2));
+            
+            // Update main incident report
+            const summaryLog = `
+            === INCIDENT RESPONSE SUMMARY ===
+            Overall Severity: ${maxSeverity.toUpperCase()}
+            Total Incidents: ${allIncidents.length}
+            Critical: ${consolidatedReport.incidents_by_severity.critical}
+            High: ${consolidatedReport.incidents_by_severity.high}
+            Medium: ${consolidatedReport.incidents_by_severity.medium}
+            Low: ${consolidatedReport.incidents_by_severity.low}
+            
+            Issue Creation: ${consolidatedReport.should_create_issue ? 'REQUIRED' : 'NOT NEEDED'}
+            Threshold: ${inputThreshold.toUpperCase()}
+            
+            Report completed at: ${consolidatedReport.timestamp}
+            ========================================
+            `;
+            
+            fs.appendFileSync('incident-reports/incident-report.log', summaryLog);
+            
+            console.log(`📋 Incident summary: ${allIncidents.length} incidents, severity: ${maxSeverity}`);
+            console.log(`🎯 Issue creation: ${consolidatedReport.should_create_issue ? 'Required' : 'Not needed'}`);
+            
+            // Set outputs for next step
+            core.setOutput('should_create_issue', consolidatedReport.should_create_issue);
+            core.setOutput('max_severity', maxSeverity);
+            core.setOutput('total_incidents', allIncidents.length);
+
+      - name: Display incident report
+        run: |
+          echo "📄 Incident Response Bot Report:"
+          cat incident-reports/incident-report.log
+          echo ""
+          echo "📊 Consolidated findings:"
+          cat incident-reports/consolidated-report.json | jq '.'
+
+      - name: Create incident issue if needed
+        if: steps.consolidate-incident-findings.outputs.should_create_issue == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const fs = require('fs');
+            
+            console.log('🚨 Creating incident issue...');
+            
+            // Load consolidated report
+            const report = JSON.parse(fs.readFileSync('incident-reports/consolidated-report.json', 'utf8'));
+            
+            const severityEmojis = {
+              critical: '🔴',
+              high: '🟠', 
+              medium: '🟡',
+              low: '🟢'
+            };
+            
+            const severityEmoji = severityEmojis[report.overall_severity] || '⚪';
+            const title = `${severityEmoji} Incident Alert: ${report.total_incidents} Issues Detected (${report.overall_severity.toUpperCase()} Severity)`;
+            
+            // Build issue body
+            let body = `## 🚨 Incident Response Alert\\n\\n`;
+            body += `**Overall Severity**: ${severityEmoji} ${report.overall_severity.toUpperCase()}\\n`;
+            body += `**Detection Time**: ${report.timestamp}\\n`;
+            body += `**Repository**: ${report.repository}\\n`;
+            body += `**Total Incidents**: ${report.total_incidents}\\n\\n`;
+            
+            // Severity breakdown
+            body += `### 📊 Incidents by Severity\\n`;
+            body += `- 🔴 Critical: ${report.incidents_by_severity.critical}\\n`;
+            body += `- 🟠 High: ${report.incidents_by_severity.high}\\n`;
+            body += `- 🟡 Medium: ${report.incidents_by_severity.medium}\\n`;
+            body += `- 🟢 Low: ${report.incidents_by_severity.low}\\n\\n`;
+            
+            // Type breakdown
+            body += `### 🔍 Incidents by Category\\n`;
+            body += `- ⚙️ Workflow Failures: ${report.incidents_by_type.workflow_failures}\\n`;
+            body += `- 🔒 Security Alerts: ${report.incidents_by_type.security_alerts}\\n`;
+            body += `- 🏥 System Health: ${report.incidents_by_type.system_health}\\n`;
+            body += `- 🌐 External Services: ${report.incidents_by_type.external_services}\\n\\n`;
+            
+            // Detailed findings for critical/high severity incidents
+            const criticalIncidents = report.all_incidents.filter(i => ['critical', 'high'].includes(i.severity));
+            if (criticalIncidents.length > 0) {
+              body += `### 🔥 Critical/High Priority Incidents\\n\\n`;
+              criticalIncidents.slice(0, 5).forEach((incident, index) => {
+                body += `**${index + 1}. ${incident.type.replace(/_/g, ' ').toUpperCase()}**\\n`;
+                body += `- Severity: ${severityEmojis[incident.severity]} ${incident.severity}\\n`;
+                body += `- Category: ${incident.check_type}\\n`;
+                if (incident.count) body += `- Count: ${incident.count}\\n`;
+                if (incident.details && incident.details.length > 0) {
+                  body += `- Details: ${incident.details.slice(0, 2).map(d => d.name || d.title || d.ghsa_id || 'N/A').join(', ')}\\n`;
+                }
+                body += `\\n`;
+              });
+            }
+            
+            // Response instructions
+            body += `### 🛠️ Immediate Actions Required\\n\\n`;
+            
+            if (report.incidents_by_type.workflow_failures > 0) {
+              body += `1. **Review Failed Workflows**: Check the Actions tab for recent workflow failures\\n`;
+            }
+            if (report.incidents_by_type.security_alerts > 0) {
+              body += `2. **Address Security Issues**: Review security alerts and apply necessary patches\\n`;
+            }
+            if (report.incidents_by_type.external_services > 0) {
+              body += `3. **Check Service Dependencies**: Verify external service status and connectivity\\n`;
+            }
+            if (report.incidents_by_type.system_health > 0) {
+              body += `4. **System Health Review**: Investigate system health indicators and patterns\\n`;
+            }
+            
+            body += `\\n### 🤖 Automated Response\\n`;
+            body += `You can trigger automated incident response:\\n`;
+            body += `1. Go to Actions → ops-bot workflow\\n`;
+            body += `2. Run with parameters for the detected incident type\\n`;
+            body += `3. Review proposed fixes and implement as needed\\n\\n`;
+            
+            body += `### 📋 Resolution Checklist\\n`;
+            body += `- [ ] All critical incidents reviewed and triaged\\n`;
+            body += `- [ ] Security issues patched or mitigated\\n`;
+            body += `- [ ] Failed workflows investigated and fixed\\n`;
+            body += `- [ ] External service issues resolved or workarounds implemented\\n`;
+            body += `- [ ] System health issues addressed\\n`;
+            body += `- [ ] Incident response plan updated if needed\\n`;
+            body += `- [ ] Post-incident review scheduled\\n\\n`;
+            
+            body += `### 📊 Detailed Report\\n`;
+            body += `See workflow run logs for complete incident analysis and raw data.\\n\\n`;
+            body += `**Workflow Run**: [View Details](${context.payload.workflow_run?.html_url || 'Check Actions tab'})\\n\\n`;
+            
+            body += `---\\n`;
+            body += `*Auto-generated by Incident Response Bot on ${report.timestamp}*`;
+            
+            // Check if similar incident issue already exists
+            const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue in:title "Incident Alert" state:open`
+            });
+            
+            let labels = ['incident', 'automated', 'priority:' + report.overall_severity];
+            
+            // Add specific labels based on incident types
+            if (report.incidents_by_type.security_alerts > 0) labels.push('security');
+            if (report.incidents_by_type.workflow_failures > 0) labels.push('ci-cd');
+            if (report.incidents_by_type.external_services > 0) labels.push('infrastructure');
+            
+            if (existingIssues.total_count === 0 || report.overall_severity === 'critical') {
+              // Create new issue or always create for critical incidents
+              const { data: issue } = await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels
+              });
+              
+              console.log(`✅ Created incident issue #${issue.number}: ${title}`);
+              
+              // If critical, also add emergency label and mention
+              if (report.overall_severity === 'critical') {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  labels: ['emergency']
+                });
+                console.log('🚨 Added emergency label for critical incident');
+              }
+              
+            } else {
+              console.log('ℹ️ Similar incident issue already exists, skipping creation');
+            }
+
+      - name: Upload incident reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incident-response-report-${{ github.run_id }}
+          path: incident-reports/
+          retention-days: 30
+
+      - name: Summary comment
+        if: always()
+        run: |
+          echo "## 📋 Incident Response Bot Summary"
+          echo ""
+          echo "**Check Type:** ${{ inputs.check_type || 'all' }}"
+          echo "**Severity Threshold:** ${{ inputs.severity_threshold || 'medium' }}"
+          echo "**Max Severity Found:** ${{ steps.consolidate-incident-findings.outputs.max_severity || 'none' }}"
+          echo "**Total Incidents:** ${{ steps.consolidate-incident-findings.outputs.total_incidents || '0' }}"
+          echo "**Issue Created:** ${{ steps.consolidate-incident-findings.outputs.should_create_issue == 'true' && 'Yes' || 'No' }}"
+          echo ""
+          echo "🔍 **What was checked:**"
+          echo "- Workflow failures in the last 24 hours"
+          echo "- Security alerts and advisories"  
+          echo "- System health indicators"
+          echo "- External service availability"
+          echo ""
+          echo "⚙️ **Customization Options:**"
+          echo "- Modify check logic in each step's script section"
+          echo "- Adjust severity thresholds and incident criteria"
+          echo "- Add new check types by creating additional steps"
+          echo "- Configure notification channels and escalation paths"
+          echo ""
+          echo "📊 See uploaded artifact 'incident-response-report-${{ github.run_id }}' for detailed findings."
