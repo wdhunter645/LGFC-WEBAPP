@@ -16,11 +16,11 @@ jobs:
       - name: Approve PR
         run: gh pr review "$NUMBER" --approve
         env:
-          GH_TOKEN: ${{ github.token }}               # or: ${{ secrets.CODEX_PAT }}
+          GH_TOKEN: ${{ secrets.CODEX_PAT || github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
 
       - name: Enable auto-merge (squash, delete branch)
         run: gh pr merge "$NUMBER" --squash --auto --delete-branch
         env:
-          GH_TOKEN: ${{ github.token }}               # or: ${{ secrets.CODEX_PAT }}
+          GH_TOKEN: ${{ secrets.CODEX_PAT || github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
