@@ -1,0 +1,32 @@
+name: build/test workflow
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies (tolerant)
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci || npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+          else
+            npm install --legacy-peer-deps
+          fi
+
+      - run: npm run build --if-present
+      - run: npm test --if-present
