@@ -14,13 +14,17 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write      # Required for committing security scan results
       security-events: write
       actions: read
+      issues: write        # Required for creating security issues
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -448,5 +452,12 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add security-scans/
-          git commit -m "Security scan results - $(date +"%Y-%m-%d %H:%M")" || echo "No security scan changes to commit"
-          git push
+          if git diff --cached --exit-code > /dev/null; then
+            echo "No security scan changes to commit"
+          else
+            git commit -m "Security scan results - $(date +"%Y-%m-%d %H:%M")"
+            git push || {
+              echo "::warning::Failed to push security scan results. Results are available as artifacts."
+              exit 0
+            }
+          fi
