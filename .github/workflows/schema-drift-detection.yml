@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
         
       - name: Install Supabase CLI
         run: |
@@ -29,20 +32,34 @@ jobs:
           supabase --version
           
       - name: Login to Supabase
+        id: supabase_login
         run: |
           if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
             echo "::error::SUPABASE_ACCESS_TOKEN secret not configured"
+            echo "login_failed=true" >> $GITHUB_OUTPUT
             exit 1
           fi
-          echo ${{ secrets.SUPABASE_ACCESS_TOKEN }} | supabase login
+          if ! echo ${{ secrets.SUPABASE_ACCESS_TOKEN }} | supabase login; then
+            echo "::error::Failed to login to Supabase with provided token"
+            echo "login_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "login_failed=false" >> $GITHUB_OUTPUT
           
       - name: Link to Supabase project
+        id: supabase_link
         run: |
           if [ -z "${{ secrets.SUPABASE_PROJECT_REF }}" ]; then
             echo "::error::SUPABASE_PROJECT_REF secret not configured"
+            echo "link_failed=true" >> $GITHUB_OUTPUT
             exit 1
           fi
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          if ! supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}; then
+            echo "::error::Failed to link to Supabase project"
+            echo "link_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "link_failed=false" >> $GITHUB_OUTPUT
           
       - name: Create schema baseline directory
         run: |
@@ -296,10 +313,25 @@ jobs:
           cd schema-monitoring
           ls -t current_schema_*.sql | tail -n +6 | xargs rm -f || true
           
+      - name: Upload schema monitoring artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schema-monitoring-${{ github.sha }}
+          path: schema-monitoring/
+          retention-days: 30
+          
       - name: Commit schema monitoring data
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add schema-monitoring/
-          git commit -m "Schema drift detection - $(date +"%Y-%m-%d %H:%M")" || echo "No schema changes to commit"
-          git push
+          if git diff --cached --exit-code > /dev/null; then
+            echo "No schema changes to commit"
+          else
+            git commit -m "Schema drift detection - $(date +"%Y-%m-%d %H:%M")"
+            git push || {
+              echo "::warning::Failed to push schema monitoring data. Monitoring data available in artifacts."
+              exit 0
+            }
+          fi
