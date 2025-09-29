@@ -2,8 +2,8 @@ name: Workflow Failure Detector
 
 on:
   schedule:
-    # Run every 15 minutes to catch failures quickly
-    - cron: '*/15 * * * *'
+    # Run every 2 hours to catch failures efficiently without overwhelming the system
+    - cron: '0 */2 * * *'
   workflow_dispatch: # Allow manual trigger
     inputs:
       lookback_hours:
@@ -36,6 +36,16 @@ jobs:
             const sinceIso = new Date(Date.now() - lookbackHours*60*60*1000).toISOString();
 
             console.log(`Looking for failed workflows since ${sinceIso}`);
+
+            // Circuit breaker: Check if we've created too many failure issues recently
+            const recentFailureIssues = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue label:workflow-failure created:>${new Date(Date.now() - 24*60*60*1000).toISOString().split('T')[0]} state:open`
+            });
+
+            if (recentFailureIssues.data.total_count > 10) {
+              console.log(`⚠️  Circuit breaker activated: ${recentFailureIssues.data.total_count} failure issues created in last 24h. Skipping to prevent spam.`);
+              return;
+            }
 
             // Fetch recent workflow runs
             const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
