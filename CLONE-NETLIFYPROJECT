@@ -1,0 +1,2 @@
+# to clone netlify project 
+npx netlify clone https://github.com/wdhunter645/LGFC-WEBAPP-20bd0
